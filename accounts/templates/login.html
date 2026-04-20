@@ -1,143 +1,296 @@
 {% load static %}
 
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
+  <head>
     <title>RENTS Login</title>
-
-    <!-- Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
-    <!-- Mobile responsiveness -->
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
-        .left-panel {
-            background: linear-gradient(135deg, #111, #333);
-        }
+      .left-panel {
+        background: linear-gradient(135deg, #111, #333);
+      }
+      .role-btn {
+        transition: all 0.2s;
+      }
+      .role-btn.active {
+        background-color: #212529;
+        color: white;
+      }
     </style>
-</head>
+  </head>
 
-<body>
-
-<!-- ERROR MODAL -->
-<div class="modal fade" id="errorModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-
-      <div class="modal-header">
-        <h5 class="modal-title text-danger">Login Failed</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+  <body>
+    <!-- ERROR MODAL -->
+    <div class="modal fade" id="errorModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title text-danger">Login Failed</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">{{ error }}</div>
+          <div class="modal-footer">
+            <button class="btn btn-dark" data-bs-dismiss="modal">OK</button>
+          </div>
+        </div>
       </div>
-
-      <div class="modal-body">
-        Invalid username or password. Please try again.
-      </div>
-
-      <div class="modal-footer">
-        <button class="btn btn-dark" data-bs-dismiss="modal">OK</button>
-      </div>
-
     </div>
-  </div>
-</div>
 
-<!-- MAIN CONTAINER -->
-<div class="container-fluid">
-    <div class="d-md-none text-center p-2 bg-dark text-white">
-    <strong>RENTS</strong>
-</div>
-    <div class="row min-vh-100">
+    <!-- SIGNUP MODAL -->
+    <div class="modal fade" id="signupModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Sign up as Tenant</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
 
-        <!-- LEFT SIDE (BRANDING) -->
-        <div class="col-md-5 d-none d-md-flex left-panel text-white flex-column justify-content-center align-items-center text-center p-3">
+          <div class="modal-body">
+            {% if signup_error %}
+            <div class="alert alert-danger py-2 text-center">
+              {{ signup_error }}
+            </div>
+            {% endif %} {% if signup_success %}
+            <div class="alert alert-success py-2 text-center">
+              {{ signup_success }}
+            </div>
+            {% endif %}
 
-            <h1 class="fw-bold display-4">RENTS</h1>
+            <form method="POST" action="{% url 'signup' %}">
+              {% csrf_token %}
 
-            <p class="mb-2">Residents Entry, Navigation, and Tenant Tracking System</p>
+              <!-- FULL NAME -->
+              <div class="input-group mb-2">
+                <span class="input-group-text"
+                  ><i class="bi bi-person-vcard"></i
+                ></span>
+                <input
+                  type="text"
+                  name="full_name"
+                  class="form-control"
+                  placeholder="Full Name"
+                  required
+                />
+              </div>
 
-            <p class="px-4">
-                Manage tenants, rooms, and payments efficiently in one system.
-            </p>
+              <!-- EMAIL -->
+              <div class="input-group mb-2">
+                <span class="input-group-text"
+                  ><i class="bi bi-envelope"></i
+                ></span>
+                <input
+                  type="email"
+                  name="email"
+                  class="form-control"
+                  placeholder="Email"
+                  required
+                />
+              </div>
 
+              <!-- PHONE -->
+              <div class="input-group mb-2">
+                <span class="input-group-text"
+                  ><i class="bi bi-phone"></i
+                ></span>
+                <input
+                  type="text"
+                  name="phone"
+                  class="form-control"
+                  placeholder="Phone Number"
+                  required
+                />
+              </div>
+
+              <!-- ROOM NUMBER -->
+              <div class="input-group mb-2">
+                <span class="input-group-text"
+                  ><i class="bi bi-door-open"></i
+                ></span>
+                <input
+                  type="text"
+                  name="room_number"
+                  class="form-control"
+                  placeholder="Room Number"
+                  required
+                />
+              </div>
+
+              <!-- USERNAME -->
+              <div class="input-group mb-2">
+                <span class="input-group-text"
+                  ><i class="bi bi-person"></i
+                ></span>
+                <input
+                  type="text"
+                  name="username"
+                  class="form-control"
+                  placeholder="Username"
+                  required
+                />
+              </div>
+
+              <!-- PASSWORD -->
+              <div class="input-group mb-3">
+                <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                <input
+                  type="password"
+                  id="signupPassword"
+                  name="password"
+                  class="form-control"
+                  placeholder="Password"
+                  required
+                />
+                <span
+                  class="input-group-text toggle-password"
+                  style="cursor:pointer;"
+                >
+                  <i class="bi bi-eye" id="toggleIcon"></i>
+                </span>
+              </div>
+
+              <button class="btn btn-dark w-100">Create Account</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="container-fluid">
+      <div class="d-md-none text-center p-2 bg-dark text-white">
+        <strong>RENTS</strong>
+      </div>
+      <div class="row min-vh-100">
+        <!-- LEFT PANEL -->
+        <div
+          class="col-md-5 d-none d-md-flex left-panel text-white flex-column justify-content-center align-items-center text-center p-3"
+        >
+          <h1 class="fw-bold display-4">RENTS</h1>
+          <p class="mb-2">
+            Residents Entry, Navigation, and Tenant Tracking System
+          </p>
+          <p class="px-4">
+            Manage tenants, rooms, and payments efficiently in one system.
+          </p>
         </div>
 
-        <!-- RIGHT SIDE (LOGIN) -->
-        <div class="col-12 col-md-7 d-flex justify-content-center align-items-center bg-light">
+        <!-- RIGHT PANEL (LOGIN) -->
+        <div
+          class="col-12 col-md-7 d-flex justify-content-center align-items-center bg-light"
+        >
+          <div class="card shadow p-4 w-75">
+            <h3 class="text-center mb-3">Welcome to RENTS</h3>
 
-            <div class="card shadow p-4 w-75">
-
-                <h3 class="text-center mb-2">Login as Admin</h3>
-
-                <p class="text-center text-muted mb-4">
-                    Click Sign up if you are tenant.
-                </p>
-
-                <form method="POST">
-                    {% csrf_token %}
-
-                    <!-- USERNAME -->
-                    <div class="input-group mb-2">
-                        <span class="input-group-text">
-                            <i class="bi bi-person"></i>
-                        </span>
-                        <input type="text" name="username" class="form-control" placeholder="Username">
-                    </div>
-
-                    <!-- PASSWORD -->
-                    <div class="input-group mb-3">
-                        <span class="input-group-text">
-                            <i class="bi bi-lock"></i>
-                        </span>
-
-                        <input type="password" id="password" name="password" class="form-control" placeholder="Password">
-
-                        <span class="input-group-text" onclick="togglePassword()" style="cursor:pointer;">
-                            <i class="bi bi-eye" id="toggleIcon"></i>
-                        </span>
-                    </div>
-
-                    <button class="btn btn-dark w-100">
-                        Login
-                    </button>
-
-                    <!-- ERROR TEXT (fallback) -->
-                    {% if error %}
-                        <div class="alert alert-danger mt-3 py-2 text-center">
-                            {{ error }}
-                        </div>
-                    {% endif %}
-
-                    <!-- SIGNUP BUTTON -->
-                    <button type="button" class="btn btn-outline-primary w-100 mt-2">
-                        Sign up as Tenant
-                    </button>
-
-                </form>
-
+            <!-- ROLE TOGGLE -->
+            <div class="d-flex justify-content-center mb-4">
+              <div class="btn-group w-100" role="group">
+                <button
+                  type="button"
+                  class="btn btn-outline-dark role-btn active"
+                  id="btnAdmin"
+                  onclick="selectRole('admin')"
+                >
+                  <i class="bi bi-shield-lock"></i> Admin
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-outline-dark role-btn"
+                  id="btnTenant"
+                  onclick="selectRole('tenant')"
+                >
+                  <i class="bi bi-person"></i> Tenant
+                </button>
+              </div>
             </div>
 
+            <!-- LOGIN FORM -->
+            <form method="POST" action="{% url 'login' %}">
+              {% csrf_token %}
+              <input type="hidden" name="role" id="roleInput" value="admin" />
+
+              <!-- USERNAME -->
+              <div class="input-group mb-2">
+                <span class="input-group-text"
+                  ><i class="bi bi-person"></i
+                ></span>
+                <input
+                  type="text"
+                  name="username"
+                  class="form-control"
+                  placeholder="Username"
+                  required
+                />
+              </div>
+
+              <!-- PASSWORD -->
+              <div class="input-group mb-3">
+                <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  class="form-control"
+                  placeholder="Password"
+                  required
+                />
+                <span
+                  class="input-group-text toggle-password"
+                  style="cursor:pointer;"
+                >
+                  <i class="bi bi-eye" id="toggleIcon"></i>
+                </span>
+              </div>
+
+              <button class="btn btn-dark w-100">Login</button>
+
+              <!-- SIGNUP BUTTON (Tenant only) -->
+              <div id="signupSection" class="mt-2 d-none">
+                <button
+                  type="button"
+                  class="btn btn-outline-primary w-100"
+                  data-bs-toggle="modal"
+                  data-bs-target="#signupModal"
+                >
+                  Sign up as Tenant
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-
+      </div>
     </div>
-</div>
 
-<!-- JS FILE -->
-<script src="{% static 'accounts/js/login.js' %}"></script>
+    <script src="{% static 'accounts/js/login.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- BOOTSTRAP JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-<!-- ERROR MODAL TRIGGER -->
-{% if error_modal %}
-<script>
-    var myModal = new bootstrap.Modal(document.getElementById('errorModal'));
-    myModal.show();
-</script>
-{% endif %}
-
-</body>
+    {% if error_modal %}
+    <script>
+      var myModal = new bootstrap.Modal(document.getElementById("errorModal"));
+      myModal.show();
+    </script>
+    {% endif %} {% if signup_error or signup_success %}
+    <script>
+      var signupModal = new bootstrap.Modal(
+        document.getElementById("signupModal"),
+      );
+      signupModal.show();
+    </script>
+    {% endif %}
+  </body>
 </html>
