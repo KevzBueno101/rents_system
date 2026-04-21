@@ -193,3 +193,93 @@ def delete_admin(request, user_id):
         admin_user.delete()  # deletes User + AdminProfile (cascade)
 
     return redirect('admin_list')
+
+
+# ─── TENANT LIST ─────────────────────────────────────
+@login_required(login_url='/')
+def tenant_list(request):
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+    tenants = TenantProfile.objects.select_related('user').order_by('-created_at')
+    return render(request, 'tenant_list.html', {'tenants': tenants})
+
+
+# ─── ADD TENANT ───────────────────────────────────────
+@login_required(login_url='/')
+def add_tenant(request):
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    if request.method == 'POST':
+        username    = request.POST.get('username')
+        password    = request.POST.get('password')
+        email       = request.POST.get('email')
+        full_name   = request.POST.get('full_name')
+        phone       = request.POST.get('phone')
+        room_number = request.POST.get('room_number')
+        photo       = request.FILES.get('photo')
+
+        if User.objects.filter(username=username).exists():
+            tenants = TenantProfile.objects.select_related('user').order_by('-created_at')
+            return render(request, 'tenant_list.html', {
+                'tenants'       : tenants,
+                'add_error'     : 'Username already taken.',
+                'show_add_modal': True,
+            })
+
+        user = User.objects.create_user(
+            username=username,
+            password=password,
+            email=email,
+            is_staff=False,
+        )
+
+        TenantProfile.objects.create(
+            user=user,
+            full_name=full_name,
+            phone=phone,
+            room_number=room_number,
+            photo=photo,
+        )
+
+        return redirect('tenant_list')
+
+    return redirect('tenant_list')
+
+
+# ─── EDIT TENANT ──────────────────────────────────────
+@login_required(login_url='/')
+def edit_tenant(request, tenant_id):
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    tenant = TenantProfile.objects.get(id=tenant_id)
+
+    if request.method == 'POST':
+        tenant.full_name   = request.POST.get('full_name')
+        tenant.phone       = request.POST.get('phone')
+        tenant.room_number = request.POST.get('room_number')
+        tenant.user.email  = request.POST.get('email')
+
+        if request.FILES.get('photo'):
+            tenant.photo = request.FILES.get('photo')
+
+        tenant.save()
+        tenant.user.save()
+
+        return redirect('tenant_list')
+
+    return redirect('tenant_list')
+
+
+# ─── DELETE TENANT ────────────────────────────────────
+@login_required(login_url='/')
+def delete_tenant(request, tenant_id):
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    if request.method == 'POST':
+        tenant = TenantProfile.objects.get(id=tenant_id)
+        tenant.user.delete()  # deletes User + TenantProfile (cascade)
+
+    return redirect('tenant_list')
