@@ -1,0 +1,11 @@
+{% with size as size_int %}
+    {% if profile.photo %}
+        <img src="{{ profile.photo.url }}"
+             alt="{{ profile.full_name }}"
+             style="width: {{ size_int }}px; height: {{ size_int }}px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
+    {% else %}
+        <div style="width: {{ size_int }}px; height: {{ size_int }}px; border-radius: 50%; background: #e8f4fd; display: flex; align-items: center; justify-content: center; color: #1a73e8; font-weight: 700; font-size: {{ font_size }}px; flex-shrink: 0;">
+            {{ profile.full_name|default:"U"|first|upper }}
+        </div>
+    {% endif %}
+{% endwith %}

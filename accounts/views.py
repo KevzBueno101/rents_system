@@ -46,6 +46,7 @@ def signup_view(request):
         full_name   = request.POST.get('full_name')
         phone       = request.POST.get('phone')
         room_number = request.POST.get('room_number')
+        photo       = request.FILES.get('photo')  # ← NEW
 
         if User.objects.filter(username=username).exists():
             return render(request, 'login.html', {
@@ -62,7 +63,8 @@ def signup_view(request):
             user=user,
             full_name=full_name,
             phone=phone,
-            room_number=room_number
+            room_number=room_number,
+            photo=photo  # ← NEW
         )
 
         return render(request, 'login.html', {
@@ -70,7 +72,6 @@ def signup_view(request):
         })
 
     return redirect('login')
-
 
 # ─── REGISTER ADMIN (Superadmin only) ────────────────
 @login_required(login_url='/')
@@ -84,6 +85,7 @@ def register_admin(request):
         email     = request.POST.get('email')
         full_name = request.POST.get('full_name')
         phone     = request.POST.get('phone')
+        photo     = request.FILES.get('photo')  # ← NEW
 
         if User.objects.filter(username=username).exists():
             return render(request, 'admin_dashboard.html', {
@@ -91,28 +93,24 @@ def register_admin(request):
                 'show_register_modal': True,
             })
 
-        # Create admin user
         new_admin = User.objects.create_user(
             username=username,
             password=password,
             email=email,
-            is_staff=True,          # ← admin
-            is_superuser=False,     # ← NOT superadmin
+            is_staff=True,
+            is_superuser=False,
         )
 
-        # Create admin profile
-        from .models import AdminProfile
         AdminProfile.objects.create(
             user=new_admin,
             full_name=full_name,
             phone=phone,
+            photo=photo,  # ← NEW
             created_by=request.user
         )
 
         return render(request, 'admin_dashboard.html', {
             'register_success': f'Admin account for {full_name} created successfully!',
-            'show_register_modal': False,
-            # pass dashboard context too
             'total_tenants' : TenantProfile.objects.count(),
             'vacant_rooms'  : sum(1 for r in Room.objects.all() if not r.is_full()),
             'unpaid_bills'  : Bill.objects.filter(is_paid=False).count(),
@@ -121,7 +119,6 @@ def register_admin(request):
         })
 
     return redirect('admin_dashboard')
-
 # ─── ADMIN DASHBOARD ─────────────────────────────────
 @login_required(login_url='/')
 def admin_dashboard(request):

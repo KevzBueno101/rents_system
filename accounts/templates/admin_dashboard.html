@@ -1,4 +1,5 @@
 {% extends 'base_dashboard.html' %}
+{% load avatar_tags %}
 
 {% block title %}Admin Dashboard{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
@@ -24,40 +25,42 @@
                 <div class="alert alert-danger py-2 text-center">{{ register_error }}</div>
                 {% endif %}
 
-                <form method="POST" action="{% url 'register_admin' %}">
+                <form method="POST" action="{% url 'register_admin' %}" enctype="multipart/form-data">
                     {% csrf_token %}
 
-                    <!-- FULL NAME -->
                     <div class="input-group mb-2">
                         <span class="input-group-text"><i class="bi bi-person-vcard"></i></span>
                         <input type="text" name="full_name" class="form-control" placeholder="Full Name" required>
                     </div>
 
-                    <!-- EMAIL -->
                     <div class="input-group mb-2">
                         <span class="input-group-text"><i class="bi bi-envelope"></i></span>
                         <input type="email" name="email" class="form-control" placeholder="Email" required>
                     </div>
 
-                    <!-- PHONE -->
                     <div class="input-group mb-2">
                         <span class="input-group-text"><i class="bi bi-phone"></i></span>
                         <input type="text" name="phone" class="form-control" placeholder="Phone Number" required>
                     </div>
 
-                    <!-- USERNAME -->
                     <div class="input-group mb-2">
                         <span class="input-group-text"><i class="bi bi-person"></i></span>
                         <input type="text" name="username" class="form-control" placeholder="Username" required>
                     </div>
 
-                    <!-- PASSWORD -->
-                    <div class="input-group mb-3">
+                    <div class="input-group mb-2">
                         <span class="input-group-text"><i class="bi bi-lock"></i></span>
                         <input type="password" id="adminPassword" name="password" class="form-control" placeholder="Password" required>
                         <span class="input-group-text" onclick="toggleAdminPassword()" style="cursor:pointer;">
                             <i class="bi bi-eye" id="adminEyeIcon"></i>
                         </span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted" style="font-size:13px;">
+                            <i class="bi bi-camera"></i> Profile Photo (optional)
+                        </label>
+                        <input type="file" name="photo" class="form-control" accept="image/*">
                     </div>
 
                     <button class="btn btn-dark w-100">
@@ -83,7 +86,6 @@
 <!-- STAT CARDS -->
 <div class="row g-3 mb-4">
 
-    <!-- TOTAL TENANTS -->
     <div class="col-6 col-xl-3">
         <div class="stat-card">
             <div class="icon-box" style="background:#e8f4fd; color:#1a73e8;">
@@ -96,7 +98,6 @@
         </div>
     </div>
 
-    <!-- VACANT ROOMS -->
     <div class="col-6 col-xl-3">
         <div class="stat-card">
             <div class="icon-box" style="background:#e6f9f0; color:#1db954;">
@@ -109,7 +110,6 @@
         </div>
     </div>
 
-    <!-- UNPAID BILLS -->
     <div class="col-6 col-xl-3">
         <div class="stat-card">
             <div class="icon-box" style="background:#fff4e5; color:#f4a100;">
@@ -122,7 +122,6 @@
         </div>
     </div>
 
-    <!-- OPEN REPAIRS -->
     <div class="col-6 col-xl-3">
         <div class="stat-card">
             <div class="icon-box" style="background:#fdecea; color:#e53935;">
@@ -137,15 +136,13 @@
 
 </div>
 
-<!-- RECENT TENANTS + REGISTER BUTTON ROW -->
+<!-- RECENT TENANTS TABLE -->
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
         <h6 class="mb-0 fw-bold"><i class="bi bi-people"></i> Recent Tenants</h6>
         <div class="d-flex gap-2">
             {% if request.user.is_superuser %}
-            <button class="btn btn-sm btn-dark"
-                data-bs-toggle="modal"
-                data-bs-target="#registerAdminModal">
+            <button class="btn btn-sm btn-dark" data-bs-toggle="modal" data-bs-target="#registerAdminModal">
                 <i class="bi bi-shield-plus"></i>
                 <span class="d-none d-md-inline">Register Admin</span>
             </button>
@@ -154,32 +151,41 @@
         </div>
     </div>
     <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
+        <div class="table-responsive table-wrapper-scroll-x">
+            <table class="table table-hover mb-0" style="min-width: 600px;">
                 <thead class="table-light">
                     <tr>
-                        <th class="ps-4">Name</th>
+                        <th class="ps-4 sticky-col">Name</th>
                         <th>Room</th>
                         <th>Phone</th>
-                        <th class="d-none d-md-table-cell">Member Since</th>
+                        <th>Created At</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for tenant in recent_tenants %}
                     <tr>
-                        <td class="ps-4">
+                        <td class="ps-4 sticky-col">
                             <div class="d-flex align-items-center gap-2">
-                                <div style="width:34px; height:34px; border-radius:50%; background:#e8f4fd; display:flex; align-items:center; justify-content:center; color:#1a73e8; font-weight:700; flex-shrink:0;">
-                                    {{ tenant.full_name|first }}
+                                {% show_avatar tenant 34 14 %}
+                                <div class="text-truncate" style="max-width:150px;">
+                                    <div class="fw-semibold">{{ tenant.full_name }}</div>
+                                    <small class="text-muted">@{{ tenant.user.username }}</small>
                                 </div>
-                                <span class="text-truncate" style="max-width:120px;">
-                                    {{ tenant.full_name }}
-                                </span>
                             </div>
                         </td>
                         <td><span class="badge bg-dark">{{ tenant.room_number }}</span></td>
-                        <td class="d-none d-sm-table-cell">{{ tenant.phone }}</td>
-                        <td class="d-none d-md-table-cell">{{ tenant.created_at|date:"M d, Y" }}</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-1">
+                                <i class="bi bi-telephone text-muted"></i>
+                                <span>{{ tenant.phone }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-1">
+                                <i class="bi bi-calendar text-muted"></i>
+                                <span>{{ tenant.created_at|date:"M d, Y" }}</span>
+                            </div>
+                        </td>
                     </tr>
                     {% empty %}
                     <tr>

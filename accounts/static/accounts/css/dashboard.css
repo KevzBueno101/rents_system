@@ -171,6 +171,58 @@ body {
     -webkit-overflow-scrolling: touch;
 }
 
+/* MOBILE RESPONSIVE TABLES */
+.table-wrapper-scroll-x {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #ccc #f4f6f9;
+}
+
+.table-wrapper-scroll-x::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-wrapper-scroll-x::-webkit-scrollbar-track {
+    background: #f4f6f9;
+}
+
+.table-wrapper-scroll-x::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+.table-wrapper-scroll-x::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+/* STICKY COLUMNS */
+.sticky-col {
+    position: sticky;
+    left: 0;
+    background: white;
+    z-index: 10;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+}
+
+.sticky-col-end {
+    position: sticky;
+    right: 0;
+    background: white;
+    z-index: 10;
+    box-shadow: -2px 0 4px rgba(0,0,0,0.1);
+}
+
+/* TABLE HEAD STICKY COLS */
+.table .sticky-col {
+    background: #f8f9fa;
+    font-weight: 600;
+}
+
+.table .sticky-col-end {
+    background: #f8f9fa;
+}
+
 /* ── OVERLAY ── */
 #sidebarOverlay {
     display: none;

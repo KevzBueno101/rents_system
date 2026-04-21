@@ -1,4 +1,5 @@
 {% extends 'base_dashboard.html' %}
+{% load avatar_tags %}
 
 {% block title %}Admin List{% endblock %}
 {% block page_title %}Admins{% endblock %}
@@ -19,48 +20,54 @@
     </div>
 
     <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
+        <div class="table-responsive table-wrapper-scroll-x">
+            <table class="table table-hover mb-0" style="min-width: 800px;">
                 <thead class="table-light">
                     <tr>
-                        <th class="ps-4">Name</th>
-                        <th class="d-none d-md-table-cell">Email</th>
-                        <th class="d-none d-sm-table-cell">Phone</th>
-                        <th class="d-none d-md-table-cell">Registered By</th>
-                        <th class="d-none d-md-table-cell">Date Added</th>
+                        <th class="ps-4 sticky-col">Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Registered By</th>
+                        <th>Date Added</th>
                         <th>Status</th>
-                        <th>Action</th>
+                        <th class="sticky-col-end">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for admin in admins %}
                     <tr>
-                        <td class="ps-4">
+                        <td class="ps-4 sticky-col">
                             <div class="d-flex align-items-center gap-2">
-                                <div style="width:34px; height:34px; border-radius:50%; background:#f0e8fd; display:flex; align-items:center; justify-content:center; color:#7c3aed; font-weight:700; flex-shrink:0;">
-                                    {{ admin.full_name|first }}
-                                </div>
-                                <div>
-                                    <div style="font-size:14px; font-weight:600;">
-                                        {{ admin.full_name }}
-                                    </div>
-                                    <div style="font-size:11px; color:#888;">
-                                        @{{ admin.user.username }}
-                                    </div>
+                                {% show_avatar admin 34 14 %}
+                                <div class="text-truncate" style="max-width:150px;">
+                                    <div class="fw-semibold">{{ admin.full_name }}</div>
+                                    <small class="text-muted">@{{ admin.user.username }}</small>
                                 </div>
                             </div>
                         </td>
-                        <td class="d-none d-md-table-cell">
-                            {{ admin.user.email|default:"—" }}
+                        <td>
+                            <div class="d-flex align-items-center gap-1">
+                                <i class="bi bi-envelope text-muted"></i>
+                                <span class="text-truncate">{{ admin.user.email|default:"—" }}</span>
+                            </div>
                         </td>
-                        <td class="d-none d-sm-table-cell">
-                            {{ admin.phone|default:"—" }}
+                        <td>
+                            <div class="d-flex align-items-center gap-1">
+                                <i class="bi bi-telephone text-muted"></i>
+                                <span>{{ admin.phone|default:"—" }}</span>
+                            </div>
                         </td>
-                        <td class="d-none d-md-table-cell">
-                            {{ admin.created_by.username|default:"—" }}
+                        <td>
+                            <div class="d-flex align-items-center gap-1">
+                                <i class="bi bi-person-plus text-muted"></i>
+                                <span>{{ admin.created_by.username|default:"—" }}</span>
+                            </div>
                         </td>
-                        <td class="d-none d-md-table-cell">
-                            {{ admin.created_at|date:"M d, Y" }}
+                        <td>
+                            <div class="d-flex align-items-center gap-1">
+                                <i class="bi bi-calendar text-muted"></i>
+                                <span>{{ admin.created_at|date:"M d, Y" }}</span>
+                            </div>
                         </td>
                         <td>
                             {% if admin.user.is_active %}
@@ -69,7 +76,7 @@
                                 <span class="badge bg-secondary">Inactive</span>
                             {% endif %}
                         </td>
-                        <td>
+                        <td class="sticky-col-end">
                             <a href="{% url 'toggle_admin_status' admin.user.id %}"
                                class="btn btn-sm {% if admin.user.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}"
                                onclick="return confirm('Are you sure?')">
@@ -109,7 +116,7 @@
             </div>
 
             <div class="modal-body">
-                <form method="POST" action="{% url 'register_admin' %}">
+                <form method="POST" action="{% url 'register_admin' %}" enctype="multipart/form-data">
                     {% csrf_token %}
 
                     <div class="input-group mb-2">
@@ -132,12 +139,20 @@
                         <input type="text" name="username" class="form-control" placeholder="Username" required>
                     </div>
 
-                    <div class="input-group mb-3">
+                    <div class="input-group mb-2">
                         <span class="input-group-text"><i class="bi bi-lock"></i></span>
                         <input type="password" id="adminPassword" name="password" class="form-control" placeholder="Password" required>
                         <span class="input-group-text" onclick="toggleAdminPassword()" style="cursor:pointer;">
                             <i class="bi bi-eye" id="adminEyeIcon"></i>
                         </span>
+                    </div>
+
+                    <!-- PHOTO -->
+                    <div class="mb-3">
+                        <label class="form-label text-muted" style="font-size:13px;">
+                            <i class="bi bi-camera"></i> Profile Photo (optional)
+                        </label>
+                        <input type="file" name="photo" class="form-control" accept="image/*">
                     </div>
 
                     <button class="btn btn-dark w-100">
