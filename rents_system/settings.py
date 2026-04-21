@@ -85,7 +85,7 @@ DATABASES = {
         'HOST': os.getenv('DB_HOST'),
         'PORT': os.getenv('DB_PORT'),
         'OPTIONS': {
-            'ssl': {'ca': '/etc/ssl/certs/ca-certificates.crt'}
+            'ssl': {'ssl_disabled': False}
         }
     }
 }
