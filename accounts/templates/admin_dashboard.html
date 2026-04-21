@@ -86,7 +86,7 @@
 <!-- STAT CARDS -->
 <div class="row g-3 mb-4">
 
-    <div class="col-6 col-xl-3">
+    <div class="col-6 col-xl-3" style="cursor:pointer;" onclick="window.location='{% url 'tenant_list' %}'">
         <div class="stat-card">
             <div class="icon-box" style="background:#e8f4fd; color:#1a73e8;">
                 <i class="bi bi-people"></i>
@@ -163,29 +163,18 @@
                 </thead>
                 <tbody>
                     {% for tenant in recent_tenants %}
-                    <tr>
-                        <td class="ps-4 sticky-col">
+                    <tr style="cursor:pointer;" onclick="window.location='{% url 'tenant_list' %}'">
+                        <td class="ps-4">
                             <div class="d-flex align-items-center gap-2">
                                 {% show_avatar tenant 34 14 %}
-                                <div class="text-truncate" style="max-width:150px;">
-                                    <div class="fw-semibold">{{ tenant.full_name }}</div>
-                                    <small class="text-muted">@{{ tenant.user.username }}</small>
-                                </div>
+                                <span class="text-truncate" style="max-width:120px;">
+                                    {{ tenant.full_name }}
+                                </span>
                             </div>
                         </td>
                         <td><span class="badge bg-dark">{{ tenant.room_number }}</span></td>
-                        <td>
-                            <div class="d-flex align-items-center gap-1">
-                                <i class="bi bi-telephone text-muted"></i>
-                                <span>{{ tenant.phone }}</span>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center gap-1">
-                                <i class="bi bi-calendar text-muted"></i>
-                                <span>{{ tenant.created_at|date:"M d, Y" }}</span>
-                            </div>
-                        </td>
+                        <td class="d-none d-sm-table-cell">{{ tenant.phone }}</td>
+                        <td class="d-none d-md-table-cell">{{ tenant.created_at|date:"M d, Y" }}</td>
                     </tr>
                     {% empty %}
                     <tr>
