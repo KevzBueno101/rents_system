@@ -1,2 +1,2 @@
-web: gunicorn rents_system.wsgi
+web: gunicorn rents_system_dev.wsgi
 
