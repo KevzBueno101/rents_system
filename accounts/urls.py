@@ -6,5 +6,8 @@ urlpatterns = [
     path('signup/', views.signup_view, name='signup'),
     path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('tenant-dashboard/', views.tenant_dashboard, name='tenant_dashboard'),
+    path('register-admin/', views.register_admin, name='register_admin'),
+    path('admin-list/', views.admin_list, name='admin_list'),
+    path('toggle-admin/<int:user_id>/', views.toggle_admin_status, name='toggle_admin_status'),
     path('logout/', views.logout_view, name='logout'),
 ]

@@ -23,3 +23,16 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 });
+
+// ── ADMIN PASSWORD TOGGLE ─────────────────────────────
+window.toggleAdminPassword = function () {
+    const pass = document.getElementById('adminPassword');
+    const icon = document.getElementById('adminEyeIcon');
+    if (pass.type === 'password') {
+        pass.type = 'text';
+        icon.classList.replace('bi-eye', 'bi-eye-slash');
+    } else {
+        pass.type = 'password';
+        icon.classList.replace('bi-eye-slash', 'bi-eye');
+    }
+};

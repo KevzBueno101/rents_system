@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
-from .models import TenantProfile, Room, Bill, MaintenanceReport, Violation
+from .models import TenantProfile, Room, Bill, MaintenanceReport, Violation, AdminProfile
 
 
 # ─── LOGIN ───────────────────────────────────────────
@@ -72,6 +72,56 @@ def signup_view(request):
     return redirect('login')
 
 
+# ─── REGISTER ADMIN (Superadmin only) ────────────────
+@login_required(login_url='/')
+def register_admin(request):
+    if not request.user.is_superuser:
+        return redirect('admin_dashboard')
+
+    if request.method == 'POST':
+        username  = request.POST.get('username')
+        password  = request.POST.get('password')
+        email     = request.POST.get('email')
+        full_name = request.POST.get('full_name')
+        phone     = request.POST.get('phone')
+
+        if User.objects.filter(username=username).exists():
+            return render(request, 'admin_dashboard.html', {
+                'register_error': 'Username already taken.',
+                'show_register_modal': True,
+            })
+
+        # Create admin user
+        new_admin = User.objects.create_user(
+            username=username,
+            password=password,
+            email=email,
+            is_staff=True,          # ← admin
+            is_superuser=False,     # ← NOT superadmin
+        )
+
+        # Create admin profile
+        from .models import AdminProfile
+        AdminProfile.objects.create(
+            user=new_admin,
+            full_name=full_name,
+            phone=phone,
+            created_by=request.user
+        )
+
+        return render(request, 'admin_dashboard.html', {
+            'register_success': f'Admin account for {full_name} created successfully!',
+            'show_register_modal': False,
+            # pass dashboard context too
+            'total_tenants' : TenantProfile.objects.count(),
+            'vacant_rooms'  : sum(1 for r in Room.objects.all() if not r.is_full()),
+            'unpaid_bills'  : Bill.objects.filter(is_paid=False).count(),
+            'open_repairs'  : MaintenanceReport.objects.filter(status='open').count(),
+            'recent_tenants': TenantProfile.objects.order_by('-created_at')[:5],
+        })
+
+    return redirect('admin_dashboard')
+
 # ─── ADMIN DASHBOARD ─────────────────────────────────
 @login_required(login_url='/')
 def admin_dashboard(request):
@@ -91,6 +141,33 @@ def admin_dashboard(request):
         'open_repairs'  : open_repairs,
         'recent_tenants': recent_tenants,
     })
+
+
+# ─── ADMIN LIST (Superadmin only) ────────────────────
+@login_required(login_url='/')
+def admin_list(request):
+    if not request.user.is_superuser:
+        return redirect('admin_dashboard')
+
+    admins = AdminProfile.objects.select_related('user', 'created_by').order_by('-created_at')
+
+    return render(request, 'admin_list.html', {
+        'admins': admins,
+    })
+
+
+# ─── TOGGLE ADMIN STATUS (Superadmin only) ────────────
+@login_required(login_url='/')
+def toggle_admin_status(request, user_id):
+    if not request.user.is_superuser:
+        return redirect('admin_dashboard')
+
+    from django.contrib.auth.models import User as AuthUser
+    admin_user = AuthUser.objects.get(id=user_id)
+    admin_user.is_active = not admin_user.is_active
+    admin_user.save()
+
+    return redirect('admin_list')
 
 
 # ─── TENANT DASHBOARD ────────────────────────────────

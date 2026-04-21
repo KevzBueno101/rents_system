@@ -12,6 +12,22 @@ class TenantProfile(models.Model):
 
     def __str__(self):
         return f"{self.full_name} - Room {self.room_number}"
+        
+# ─── ADMIN PROFILE ────────────────────────────────────
+class AdminProfile(models.Model):
+    user       = models.OneToOneField(User, on_delete=models.CASCADE)
+    full_name  = models.CharField(max_length=100)
+    phone      = models.CharField(max_length=20)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='admins_created'
+    )
+
+    def __str__(self):
+        return f"{self.full_name} (Admin)"
 
 
 # ─── ROOM ─────────────────────────────────────────────
