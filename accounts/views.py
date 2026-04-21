@@ -125,6 +125,12 @@ def admin_dashboard(request):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
 
+    # Get admin profile if exists
+    try:
+        admin_profile = request.user.adminprofile
+    except:
+        admin_profile = None
+
     total_tenants  = TenantProfile.objects.count()
     vacant_rooms   = sum(1 for r in Room.objects.all() if not r.is_full())
     unpaid_bills   = Bill.objects.filter(is_paid=False).count()
@@ -132,13 +138,13 @@ def admin_dashboard(request):
     recent_tenants = TenantProfile.objects.order_by('-created_at')[:5]
 
     return render(request, 'admin_dashboard.html', {
-        'total_tenants' : total_tenants,
-        'vacant_rooms'  : vacant_rooms,
-        'unpaid_bills'  : unpaid_bills,
-        'open_repairs'  : open_repairs,
-        'recent_tenants': recent_tenants,
+        'total_tenants'  : total_tenants,
+        'vacant_rooms'   : vacant_rooms,
+        'unpaid_bills'   : unpaid_bills,
+        'open_repairs'   : open_repairs,
+        'recent_tenants' : recent_tenants,
+        'admin_profile'  : admin_profile,   # ← NEW
     })
-
 
 # ─── ADMIN LIST (Superadmin only) ────────────────────
 @login_required(login_url='/')
