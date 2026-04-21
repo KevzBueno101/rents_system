@@ -175,8 +175,21 @@ def tenant_dashboard(request):
     profile = TenantProfile.objects.get(user=request.user)
     return render(request, 'tenant_dashboard.html', {'profile': profile})
 
-
 # ─── LOGOUT ──────────────────────────────────────────
 def logout_view(request):
     logout(request)
     return redirect('login')
+
+
+# ─── DELETE ADMIN (Superadmin only) ──────────────────
+@login_required(login_url='/')
+def delete_admin(request, user_id):
+    if not request.user.is_superuser:
+        return redirect('admin_dashboard')
+
+    if request.method == 'POST':
+        from django.contrib.auth.models import User as AuthUser
+        admin_user = AuthUser.objects.get(id=user_id)
+        admin_user.delete()  # deletes User + AdminProfile (cascade)
+
+    return redirect('admin_list')

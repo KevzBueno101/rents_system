@@ -76,19 +76,32 @@
                                 <span class="badge bg-secondary">Inactive</span>
                             {% endif %}
                         </td>
-                        <td class="sticky-col-end">
-                            <a href="{% url 'toggle_admin_status' admin.user.id %}"
-                               class="btn btn-sm {% if admin.user.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}"
-                               onclick="return confirm('Are you sure?')">
-                                {% if admin.user.is_active %}
-                                    <i class="bi bi-slash-circle"></i>
-                                    <span class="d-none d-md-inline">Deactivate</span>
-                                {% else %}
-                                    <i class="bi bi-check-circle"></i>
-                                    <span class="d-none d-md-inline">Activate</span>
-                                {% endif %}
-                            </a>
-                        </td>
+                        <td>
+    <div class="d-flex gap-1">
+        <!-- ACTIVATE/DEACTIVATE -->
+        <a href="{% url 'toggle_admin_status' admin.user.id %}"
+           class="btn btn-sm {% if admin.user.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}"
+           onclick="return confirm('Are you sure?')">
+            {% if admin.user.is_active %}
+                <i class="bi bi-slash-circle"></i>
+                <span class="d-none d-md-inline">Deactivate</span>
+            {% else %}
+                <i class="bi bi-check-circle"></i>
+                <span class="d-none d-md-inline">Activate</span>
+            {% endif %}
+        </a>
+
+        <!-- DELETE -->
+        <form method="POST" action="{% url 'delete_admin' admin.user.id %}"
+              onsubmit="return confirm('Permanently delete this admin? This cannot be undone!')">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-trash"></i>
+                <span class="d-none d-md-inline">Delete</span>
+            </button>
+        </form>
+    </div>
+</td>
                     </tr>
                     {% empty %}
                     <tr>
