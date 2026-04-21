@@ -36,3 +36,24 @@ window.toggleAdminPassword = function () {
         icon.classList.replace('bi-eye-slash', 'bi-eye');
     }
 };
+
+// ── EDIT TENANT MODAL ─────────────────────────────────
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.edit-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const id         = this.dataset.id;
+            const fullName   = this.dataset.fullname;
+            const email      = this.dataset.email;
+            const phone      = this.dataset.phone;
+            const roomNumber = this.dataset.room;
+
+            document.getElementById('editFullName').value   = fullName;
+            document.getElementById('editEmail').value      = email;
+            document.getElementById('editPhone').value      = phone;
+            document.getElementById('editRoomNumber').value = roomNumber;
+            document.getElementById('editTenantForm').action = '/edit-tenant/' + id + '/';
+
+            new bootstrap.Modal(document.getElementById('editTenantModal')).show();
+        });
+    });
+});
