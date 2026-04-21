@@ -7,6 +7,12 @@ from .models import TenantProfile, Room, Bill, MaintenanceReport, Violation, Adm
 
 # ─── LOGIN ───────────────────────────────────────────
 def login_view(request):
+    if request.user.is_authenticated:
+        if request.user.is_staff:
+            return redirect('admin_dashboard')
+        else:
+            return redirect('tenant_dashboard')
+
     if request.method == 'POST':
         role     = request.POST.get('role')
         username = request.POST.get('username')
@@ -18,11 +24,9 @@ def login_view(request):
             if role == 'admin' and user.is_staff:
                 login(request, user)
                 return redirect('admin_dashboard')
-
             elif role == 'tenant' and not user.is_staff:
                 login(request, user)
                 return redirect('tenant_dashboard')
-
             else:
                 return render(request, 'login.html', {
                     'error_modal': True,
@@ -46,7 +50,7 @@ def signup_view(request):
         full_name   = request.POST.get('full_name')
         phone       = request.POST.get('phone')
         room_number = request.POST.get('room_number')
-        photo       = request.FILES.get('photo')  # ← NEW
+        photo       = request.FILES.get('photo')
 
         if User.objects.filter(username=username).exists():
             return render(request, 'login.html', {
@@ -64,7 +68,7 @@ def signup_view(request):
             full_name=full_name,
             phone=phone,
             room_number=room_number,
-            photo=photo  # ← NEW
+            photo=photo
         )
 
         return render(request, 'login.html', {
@@ -72,6 +76,7 @@ def signup_view(request):
         })
 
     return redirect('login')
+
 
 # ─── REGISTER ADMIN (Superadmin only) ────────────────
 @login_required(login_url='/')
@@ -85,12 +90,17 @@ def register_admin(request):
         email     = request.POST.get('email')
         full_name = request.POST.get('full_name')
         phone     = request.POST.get('phone')
-        photo     = request.FILES.get('photo')  # ← NEW
+        photo     = request.FILES.get('photo')
 
         if User.objects.filter(username=username).exists():
-            return render(request, 'admin_dashboard.html', {
-                'register_error': 'Username already taken.',
+            return render(request, 'admin/dashboard.html', {
+                'register_error'     : 'Username already taken.',
                 'show_register_modal': True,
+                'total_tenants'      : TenantProfile.objects.count(),
+                'vacant_rooms'       : sum(1 for r in Room.objects.all() if not r.is_full()),
+                'unpaid_bills'       : Bill.objects.filter(is_paid=False).count(),
+                'open_repairs'       : MaintenanceReport.objects.filter(status='open').count(),
+                'recent_tenants'     : TenantProfile.objects.order_by('-created_at')[:5],
             })
 
         new_admin = User.objects.create_user(
@@ -105,31 +115,27 @@ def register_admin(request):
             user=new_admin,
             full_name=full_name,
             phone=phone,
-            photo=photo,  # ← NEW
+            photo=photo,
             created_by=request.user
         )
 
-        return render(request, 'admin_dashboard.html', {
+        return render(request, 'admin/dashboard.html', {
             'register_success': f'Admin account for {full_name} created successfully!',
-            'total_tenants' : TenantProfile.objects.count(),
-            'vacant_rooms'  : sum(1 for r in Room.objects.all() if not r.is_full()),
-            'unpaid_bills'  : Bill.objects.filter(is_paid=False).count(),
-            'open_repairs'  : MaintenanceReport.objects.filter(status='open').count(),
-            'recent_tenants': TenantProfile.objects.order_by('-created_at')[:5],
+            'total_tenants'   : TenantProfile.objects.count(),
+            'vacant_rooms'    : sum(1 for r in Room.objects.all() if not r.is_full()),
+            'unpaid_bills'    : Bill.objects.filter(is_paid=False).count(),
+            'open_repairs'    : MaintenanceReport.objects.filter(status='open').count(),
+            'recent_tenants'  : TenantProfile.objects.order_by('-created_at')[:5],
         })
 
     return redirect('admin_dashboard')
+
+
 # ─── ADMIN DASHBOARD ─────────────────────────────────
 @login_required(login_url='/')
 def admin_dashboard(request):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
-
-    # Get admin profile if exists
-    try:
-        admin_profile = request.user.adminprofile
-    except:
-        admin_profile = None
 
     total_tenants  = TenantProfile.objects.count()
     vacant_rooms   = sum(1 for r in Room.objects.all() if not r.is_full())
@@ -137,14 +143,14 @@ def admin_dashboard(request):
     open_repairs   = MaintenanceReport.objects.filter(status='open').count()
     recent_tenants = TenantProfile.objects.order_by('-created_at')[:5]
 
-    return render(request, 'admin_dashboard.html', {
-        'total_tenants'  : total_tenants,
-        'vacant_rooms'   : vacant_rooms,
-        'unpaid_bills'   : unpaid_bills,
-        'open_repairs'   : open_repairs,
-        'recent_tenants' : recent_tenants,
-        'admin_profile'  : admin_profile,   # ← NEW
+    return render(request, 'admin/dashboard.html', {
+        'total_tenants' : total_tenants,
+        'vacant_rooms'  : vacant_rooms,
+        'unpaid_bills'  : unpaid_bills,
+        'open_repairs'  : open_repairs,
+        'recent_tenants': recent_tenants,
     })
+
 
 # ─── ADMIN LIST (Superadmin only) ────────────────────
 @login_required(login_url='/')
@@ -154,7 +160,7 @@ def admin_list(request):
 
     admins = AdminProfile.objects.select_related('user', 'created_by').order_by('-created_at')
 
-    return render(request, 'admin_list.html', {
+    return render(request, 'admin/admin_list.html', {
         'admins': admins,
     })
 
@@ -165,10 +171,22 @@ def toggle_admin_status(request, user_id):
     if not request.user.is_superuser:
         return redirect('admin_dashboard')
 
-    from django.contrib.auth.models import User as AuthUser
-    admin_user = AuthUser.objects.get(id=user_id)
+    admin_user = User.objects.get(id=user_id)
     admin_user.is_active = not admin_user.is_active
     admin_user.save()
+
+    return redirect('admin_list')
+
+
+# ─── DELETE ADMIN (Superadmin only) ──────────────────
+@login_required(login_url='/')
+def delete_admin(request, user_id):
+    if not request.user.is_superuser:
+        return redirect('admin_dashboard')
+
+    if request.method == 'POST':
+        admin_user = User.objects.get(id=user_id)
+        admin_user.delete()
 
     return redirect('admin_list')
 
@@ -179,26 +197,7 @@ def tenant_dashboard(request):
     if request.user.is_staff:
         return redirect('admin_dashboard')
     profile = TenantProfile.objects.get(user=request.user)
-    return render(request, 'tenant_dashboard.html', {'profile': profile})
-
-# ─── LOGOUT ──────────────────────────────────────────
-def logout_view(request):
-    logout(request)
-    return redirect('login')
-
-
-# ─── DELETE ADMIN (Superadmin only) ──────────────────
-@login_required(login_url='/')
-def delete_admin(request, user_id):
-    if not request.user.is_superuser:
-        return redirect('admin_dashboard')
-
-    if request.method == 'POST':
-        from django.contrib.auth.models import User as AuthUser
-        admin_user = AuthUser.objects.get(id=user_id)
-        admin_user.delete()  # deletes User + AdminProfile (cascade)
-
-    return redirect('admin_list')
+    return render(request, 'tenant/dashboard.html', {'profile': profile})
 
 
 # ─── TENANT LIST ─────────────────────────────────────
@@ -207,7 +206,7 @@ def tenant_list(request):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
     tenants = TenantProfile.objects.select_related('user').order_by('-created_at')
-    return render(request, 'tenant_list.html', {'tenants': tenants})
+    return render(request, 'admin/tenant_list.html', {'tenants': tenants})
 
 
 # ─── ADD TENANT ───────────────────────────────────────
@@ -227,7 +226,7 @@ def add_tenant(request):
 
         if User.objects.filter(username=username).exists():
             tenants = TenantProfile.objects.select_related('user').order_by('-created_at')
-            return render(request, 'tenant_list.html', {
+            return render(request, 'admin/tenant_list.html', {
                 'tenants'       : tenants,
                 'add_error'     : 'Username already taken.',
                 'show_add_modal': True,
@@ -286,6 +285,12 @@ def delete_tenant(request, tenant_id):
 
     if request.method == 'POST':
         tenant = TenantProfile.objects.get(id=tenant_id)
-        tenant.user.delete()  # deletes User + TenantProfile (cascade)
+        tenant.user.delete()
 
     return redirect('tenant_list')
+
+
+# ─── LOGOUT ──────────────────────────────────────────
+def logout_view(request):
+    logout(request)
+    return redirect('login')
