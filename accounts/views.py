@@ -2,8 +2,8 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
-from .models import TenantProfile, Room, Bill, MaintenanceReport, Violation, AdminProfile
 from django.db import models
+from .models import TenantProfile, Room, Bill, MaintenanceReport, Violation, AdminProfile
 
 
 # ─── LOGIN ───────────────────────────────────────────
@@ -39,23 +39,72 @@ def login_view(request):
                 'error': 'Invalid username or password.'
             })
 
-    return render(request, 'login.html')
+    # Get available rooms for signup dropdown
+    from django.db.models import Count, Q
+    available_rooms = Room.objects.annotate(
+        occupied_count=Count('tenantprofile', filter=Q(tenantprofile__isnull=False))
+    ).filter(
+        capacity__gt=models.F('occupied_count')
+    ).order_by('floor', 'room_number')
+    
+    return render(request, 'login.html', {
+        'available_rooms': available_rooms
+    })
 
 
 # ─── SIGNUP ──────────────────────────────────────────
 def signup_view(request):
+    # Get available rooms (not full)
+    from django.db.models import Count, Q
+    
+    available_rooms = Room.objects.annotate(
+        occupied_count=Count('tenantprofile', filter=Q(tenantprofile__isnull=False))
+    ).filter(
+        capacity__gt=models.F('occupied_count')
+    ).order_by('floor', 'room_number')
+    
     if request.method == 'POST':
         username    = request.POST.get('username')
         password    = request.POST.get('password')
         email       = request.POST.get('email')
         full_name   = request.POST.get('full_name')
         phone       = request.POST.get('phone')
-        room_number = request.POST.get('room_number')
+        room_id     = request.POST.get('room_id')
         photo       = request.FILES.get('photo')
 
-        if User.objects.filter(username=username).exists():
+        # Validate all required fields
+        errors = []
+        
+        if not username:
+            errors.append('Username is required.')
+        elif User.objects.filter(username=username).exists():
+            errors.append('Username already taken. Please choose another.')
+            
+        if not password:
+            errors.append('Password is required.')
+            
+        if not email:
+            errors.append('Email is required.')
+            
+        if not full_name:
+            errors.append('Full name is required.')
+            
+        if not phone:
+            errors.append('Phone number is required.')
+            
+        if not room_id:
+            errors.append('Please select a room.')
+        else:
+            try:
+                selected_room = Room.objects.get(id=room_id)
+            except Room.DoesNotExist:
+                errors.append('Selected room is no longer available.')
+
+        # If there are errors, return with error messages
+        if errors:
             return render(request, 'login.html', {
-                'signup_error': 'Username already taken. Please choose another.'
+                'signup_error': errors[0],  # Show first error
+                'available_rooms': available_rooms  # Re-populate room dropdown
             })
 
         user = User.objects.create_user(
@@ -68,7 +117,9 @@ def signup_view(request):
             user=user,
             full_name=full_name,
             phone=phone,
-            room_number=room_number,
+            room_id=room_id,
+            room=selected_room,
+            room_number=selected_room.room_number,  # Keep for backward compatibility
             photo=photo
         )
 
@@ -138,19 +189,19 @@ def admin_dashboard(request):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
 
-    total_tenants  = TenantProfile.objects.count()
     all_rooms      = Room.objects.all()
+    total_tenants  = TenantProfile.objects.count()
     vacant_rooms   = sum(1 for r in all_rooms if not r.is_full())
     unpaid_bills   = Bill.objects.filter(is_paid=False).count()
     open_repairs   = MaintenanceReport.objects.filter(status='open').count()
     recent_tenants = TenantProfile.objects.order_by('-created_at')[:5]
     total_beds     = sum(r.capacity for r in all_rooms)
-    vacant_beds    = total_beds - TenantProfile.objects.count()
+    occupied_beds  = sum(r.occupied_beds() for r in all_rooms)
+    vacant_beds    = total_beds - occupied_beds
+    occupancy_rate = (occupied_beds / total_beds * 100) if total_beds > 0 else 0
 
-    # ← NEW — get occupied rooms, minimum 3
     occupied_rooms = [r for r in all_rooms if r.occupied_beds() > 0]
     if len(occupied_rooms) < 3:
-        # fill remaining slots with vacant rooms
         vacant = [r for r in all_rooms if r.occupied_beds() == 0]
         occupied_rooms = occupied_rooms + vacant[:3 - len(occupied_rooms)]
 
@@ -162,8 +213,11 @@ def admin_dashboard(request):
         'recent_tenants': recent_tenants,
         'total_beds'    : total_beds,
         'vacant_beds'   : vacant_beds,
-        'recent_rooms'  : occupied_rooms[:3],  # ← NEW
+        'occupied_beds' : occupied_beds,
+        'occupancy_rate': occupancy_rate,
+        'recent_rooms'  : occupied_rooms[:3],
     })
+
 
 # ─── ADMIN LIST (Superadmin only) ────────────────────
 @login_required(login_url='/')
@@ -219,23 +273,32 @@ def tenant_list(request):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
 
-    search = request.GET.get('search', '')  # ← NEW
-
+    search  = request.GET.get('search', '')
     tenants = TenantProfile.objects.select_related('user').order_by('-created_at')
 
     if search:
         tenants = tenants.filter(
-            models.Q(full_name__icontains=search)    |
-            models.Q(phone__icontains=search)        |
-            models.Q(room_number__icontains=search)  |
-            models.Q(user__email__icontains=search)  |
+            models.Q(full_name__icontains=search)       |
+            models.Q(phone__icontains=search)           |
+            models.Q(room_number__icontains=search)     |
+            models.Q(user__email__icontains=search)     |
             models.Q(user__username__icontains=search)
         )
 
+    # Get available rooms for dropdown
+    from django.db.models import Count, Q
+    available_rooms = Room.objects.annotate(
+        occupied_count=Count('tenantprofile', filter=Q(tenantprofile__isnull=False))
+    ).filter(
+        capacity__gt=models.F('occupied_count')
+    ).order_by('floor', 'room_number')
+
     return render(request, 'admin/tenant_list.html', {
         'tenants': tenants,
-        'search' : search,   # ← para ma-retain ang search value
+        'search' : search,
+        'available_rooms': available_rooms,
     })
+
 
 # ─── ADD TENANT ───────────────────────────────────────
 @login_required(login_url='/')
@@ -249,7 +312,7 @@ def add_tenant(request):
         email       = request.POST.get('email')
         full_name   = request.POST.get('full_name')
         phone       = request.POST.get('phone')
-        room_number = request.POST.get('room_number')
+        room_id     = request.POST.get('room_number')
         photo       = request.FILES.get('photo')
 
         if User.objects.filter(username=username).exists():
@@ -267,11 +330,15 @@ def add_tenant(request):
             is_staff=False,
         )
 
+        # Get the selected room by ID
+        selected_room = Room.objects.get(id=room_id)
+        
         TenantProfile.objects.create(
             user=user,
             full_name=full_name,
             phone=phone,
-            room_number=room_number,
+            room=selected_room,
+            room_number=selected_room.room_number,  # Keep for backward compatibility
             photo=photo,
         )
 
@@ -279,6 +346,7 @@ def add_tenant(request):
 
     return redirect('tenant_list')
 
+# ... (rest of the code remains the same)
 
 # ─── EDIT TENANT ──────────────────────────────────────
 @login_required(login_url='/')
@@ -318,126 +386,38 @@ def delete_tenant(request, tenant_id):
     return redirect('tenant_list')
 
 
-# ─── LOGOUT ──────────────────────────────────────────
-def logout_view(request):
-    logout(request)
-    return redirect('login')
-
-
 # ─── ROOM LIST ───────────────────────────────────────
 @login_required(login_url='/')
 def room_list(request):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
-    rooms = Room.objects.all().order_by('room_number')
+    rooms = Room.objects.all().order_by('floor', 'room_number')
     return render(request, 'admin/room_list.html', {'rooms': rooms})
 
 
 # ─── ADD ROOM ────────────────────────────────────────
 @login_required(login_url='/')
-@login_required(login_url='/')
 def add_room(request):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
 
     if request.method == 'POST':
-        room_number  = request.POST.get('room_number')
-        capacity     = request.POST.get('capacity')
-        monthly_rate = request.POST.get('monthly_rate')
-        photo        = request.FILES.get('photo')  
-
-        if Room.objects.filter(room_number=room_number).exists():
-            rooms = Room.objects.all().order_by('room_number')
-            return render(request, 'admin/room_list.html', {
-                'rooms'         : rooms,
-                'add_error'     : f'Room {room_number} already exists.',
-                'show_add_modal': True,
-            })
-
-        Room.objects.create(
-            room_number=room_number,
-            capacity=capacity,
-            monthly_rate=monthly_rate,
-            photo=photo,  
-        )
-
-        return redirect('room_list')
-
-    return redirect('room_list')
-# ─── ADD ROOM PHOTO ────────────────────────────────────────
-@login_required(login_url='/')
-def edit_room(request, room_id):
-    if not request.user.is_staff:
-        return redirect('tenant_dashboard')
-
-    room = Room.objects.get(id=room_id)
-
-    if request.method == 'POST':
-        room.room_number  = request.POST.get('room_number')
-        room.capacity     = request.POST.get('capacity')
-        room.monthly_rate = request.POST.get('monthly_rate')
-
-        if request.FILES.get('photo'):   # ← NEW
-            room.photo = request.FILES.get('photo')
-
-        room.save()
-        return redirect('room_list')
-
-    return redirect('room_list')
-
-
-# ─── EDIT ROOM ───────────────────────────────────────
-@login_required(login_url='/')
-def edit_room(request, room_id):
-    if not request.user.is_staff:
-        return redirect('tenant_dashboard')
-
-    room = Room.objects.get(id=room_id)
-
-    if request.method == 'POST':
-        room.room_number  = request.POST.get('room_number')
-        room.capacity     = request.POST.get('capacity')
-        room.monthly_rate = request.POST.get('monthly_rate')
-        room.save()
-        return redirect('room_list')
-
-    return redirect('room_list')
-
-
-# ─── DELETE ROOM ─────────────────────────────────────
-@login_required(login_url='/')
-def delete_room(request, room_id):
-    if not request.user.is_staff:
-        return redirect('tenant_dashboard')
-
-    if request.method == 'POST':
-        room = Room.objects.get(id=room_id)
-        room.delete()
-
-    return redirect('room_list')
-
-@login_required(login_url='/')
-def add_room(request):
-    if not request.user.is_staff:
-        return redirect('tenant_dashboard')
-
-    if request.method == 'POST':
-        room_number  = request.POST.get('room_number')
-        floor        = request.POST.get('floor')
-        capacity     = request.POST.get('capacity')
-        monthly_rate = request.POST.get('monthly_rate')
-        photo        = request.FILES.get('photo')
-        area         = request.POST.get('area') or None
-        num_cr       = request.POST.get('num_cr', 1)
-        bed_type     = request.POST.get('bed_type', 'single')
-        has_lababo   = request.POST.get('has_lababo') == 'on'
+        room_number          = request.POST.get('room_number')
+        floor                = request.POST.get('floor')
+        capacity             = request.POST.get('capacity')
+        monthly_rate         = request.POST.get('monthly_rate')
+        photo                = request.FILES.get('photo')
+        area                 = request.POST.get('area') or None
+        num_cr               = request.POST.get('num_cr', 1)
+        bed_type             = request.POST.get('bed_type', 'single')
+        has_sink             = request.POST.get('has_sink') == 'on'
         water_included       = request.POST.get('water_included') == 'on'
         electricity_included = request.POST.get('electricity_included') == 'on'
-        has_fan    = request.POST.get('has_fan') == 'on'
-        has_aircon = request.POST.get('has_aircon') == 'on'
-        has_ref    = request.POST.get('has_ref') == 'on'
-        has_tv     = request.POST.get('has_tv') == 'on'
-        has_wifi   = request.POST.get('has_wifi') == 'on'
+        has_fan              = request.POST.get('has_fan') == 'on'
+        has_aircon           = request.POST.get('has_aircon') == 'on'
+        has_ref              = request.POST.get('has_ref') == 'on'
+        has_tv               = request.POST.get('has_tv') == 'on'
+        has_wifi             = request.POST.get('has_wifi') == 'on'
 
         if Room.objects.filter(room_number=room_number, floor=floor).exists():
             rooms = Room.objects.all().order_by('floor', 'room_number')
@@ -456,7 +436,7 @@ def add_room(request):
             area=area,
             num_cr=num_cr,
             bed_type=bed_type,
-            has_lababo=has_lababo,
+            has_lababo=has_sink,
             water_included=water_included,
             electricity_included=electricity_included,
             has_fan=has_fan,
@@ -471,6 +451,7 @@ def add_room(request):
     return redirect('room_list')
 
 
+# ─── EDIT ROOM ───────────────────────────────────────
 @login_required(login_url='/')
 def edit_room(request, room_id):
     if not request.user.is_staff:
@@ -479,21 +460,21 @@ def edit_room(request, room_id):
     room = Room.objects.get(id=room_id)
 
     if request.method == 'POST':
-        room.room_number  = request.POST.get('room_number')
-        room.floor        = request.POST.get('floor')
-        room.capacity     = request.POST.get('capacity')
-        room.monthly_rate = request.POST.get('monthly_rate')
-        room.area         = request.POST.get('area') or None
-        room.num_cr       = request.POST.get('num_cr', 1)
-        room.bed_type     = request.POST.get('bed_type', 'single')
-        room.has_lababo   = request.POST.get('has_lababo') == 'on'
-        room.water_included       = request.POST.get('water_included') == 'on'
-        room.electricity_included = request.POST.get('electricity_included') == 'on'
-        room.has_fan    = request.POST.get('has_fan') == 'on'
-        room.has_aircon = request.POST.get('has_aircon') == 'on'
-        room.has_ref    = request.POST.get('has_ref') == 'on'
-        room.has_tv     = request.POST.get('has_tv') == 'on'
-        room.has_wifi   = request.POST.get('has_wifi') == 'on'
+        room.room_number         = request.POST.get('room_number')
+        room.floor               = request.POST.get('floor')
+        room.capacity            = request.POST.get('capacity')
+        room.monthly_rate        = request.POST.get('monthly_rate')
+        room.area                = request.POST.get('area') or None
+        room.num_cr              = request.POST.get('num_cr', 1)
+        room.bed_type            = request.POST.get('bed_type', 'single')
+        room.has_lababo          = request.POST.get('has_sink') == 'on'
+        room.water_included      = request.POST.get('water_included') == 'on'
+        room.electricity_included= request.POST.get('electricity_included') == 'on'
+        room.has_fan             = request.POST.get('has_fan') == 'on'
+        room.has_aircon          = request.POST.get('has_aircon') == 'on'
+        room.has_ref             = request.POST.get('has_ref') == 'on'
+        room.has_tv              = request.POST.get('has_tv') == 'on'
+        room.has_wifi            = request.POST.get('has_wifi') == 'on'
 
         if request.FILES.get('photo'):
             room.photo = request.FILES.get('photo')
@@ -503,42 +484,21 @@ def edit_room(request, room_id):
 
     return redirect('room_list')
 
+
+# ─── DELETE ROOM ─────────────────────────────────────
 @login_required(login_url='/')
-def edit_room(request, room_id):
+def delete_room(request, room_id):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
 
-    room = Room.objects.get(id=room_id)
-
     if request.method == 'POST':
-        room.room_number  = request.POST.get('room_number')
-        room.floor        = request.POST.get('floor')
-        room.capacity     = request.POST.get('capacity')
-        room.monthly_rate = request.POST.get('monthly_rate')
-
-        if request.FILES.get('photo'):
-            room.photo = request.FILES.get('photo')
-
-        room.save()
-        return redirect('room_list')
+        room = Room.objects.get(id=room_id)
+        room.delete()
 
     return redirect('room_list')
-    if not request.user.is_staff:
-        return redirect('tenant_dashboard')
 
-    room = Room.objects.get(id=room_id)
 
-    if request.method == 'POST':
-        room.room_number  = request.POST.get('room_number')
-        room.floor        = request.POST.get('floor')
-        room.position     = request.POST.get('position')
-        room.capacity     = request.POST.get('capacity')
-        room.monthly_rate = request.POST.get('monthly_rate')
-
-        if request.FILES.get('photo'):
-            room.photo = request.FILES.get('photo')
-
-        room.save()
-        return redirect('room_list')
-
-    return redirect('room_list')
+# ─── LOGOUT ──────────────────────────────────────────
+def logout_view(request):
+    logout(request)
+    return redirect('login')

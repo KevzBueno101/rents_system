@@ -37,30 +37,46 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // ── EDIT ROOM MODAL ───────────────────────────────────
-document.querySelectorAll('.edit-room-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-        document.getElementById('editRoomNumber').value  = this.dataset.room;
-        document.getElementById('editFloor').value       = this.dataset.floor;
-        document.getElementById('editCapacity').value    = this.dataset.capacity;
-        document.getElementById('editMonthlyRate').value = this.dataset.rate;
-        document.getElementById('editRoomForm').action   = '/edit-room/' + this.dataset.id + '/';
-        new bootstrap.Modal(document.getElementById('editRoomModal')).show();
+    // ── EDIT ROOM MODAL ───────────────────────────────
+    document.querySelectorAll('.edit-room-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.getElementById('editRoomNumber').value  = this.dataset.room;
+            document.getElementById('editFloor').value       = this.dataset.floor;
+            document.getElementById('editCapacity').value    = this.dataset.capacity;
+            document.getElementById('editMonthlyRate').value = this.dataset.rate;
+            document.getElementById('editArea').value        = this.dataset.area;
+            document.getElementById('editNumCR').value       = this.dataset.cr;
+            document.getElementById('editBedType').value     = this.dataset.bedtype;
+
+            // Checkboxes
+            document.getElementById('editSink').checked   = this.dataset.sink === 'True';
+            document.getElementById('editWater').checked  = this.dataset.water === 'True';
+            document.getElementById('editElec').checked   = this.dataset.elec === 'True';
+            document.getElementById('editWifi').checked   = this.dataset.wifi === 'True';
+            document.getElementById('editFan').checked    = this.dataset.fan === 'True';
+            document.getElementById('editAircon').checked = this.dataset.aircon === 'True';
+            document.getElementById('editRef').checked    = this.dataset.ref === 'True';
+            document.getElementById('editTv').checked     = this.dataset.tv === 'True';
+
+            document.getElementById('editRoomForm').action = '/edit-room/' + this.dataset.id + '/';
+            new bootstrap.Modal(document.getElementById('editRoomModal')).show();
+        });
     });
-});
 
     // ── ROOM INFO MODAL ───────────────────────────────
     document.querySelectorAll('.info-room-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
             const code     = this.dataset.code;
             const floor    = this.dataset.floor;
-            // const position = this.dataset.position;
             const occupied = this.dataset.occupied;
             const capacity = this.dataset.capacity;
             const rate     = this.dataset.rate;
             const status   = this.dataset.status;
             const photo    = this.dataset.photo;
             const tenants  = this.dataset.tenants;
+            const area     = this.dataset.area;
+            const cr       = this.dataset.cr;
+            const bedtype  = this.dataset.bedtype;
 
             // Room code
             document.getElementById('infoRoomCode').textContent = code;
@@ -73,7 +89,7 @@ document.querySelectorAll('.edit-room-btn').forEach(function(btn) {
                 photoEl.innerHTML = `<div style="width:100%; height:120px; background:#f4f6f9; display:flex; align-items:center; justify-content:center;"><i class="bi bi-door-open" style="font-size:40px; color:#ccc;"></i></div>`;
             }
 
-            // Status badge
+            // Status
             const statusEl = document.getElementById('infoStatus');
             statusEl.textContent = status;
             statusEl.style.background = status === 'Occupied' ? '#e53935' : '#1db954';
@@ -82,9 +98,33 @@ document.querySelectorAll('.edit-room-btn').forEach(function(btn) {
             const floorNum = parseInt(floor);
             const suffix = floorNum === 1 ? 'st' : floorNum === 2 ? 'nd' : floorNum === 3 ? 'rd' : 'th';
             document.getElementById('infoFloor').textContent     = `${floorNum}${suffix} Floor`;
-            // document.getElementById('infoPosition').textContent  = position;
             document.getElementById('infoOccupancy').textContent = `${occupied} / ${capacity} beds`;
             document.getElementById('infoRate').textContent      = `₱${parseFloat(rate).toLocaleString()}`;
+            document.getElementById('infoArea').textContent      = area ? `${area} sqm` : '—';
+            document.getElementById('infoCR').textContent        = cr + ' CR';
+            document.getElementById('infoBedType').textContent   = bedtype;
+
+            // Inclusions
+            const inclusions = [];
+            if (this.dataset.sink   === 'True') inclusions.push('Sink');
+            if (this.dataset.water  === 'True') inclusions.push('Water');
+            if (this.dataset.elec   === 'True') inclusions.push('Electricity');
+            if (this.dataset.wifi   === 'True') inclusions.push('WiFi');
+            if (this.dataset.fan    === 'True') inclusions.push('Fan');
+            if (this.dataset.aircon === 'True') inclusions.push('Aircon');
+            if (this.dataset.ref    === 'True') inclusions.push('Refrigerator');
+            if (this.dataset.tv     === 'True') inclusions.push('TV');
+
+            const inclusionsEl = document.getElementById('infoInclusions');
+            if (inclusions.length > 0) {
+                inclusionsEl.innerHTML = inclusions.map(i =>
+                    `<span class="badge bg-light text-dark border me-1 mb-1" style="font-size:12px;">
+                        <i class="bi bi-check2"></i> ${i}
+                    </span>`
+                ).join('');
+            } else {
+                inclusionsEl.innerHTML = '<span class="text-muted" style="font-size:13px;">None</span>';
+            }
 
             // Tenants
             const tenantsEl = document.getElementById('infoTenants');
@@ -117,35 +157,3 @@ document.querySelectorAll('.edit-room-btn').forEach(function(btn) {
     };
 
 });
-
-// Area
-const areaEl = document.getElementById('infoArea');
-areaEl.textContent = this.dataset.area ? `${this.dataset.area} sqm` : '—';
-
-// CR
-document.getElementById('infoCR').textContent = this.dataset.cr + ' CR';
-
-// Bed type
-document.getElementById('infoBedType').textContent = this.dataset.bedtype;
-
-// Inclusions
-const inclusions = [];
-if (this.dataset.lababo === 'True')  inclusions.push('Lababo');
-if (this.dataset.water  === 'True')  inclusions.push('Water');
-if (this.dataset.elec   === 'True')  inclusions.push('Electricity');
-if (this.dataset.wifi   === 'True')  inclusions.push('WiFi');
-if (this.dataset.fan    === 'True')  inclusions.push('Fan');
-if (this.dataset.aircon === 'True')  inclusions.push('Aircon');
-if (this.dataset.ref    === 'True')  inclusions.push('Ref');
-if (this.dataset.tv     === 'True')  inclusions.push('TV');
-
-const inclusionsEl = document.getElementById('infoInclusions');
-if (inclusions.length > 0) {
-    inclusionsEl.innerHTML = inclusions.map(i =>
-        `<span class="badge bg-light text-dark border me-1 mb-1" style="font-size:12px;">
-            <i class="bi bi-check2"></i> ${i}
-        </span>`
-    ).join('');
-} else {
-    inclusionsEl.innerHTML = '<span class="text-muted" style="font-size:13px;">None</span>';
-}

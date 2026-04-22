@@ -109,15 +109,16 @@
         </div>
     </div>
 </div>
-<!-- VACANT BEDS -->
+<!-- OCCUPANCY -->
 <div class="col-6 col-xl" style="cursor:pointer;" onclick="window.location='{% url 'room_list' %}'">
     <div class="stat-card">
         <div class="icon-box" style="background:#f0e8fd; color:#7c3aed;">
-            <i class="bi bi-bounding-box"></i>
+            <i class="bi bi-percent"></i>
         </div>
         <div>
-            <div class="stat-value">{{ vacant_beds }}</div>
-            <div class="stat-label">Vacant Beds</div>
+            <div class="stat-value">{{ occupancy_rate|floatformat:1 }}%</div>
+            <div class="stat-label">Occupancy</div>
+            <small class="text-muted">{{ occupied_beds }}/{{ total_beds }} beds</small>
         </div>
     </div>
 </div>
@@ -184,7 +185,7 @@
                                 </span>
                             </div>
                         </td>
-                        <td><span class="badge bg-dark">{{ tenant.room_number }}</span></td>
+                        <td><span class="badge bg-dark">{{ tenant.room.room_code|default:tenant.room_number }}</span></td>
                         <td class="d-none d-sm-table-cell">{{ tenant.phone }}</td>
                         <td class="d-none d-md-table-cell">{{ tenant.created_at|date:"M d, Y" }}</td>
                     </tr>

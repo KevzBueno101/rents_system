@@ -85,7 +85,61 @@
             <!-- ROOM NUMBER -->
             <div class="input-group mb-2">
               <span class="input-group-text"><i class="bi bi-door-open"></i></span>
-              <input type="text" name="room_number" class="form-control" placeholder="Room Number" required>
+              <select name="room_id" class="form-control" id="signupRoomSelect" required>
+                <option value="">Select Available Room</option>
+                {% for room in available_rooms %}
+                  <option value="{{ room.id }}" 
+                          data-rate="{{ room.monthly_rate }}"
+                          data-capacity="{{ room.capacity }}"
+                          data-occupied="{{ room.occupied_beds }}"
+                          data-floor="{{ room.floor }}"
+                          data-bed-type="{{ room.bed_type }}"
+                          data-water="{{ room.water_included|yesno:'Yes,No' }}"
+                          data-electricity="{{ room.electricity_included|yesno:'Yes,No' }}"
+                          data-fan="{{ room.has_fan|yesno:'Yes,No' }}"
+                          data-aircon="{{ room.has_aircon|yesno:'Yes,No' }}"
+                          data-ref="{{ room.has_ref|yesno:'Yes,No' }}"
+                          data-tv="{{ room.has_tv|yesno:'Yes,No' }}"
+                          data-wifi="{{ room.has_wifi|yesno:'Yes,No' }}">
+                    {{ room.room_code }} - {{ room.monthly_rate|floatformat:0 }}/month 
+                    {% if room.occupied_beds > 0 %}({{ room.occupied_beds }}/{{ room.capacity }} occupied){% endif %}
+                  </option>
+                {% empty %}
+                  <option value="" disabled>No available rooms</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- ROOM DETAILS -->
+            <div id="signupRoomDetails" class="alert alert-info d-none" style="font-size: 13px;">
+              <h6 class="mb-2"><i class="bi bi-info-circle"></i> Room Details</h6>
+              <div class="row g-2">
+                <div class="col-6">
+                  <strong>Rate:</strong> <span id="signupRoomRate">-</span>
+                </div>
+                <div class="col-6">
+                  <strong>Capacity:</strong> <span id="signupRoomCapacity">-</span>
+                </div>
+                <div class="col-6">
+                  <strong>Floor:</strong> <span id="signupRoomFloor">-</span>
+                </div>
+                <div class="col-6">
+                  <strong>Available:</strong> <span id="signupRoomAvailable">-</span>
+                </div>
+                <div class="col-12">
+                  <strong>Bed Type:</strong> <span id="signupRoomBedType">-</span>
+                </div>
+              </div>
+              <div class="mt-2" id="signupInclusionsSection" style="display: none;">
+                <strong>Inclusions:</strong>
+                <div class="d-flex flex-wrap gap-1 mt-1" id="signupInclusionsList">
+                </div>
+              </div>
+              <div class="mt-2" id="signupAppliancesSection" style="display: none;">
+                <strong>Appliances:</strong>
+                <div class="d-flex flex-wrap gap-1 mt-1" id="signupAppliancesList">
+                </div>
+              </div>
             </div>
 
             <!-- USERNAME -->
@@ -255,6 +309,107 @@
       signupSection.classList.remove("d-none");
     }
   }
+
+  // Signup room selection JavaScript
+  document.addEventListener('DOMContentLoaded', function() {
+    const signupRoomSelect = document.getElementById('signupRoomSelect');
+    const signupRoomDetails = document.getElementById('signupRoomDetails');
+  
+    if (signupRoomSelect) {
+      // Room details elements
+      const signupRoomRate = document.getElementById('signupRoomRate');
+      const signupRoomCapacity = document.getElementById('signupRoomCapacity');
+      const signupRoomFloor = document.getElementById('signupRoomFloor');
+      const signupRoomAvailable = document.getElementById('signupRoomAvailable');
+      const signupRoomBedType = document.getElementById('signupRoomBedType');
+      
+      // Section containers
+      const signupInclusionsSection = document.getElementById('signupInclusionsSection');
+      const signupAppliancesSection = document.getElementById('signupAppliancesSection');
+      const signupInclusionsList = document.getElementById('signupInclusionsList');
+      const signupAppliancesList = document.getElementById('signupAppliancesList');
+      
+      signupRoomSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        
+        if (this.value === '') {
+          signupRoomDetails.classList.add('d-none');
+          return;
+        }
+        
+        // Update room details
+        signupRoomRate.textContent = `PHP ${parseFloat(selectedOption.dataset.rate).toFixed(0)}/month`;
+        signupRoomCapacity.textContent = selectedOption.dataset.capacity;
+        signupRoomFloor.textContent = selectedOption.dataset.floor;
+        const available = parseInt(selectedOption.dataset.capacity) - parseInt(selectedOption.dataset.occupied);
+        signupRoomAvailable.textContent = `${available} bed${available !== 1 ? 's' : ''}`;
+        
+        // Update bed type
+        const bedType = selectedOption.dataset.bedType;
+        let bedTypeText = bedType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+        signupRoomBedType.textContent = bedTypeText;
+        
+        // Clear existing badges
+        signupInclusionsList.innerHTML = '';
+        signupAppliancesList.innerHTML = '';
+        
+        // Collect inclusions that are checked
+        const inclusions = [];
+        if (selectedOption.dataset.water === 'Yes') {
+          inclusions.push('Water');
+        }
+        if (selectedOption.dataset.electricity === 'Yes') {
+          inclusions.push('Electricity');
+        }
+        
+        // Collect appliances that are checked
+        const appliances = [];
+        if (selectedOption.dataset.fan === 'Yes') {
+          appliances.push('Fan');
+        }
+        if (selectedOption.dataset.aircon === 'Yes') {
+          appliances.push('Aircon');
+        }
+        if (selectedOption.dataset.ref === 'Yes') {
+          appliances.push('Refrigerator');
+        }
+        if (selectedOption.dataset.tv === 'Yes') {
+          appliances.push('TV');
+        }
+        if (selectedOption.dataset.wifi === 'Yes') {
+          appliances.push('WiFi');
+        }
+        
+        // Show inclusions section only if there are inclusions
+        if (inclusions.length > 0) {
+          signupInclusionsSection.style.display = 'block';
+          inclusions.forEach(inclusion => {
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-success text-white';
+            badge.textContent = inclusion;
+            signupInclusionsList.appendChild(badge);
+          });
+        } else {
+          signupInclusionsSection.style.display = 'none';
+        }
+        
+        // Show appliances section only if there are appliances
+        if (appliances.length > 0) {
+          signupAppliancesSection.style.display = 'block';
+          appliances.forEach(appliance => {
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-success text-white';
+            badge.textContent = appliance;
+            signupAppliancesList.appendChild(badge);
+          });
+        } else {
+          signupAppliancesSection.style.display = 'none';
+        }
+        
+        signupRoomDetails.classList.remove('d-none');
+      });
+    }
+  });
 </script>
 
 </html>
