@@ -33,12 +33,16 @@ rents_system/
     ├── templates/
     │   ├── login.html
     │   ├── base_dashboard.html
-    │   ├── admin_dashboard.html
-    │   ├── admin_list.html
-    │   ├── tenant_list.html
-    │   ├── tenant_dashboard.html
-    │   └── partials/
-    │       └── avatar.html
+    │   ├── admin/
+    │   │   ├── dashboard.html
+    │   │   ├── admin_list.html
+    │   │   ├── tenant_list.html
+    │   │   └── room_list.html
+    │   ├── tenant/
+    │   │   └── dashboard.html
+    │   ├── partials/
+    │   │   ├── avatar.html
+    │   │   └── sidebar.html
     │
     ├── templatetags/
     │   ├── __init__.py
@@ -73,7 +77,8 @@ rents_system/
 | user_id | FK | → auth_user |
 | full_name | VARCHAR | Full name |
 | phone | VARCHAR | Phone number |
-| room_number | VARCHAR | Assigned room |
+| room_id | FK | → accounts_room |
+| room_number | VARCHAR | Legacy room number |
 | photo | IMAGE | Profile photo (optional) |
 | created_at | DATETIME | Account creation date |
 
@@ -92,9 +97,22 @@ rents_system/
 | Field | Type | Description |
 |---|---|---|
 | id | INT | Primary key |
-| room_number | VARCHAR | Room number (unique) |
+| room_number | VARCHAR | Room identifier (A, B, 1, etc.) |
+| floor | INT | Floor number |
 | capacity | INT | Max beds |
 | monthly_rate | DECIMAL | Rent price |
+| photo | IMAGE | Room photo (optional) |
+| area | DECIMAL | Area in sqm |
+| num_cr | INT | Number of CRs |
+| bed_type | VARCHAR | Single/Double Deck/Both |
+| has_sink | BOOL | Has sink |
+| water_included | BOOL | Water included |
+| electricity_included | BOOL | Electricity included |
+| has_fan | BOOL | Has fan |
+| has_aircon | BOOL | Has aircon |
+| has_ref | BOOL | Has refrigerator |
+| has_tv | BOOL | Has TV |
+| has_wifi | BOOL | Has WiFi |
 
 ### `accounts_bill`
 | Field | Type | Description |
@@ -140,11 +158,32 @@ rents_system/
 
 ### Authentication
 - Login with role toggle (Admin / Tenant)
-- Tenant self-signup
+- Tenant self-signup with real-time room selection
 - Password visibility toggle
 - CSRF protection
 - Session-based authentication
 - Redirect if already logged in
+- Enhanced form validation with proper error handling
+
+### Room Management
+- **Room Creation**: Add rooms with detailed specifications
+- **Room Features**: Bed type, area, CR count, appliances, inclusions
+- **Room Photos**: Upload and display room images
+- **Room Sorting**: Sort by rate, capacity, floor, or room number
+- **Real-time Availability**: Show occupied/available beds
+- **Room Details Modal**: View complete room information
+- **Vacant Badges**: Display available bed count
+- **Room Codes**: Format like "Room 1-A", "Room 2-B"
+
+### Tenant Management
+- View all tenants with search functionality
+- Add tenant with room assignment
+- Edit tenant information
+- Delete tenant with confirmation
+- Profile photos with avatar system
+- Room transfer capabilities
+- Clickable rows -> redirect to tenant details
+- Real-time room availability during signup
 
 ### Admin Management (Superadmin only)
 - Register new admins
@@ -152,33 +191,39 @@ rents_system/
 - Activate / Deactivate admin accounts
 - Delete admin accounts
 - Profile photos
-
-### Tenant Management
-- View all tenants
-- Add tenant (admin side)
-- Edit tenant info
-- Delete tenant
-- Profile photos
-- Clickable rows → redirect to tenant list
+- Admin activity tracking
 
 ### Dashboard
-- Summary stat cards (Total Tenants, Vacant Rooms, Unpaid Bills, Open Repairs)
-- Recent tenants table
-- Dark sidebar navigation
-- Mobile responsive (Pixel 7 optimized)
-- Clickable stat cards
+- **Enhanced Stats**: Total tenants, vacant rooms, occupancy rate
+- **Real-time Data**: Live bed availability calculations
+- **Recent Activity**: Recent tenants and room updates
+- **Visual Indicators**: Progress bars for occupancy
+- **Dark sidebar navigation**
+- **Mobile responsive** (Pixel 7 optimized)
+- **Clickable stat cards** with navigation
+
+### User Experience
+- **Modern UI**: Clean, professional interface
+- **Responsive Design**: Works on all devices
+- **Interactive Elements**: Dynamic room details display
+- **Visual Feedback**: Loading states, hover effects
+- **Error Handling**: Clear validation messages
+- **Accessibility**: Semantic HTML, ARIA labels
 
 ---
 
 ## 🚧 Features (Planned)
 
-- [ ] Rooms Page — room map, vacancy status
-- [ ] Billing — monthly rent, mark as paid
-- [ ] Maintenance — submit and track reports
-- [ ] Violations — log and view violations
-- [ ] Tenant Dashboard — view own info, bills, reports
-- [ ] Edit Admin profile
-- [ ] Search and filter tenants
+- [ ] Room Search & Filtering - advanced room search capabilities
+- [ ] Billing System - monthly rent, payment tracking
+- [ ] Maintenance Tracking - submit and track repair requests
+- [ ] Violation Management - log and view violations
+- [ ] Tenant Dashboard - view personal info, bills, reports
+- [ ] Bulk Room Operations - edit/delete multiple rooms
+- [ ] Room Analytics - occupancy trends and reports
+- [ ] Data Export - export tenant and room data
+- [ ] Communication System - admin-tenant messaging
+- [ ] Move-in/Move-out Tracking - tenant history
 
 ---
 
