@@ -93,11 +93,37 @@ class Violation(models.Model):
         return f"{self.tenant.full_name} - {self.date}"
 
 class Room(models.Model):
+
+    # ── BED TYPE ──────────────────────────────────────
+    BED_CHOICES = [
+        ('single', 'Single'),
+        ('double_deck', 'Double Deck'),
+        ('both', 'Both'),
+    ]
+
+    # ── BASIC ─────────────────────────────────────────
     room_number  = models.CharField(max_length=20, unique=True)
     floor        = models.PositiveIntegerField(default=1)
     capacity     = models.PositiveIntegerField(default=1)
     monthly_rate = models.DecimalField(max_digits=8, decimal_places=2)
     photo        = models.ImageField(upload_to='rooms/', blank=True, null=True)
+
+    # ── ROOM FEATURES ─────────────────────────────────
+    area         = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)  # sq meters
+    num_cr       = models.PositiveIntegerField(default=1)                                       # number of CR
+    bed_type     = models.CharField(max_length=20, choices=BED_CHOICES, default='single')
+    has_lababo   = models.BooleanField(default=False)
+
+    # ── INCLUSIONS ────────────────────────────────────
+    water_included       = models.BooleanField(default=False)
+    electricity_included = models.BooleanField(default=False)
+
+    # ── APPLIANCES ────────────────────────────────────
+    has_fan    = models.BooleanField(default=False)
+    has_aircon = models.BooleanField(default=False)
+    has_ref    = models.BooleanField(default=False)
+    has_tv     = models.BooleanField(default=False)
+    has_wifi   = models.BooleanField(default=False)
 
     def occupied_beds(self):
         return TenantProfile.objects.filter(room_number=self.room_number).count()

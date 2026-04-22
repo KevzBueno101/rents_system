@@ -427,6 +427,17 @@ def add_room(request):
         capacity     = request.POST.get('capacity')
         monthly_rate = request.POST.get('monthly_rate')
         photo        = request.FILES.get('photo')
+        area         = request.POST.get('area') or None
+        num_cr       = request.POST.get('num_cr', 1)
+        bed_type     = request.POST.get('bed_type', 'single')
+        has_lababo   = request.POST.get('has_lababo') == 'on'
+        water_included       = request.POST.get('water_included') == 'on'
+        electricity_included = request.POST.get('electricity_included') == 'on'
+        has_fan    = request.POST.get('has_fan') == 'on'
+        has_aircon = request.POST.get('has_aircon') == 'on'
+        has_ref    = request.POST.get('has_ref') == 'on'
+        has_tv     = request.POST.get('has_tv') == 'on'
+        has_wifi   = request.POST.get('has_wifi') == 'on'
 
         if Room.objects.filter(room_number=room_number, floor=floor).exists():
             rooms = Room.objects.all().order_by('floor', 'room_number')
@@ -442,12 +453,55 @@ def add_room(request):
             capacity=capacity,
             monthly_rate=monthly_rate,
             photo=photo,
+            area=area,
+            num_cr=num_cr,
+            bed_type=bed_type,
+            has_lababo=has_lababo,
+            water_included=water_included,
+            electricity_included=electricity_included,
+            has_fan=has_fan,
+            has_aircon=has_aircon,
+            has_ref=has_ref,
+            has_tv=has_tv,
+            has_wifi=has_wifi,
         )
 
         return redirect('room_list')
 
     return redirect('room_list')
 
+
+@login_required(login_url='/')
+def edit_room(request, room_id):
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    room = Room.objects.get(id=room_id)
+
+    if request.method == 'POST':
+        room.room_number  = request.POST.get('room_number')
+        room.floor        = request.POST.get('floor')
+        room.capacity     = request.POST.get('capacity')
+        room.monthly_rate = request.POST.get('monthly_rate')
+        room.area         = request.POST.get('area') or None
+        room.num_cr       = request.POST.get('num_cr', 1)
+        room.bed_type     = request.POST.get('bed_type', 'single')
+        room.has_lababo   = request.POST.get('has_lababo') == 'on'
+        room.water_included       = request.POST.get('water_included') == 'on'
+        room.electricity_included = request.POST.get('electricity_included') == 'on'
+        room.has_fan    = request.POST.get('has_fan') == 'on'
+        room.has_aircon = request.POST.get('has_aircon') == 'on'
+        room.has_ref    = request.POST.get('has_ref') == 'on'
+        room.has_tv     = request.POST.get('has_tv') == 'on'
+        room.has_wifi   = request.POST.get('has_wifi') == 'on'
+
+        if request.FILES.get('photo'):
+            room.photo = request.FILES.get('photo')
+
+        room.save()
+        return redirect('room_list')
+
+    return redirect('room_list')
 
 @login_required(login_url='/')
 def edit_room(request, room_id):

@@ -117,3 +117,35 @@ document.querySelectorAll('.edit-room-btn').forEach(function(btn) {
     };
 
 });
+
+// Area
+const areaEl = document.getElementById('infoArea');
+areaEl.textContent = this.dataset.area ? `${this.dataset.area} sqm` : '—';
+
+// CR
+document.getElementById('infoCR').textContent = this.dataset.cr + ' CR';
+
+// Bed type
+document.getElementById('infoBedType').textContent = this.dataset.bedtype;
+
+// Inclusions
+const inclusions = [];
+if (this.dataset.lababo === 'True')  inclusions.push('Lababo');
+if (this.dataset.water  === 'True')  inclusions.push('Water');
+if (this.dataset.elec   === 'True')  inclusions.push('Electricity');
+if (this.dataset.wifi   === 'True')  inclusions.push('WiFi');
+if (this.dataset.fan    === 'True')  inclusions.push('Fan');
+if (this.dataset.aircon === 'True')  inclusions.push('Aircon');
+if (this.dataset.ref    === 'True')  inclusions.push('Ref');
+if (this.dataset.tv     === 'True')  inclusions.push('TV');
+
+const inclusionsEl = document.getElementById('infoInclusions');
+if (inclusions.length > 0) {
+    inclusionsEl.innerHTML = inclusions.map(i =>
+        `<span class="badge bg-light text-dark border me-1 mb-1" style="font-size:12px;">
+            <i class="bi bi-check2"></i> ${i}
+        </span>`
+    ).join('');
+} else {
+    inclusionsEl.innerHTML = '<span class="text-muted" style="font-size:13px;">None</span>';
+}

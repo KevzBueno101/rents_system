@@ -121,6 +121,97 @@
                         <span class="input-group-text">₱</span>
                         <input type="number" name="monthly_rate" id="editMonthlyRate" class="form-control" placeholder="Monthly Rate" min="0" step="0.01" required>
                     </div>
+                    <!-- AREA + CR -->
+<div class="row g-2 mb-2">
+    <div class="col-6">
+        <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-rulers"></i></span>
+            <input type="number" name="area" class="form-control" placeholder="Area (sqm)" step="0.01" min="0">
+        </div>
+    </div>
+    <div class="col-6">
+        <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-droplet"></i></span>
+            <input type="number" name="num_cr" class="form-control" placeholder="No. of CR" min="1" value="1">
+        </div>
+    </div>
+</div>
+
+<!-- BED TYPE -->
+<div class="mb-2">
+    <select name="bed_type" class="form-select">
+        <option value="single">Single Bed</option>
+        <option value="double_deck">Double Deck</option>
+        <option value="both">Both</option>
+    </select>
+</div>
+
+<!-- CHECKBOXES -->
+<div class="mb-2">
+    <label class="form-label text-muted mb-1" style="font-size:12px;">
+        <i class="bi bi-check2-square"></i> Inclusions
+    </label>
+    <div class="row g-1">
+        <div class="col-6">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="has_lababo" id="addLababo">
+                <label class="form-check-label" style="font-size:13px;" for="addLababo">Lababo</label>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="water_included" id="addWater">
+                <label class="form-check-label" style="font-size:13px;" for="addWater">Water</label>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="electricity_included" id="addElec">
+                <label class="form-check-label" style="font-size:13px;" for="addElec">Electricity</label>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="has_wifi" id="addWifi">
+                <label class="form-check-label" style="font-size:13px;" for="addWifi">WiFi</label>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- APPLIANCES -->
+<div class="mb-2">
+    <label class="form-label text-muted mb-1" style="font-size:12px;">
+        <i class="bi bi-plug"></i> Appliances
+    </label>
+    <div class="row g-1">
+        <div class="col-6">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="has_fan" id="addFan">
+                <label class="form-check-label" style="font-size:13px;" for="addFan">Fan</label>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="has_aircon" id="addAircon">
+                <label class="form-check-label" style="font-size:13px;" for="addAircon">Aircon</label>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="has_ref" id="addRef">
+                <label class="form-check-label" style="font-size:13px;" for="addRef">Ref</label>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="has_tv" id="addTv">
+                <label class="form-check-label" style="font-size:13px;" for="addTv">TV</label>
+            </div>
+        </div>
+    </div>
+</div>
+
 
                     <div class="mb-3">
                         <label class="form-label text-muted" style="font-size:13px;">
@@ -174,6 +265,31 @@
                         <span class="text-muted"><i class="bi bi-cash"></i> Monthly Rate</span>
                         <span id="infoRate" class="fw-bold"></span>
                     </div>
+                    <!-- AREA -->
+<div class="d-flex justify-content-between mb-2">
+    <span class="text-muted"><i class="bi bi-rulers"></i> Area</span>
+    <span id="infoArea"></span>
+</div>
+
+<!-- CR -->
+<div class="d-flex justify-content-between mb-2">
+    <span class="text-muted"><i class="bi bi-droplet"></i> CR</span>
+    <span id="infoCR"></span>
+</div>
+
+<!-- BED TYPE -->
+<div class="d-flex justify-content-between mb-3">
+    <span class="text-muted"><i class="bi bi-moon"></i> Bed Type</span>
+    <span id="infoBedType"></span>
+</div>
+
+<hr>
+
+<!-- INCLUSIONS -->
+<p class="text-muted mb-2" style="font-size:13px;">
+    <i class="bi bi-check2-square"></i> Inclusions & Appliances:
+</p>
+<div id="infoInclusions" class="mb-3"></div>
 
                     <hr>
 
@@ -230,17 +346,28 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h6 class="fw-bold mb-0">{{ room.room_code }}</h6>
                     <button class="btn btn-sm btn-link p-0 text-muted info-room-btn"
-                        data-id="{{ room.id }}"
-                        data-code="{{ room.room_code }}"
-                        data-floor="{{ room.floor }}"
-                        data-occupied="{{ room.occupied_beds }}"
-                        data-capacity="{{ room.capacity }}"
-                        data-rate="{{ room.monthly_rate }}"
-                        data-status="{{ room.status }}"
-                        data-photo="{% if room.photo %}{{ room.photo.url }}{% endif %}"
-                        data-tenants="{% for t in room.get_tenants %}{{ t.full_name }}{% if not forloop.last %}|{% endif %}{% endfor %}">
-                        <i class="bi bi-info-circle fs-5"></i>
-                    </button>
+    data-id="{{ room.id }}"
+    data-code="{{ room.room_code }}"
+    data-floor="{{ room.floor }}"
+    data-occupied="{{ room.occupied_beds }}"
+    data-capacity="{{ room.capacity }}"
+    data-rate="{{ room.monthly_rate }}"
+    data-status="{{ room.status }}"
+    data-photo="{% if room.photo %}{{ room.photo.url }}{% endif %}"
+    data-tenants="{% for t in room.get_tenants %}{{ t.full_name }}{% if not forloop.last %}|{% endif %}{% endfor %}"
+    data-area="{{ room.area|default:'' }}"
+    data-cr="{{ room.num_cr }}"
+    data-bedtype="{{ room.get_bed_type_display }}"
+    data-lababo="{{ room.has_lababo }}"
+    data-water="{{ room.water_included }}"
+    data-elec="{{ room.electricity_included }}"
+    data-fan="{{ room.has_fan }}"
+    data-aircon="{{ room.has_aircon }}"
+    data-ref="{{ room.has_ref }}"
+    data-tv="{{ room.has_tv }}"
+    data-wifi="{{ room.has_wifi }}">
+    <i class="bi bi-info-circle fs-5"></i>
+</button>
                 </div>
 
                 <div class="d-flex justify-content-between mb-2">
