@@ -205,6 +205,12 @@ def admin_dashboard(request):
         vacant = [r for r in all_rooms if r.occupied_beds() == 0]
         occupied_rooms = occupied_rooms + vacant[:3 - len(occupied_rooms)]
 
+    # Get admin profile for sidebar
+    try:
+        admin_profile = AdminProfile.objects.get(user=request.user)
+    except AdminProfile.DoesNotExist:
+        admin_profile = None
+
     return render(request, 'admin/dashboard.html', {
         'total_tenants' : total_tenants,
         'vacant_rooms'  : vacant_rooms,
@@ -216,6 +222,7 @@ def admin_dashboard(request):
         'occupied_beds' : occupied_beds,
         'occupancy_rate': occupancy_rate,
         'recent_rooms'  : occupied_rooms[:3],
+        'admin_profile'  : admin_profile,
     })
 
 
@@ -521,7 +528,91 @@ def delete_room(request, room_id):
     return redirect('room_list')
 
 
-# ─── LOGOUT ──────────────────────────────────────────
+# ─── EDIT PROFILE ───────────────────────────────
+@login_required(login_url='/')
+def edit_profile(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        full_name = request.POST.get('full_name')
+        email = request.POST.get('email')
+        phone = request.POST.get('phone')
+        current_password = request.POST.get('current_password')
+        new_password = request.POST.get('password')
+        confirm_password = request.POST.get('confirm_password')
+        photo = request.FILES.get('photo')
+        
+        # Validate passwords
+        errors = []
+        
+        # If new password is provided, validate it
+        if new_password:
+            if not confirm_password:
+                errors.append('Please confirm your new password.')
+            elif new_password != confirm_password:
+                errors.append('New passwords do not match.')
+        
+        # If current password is provided, validate it
+        elif current_password:
+            # Verify current password (you might want to add password verification here)
+            if not request.user.check_password(current_password):
+                errors.append('Current password is incorrect.')
+        
+        if errors:
+            # Get admin profile for form repopulation
+            try:
+                admin_profile = AdminProfile.objects.get(user=request.user)
+            except AdminProfile.DoesNotExist:
+                admin_profile = AdminProfile.objects.create(
+                    user=request.user,
+                    full_name=full_name or request.user.username,
+                    phone=phone or '',
+                    photo=photo
+                )
+            
+            return render(request, 'admin/dashboard.html', {
+                'admin_profile': admin_profile,
+                'profile_errors': errors,
+                'form_data': {
+                    'username': username,
+                    'full_name': full_name,
+                    'email': email,
+                    'phone': phone,
+                }
+            })
+        
+        # Get admin profile
+        try:
+            admin_profile = AdminProfile.objects.get(user=request.user)
+        except AdminProfile.DoesNotExist:
+            admin_profile = AdminProfile.objects.create(
+                user=request.user,
+                full_name=full_name or request.user.username,
+                phone=phone or '',
+                photo=photo
+            )
+        
+        # Update user model
+        user = request.user
+        user.username = username
+        user.email = email
+        if new_password:
+            user.set_password(new_password)
+        
+        # Update admin profile
+        admin_profile.full_name = full_name
+        admin_profile.phone = phone
+        if photo:
+            admin_profile.photo = photo
+        
+        user.save()
+        admin_profile.save()
+        
+        return redirect('admin_dashboard')
+    
+    return redirect('admin_dashboard')
+
+
+# ─── LOGOUT ──────────────────────────────────
 def logout_view(request):
     logout(request)
     return redirect('login')

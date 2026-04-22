@@ -156,4 +156,40 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
+    // ── PROFILE MODAL FUNCTIONS ─────────────────────────
+    window.openProfileModal = function () {
+        new bootstrap.Modal(document.getElementById('profileModal')).show();
+    };
+
+    window.toggleProfilePassword = function () {
+        const currentPass = document.getElementById('currentPassword');
+        const newPass = document.getElementById('newPassword');
+        const confirmPass = document.getElementById('confirmPassword');
+        const icon = document.getElementById('profileEyeIcon');
+        
+        if (currentPass.type === 'password') {
+            currentPass.type = 'text';
+            newPass.type = 'text';
+            confirmPass.type = 'text';
+            icon.classList.replace('bi-eye', 'bi-eye-slash');
+        } else {
+            currentPass.type = 'password';
+            newPass.type = 'password';
+            confirmPass.type = 'password';
+            icon.classList.replace('bi-eye-slash', 'bi-eye');
+        }
+    };
+
+    window.previewProfilePhoto = function (event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const preview = document.getElementById('profilePreview');
+                preview.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
 });

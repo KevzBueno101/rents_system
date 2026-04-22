@@ -79,7 +79,7 @@
         </nav>
 
 <div class="sidebar-footer">
-    <div class="d-flex align-items-center gap-2">
+    <div class="d-flex align-items-center gap-2" style="cursor:pointer;" onclick="openProfileModal()">
 
         {% if admin_profile and admin_profile.photo %}
             <img src="{{ admin_profile.photo.url }}"
@@ -161,6 +161,131 @@
                     <a href="{% url 'logout' %}" class="btn btn-danger">
                         <i class="bi bi-box-arrow-right"></i> Logout
                     </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROFILE EDIT MODAL -->
+    <div class="modal fade" id="profileModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-person-gear"></i> Edit Profile
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="{% url 'edit_profile' %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- PROFILE PHOTO -->
+                        <div class="text-center mb-3">
+                            <div class="mb-2 position-relative" style="cursor:pointer;" onclick="document.getElementById('profilePhotoInput').click()">
+                                {% if admin_profile and admin_profile.photo %}
+                                    <img src="{{ admin_profile.photo.url }}" 
+                                         id="profilePreview"
+                                         style="width:80px; height:80px; border-radius:50%; object-fit:cover; border:3px solid #dee2e6; transition:all 0.3s;">
+                                    <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" 
+                                         style="background:rgba(0,0,0,0.5); border-radius:50%; opacity:0; transition:all 0.3s;">
+                                        <i class="bi bi-camera text-white" style="font-size:24px;"></i>
+                                    </div>
+                                {% else %}
+                                    <div style="width:80px; height:80px; border-radius:50%; background:#f8f9fa; display:flex; align-items:center; justify-content:center; border:3px solid #dee2e6; position:relative; cursor:pointer; transition:all 0.3s;">
+                                        <i class="bi bi-person" style="font-size:32px; color:#6c757d;"></i>
+                                        <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" 
+                                             style="background:rgba(0,0,0,0.5); border-radius:50%; opacity:0; transition:all 0.3s;">
+                                            <i class="bi bi-camera text-white" style="font-size:24px;"></i>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <input type="file" name="photo" id="profilePhotoInput" class="form-control d-none" accept="image/*" 
+                                       onchange="previewProfilePhoto(event)">
+                            </div>
+                        </div>
+
+                        <!-- USERNAME -->
+                        <div class="mb-3">
+                            <label class="form-label text-muted" style="font-size:13px;">
+                                <i class="bi bi-person"></i> Username
+                            </label>
+                            <input type="text" name="username" class="form-control" 
+                                   value="{{ request.user.username }}" required>
+                        </div>
+
+                        <!-- FULL NAME -->
+                        <div class="mb-3">
+                            <label class="form-label text-muted" style="font-size:13px;">
+                                <i class="bi bi-person-vcard"></i> Full Name
+                            </label>
+                            <input type="text" name="full_name" class="form-control" 
+                                   value="{{ admin_profile.full_name|default:request.user.username }}" required>
+                        </div>
+
+                        <!-- EMAIL -->
+                        <div class="mb-3">
+                            <label class="form-label text-muted" style="font-size:13px;">
+                                <i class="bi bi-envelope"></i> Email
+                            </label>
+                            <input type="email" name="email" class="form-control" 
+                                   value="{{ request.user.email }}" required>
+                        </div>
+
+                        <!-- PHONE -->
+                        <div class="mb-3">
+                            <label class="form-label text-muted" style="font-size:13px;">
+                                <i class="bi bi-phone"></i> Phone
+                            </label>
+                            <input type="text" name="phone" class="form-control" 
+                                   value="{{ admin_profile.phone|default:'' }}" required>
+                        </div>
+
+                        <!-- PASSWORD -->
+                        <div class="mb-3">
+                            <label class="form-label text-muted" style="font-size:13px;">
+                                <i class="bi bi-lock"></i> Change Password
+                            </label>
+                            <div class="mb-2">
+                                <div class="input-group">
+                                    <input type="password" id="currentPassword" name="current_password" class="form-control" 
+                                           placeholder="Current password" required>
+                                    <span class="input-group-text" onclick="toggleProfilePassword()" style="cursor:pointer;">
+                                        <i class="bi bi-eye" id="profileEyeIcon"></i>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="input-group">
+                                    <input type="password" id="newPassword" name="password" class="form-control" 
+                                           placeholder="Enter new password">
+                                    <span class="input-group-text" onclick="toggleProfilePassword()" style="cursor:pointer;">
+                                        <i class="bi bi-eye" id="profileEyeIcon"></i>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="input-group">
+                                    <input type="password" id="confirmPassword" name="confirm_password" class="form-control" 
+                                           placeholder="Confirm new password" required>
+                                    <span class="input-group-text">
+                                        <i class="bi bi-lock-fill"></i>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-dark flex-fill">
+                                <i class="bi bi-check-circle"></i> Save Changes
+                            </button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

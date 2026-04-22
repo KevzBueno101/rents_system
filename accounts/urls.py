@@ -21,6 +21,7 @@ urlpatterns = [
 
     # ─── AUTH ─────────────────────────────────────────
     path('logout/', views.logout_view, name='logout'),
+    path('edit-profile/', views.edit_profile, name='edit_profile'),
 
     # ─── ROOMS ───────────────────────────────────────
     path('room-list/', views.room_list, name='room_list'),
