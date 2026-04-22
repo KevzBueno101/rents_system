@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from .models import TenantProfile, Room, Bill, MaintenanceReport, Violation, AdminProfile
+from django.db import models
 
 
 # ─── LOGIN ───────────────────────────────────────────
@@ -138,10 +139,20 @@ def admin_dashboard(request):
         return redirect('tenant_dashboard')
 
     total_tenants  = TenantProfile.objects.count()
-    vacant_rooms   = sum(1 for r in Room.objects.all() if not r.is_full())
+    all_rooms      = Room.objects.all()
+    vacant_rooms   = sum(1 for r in all_rooms if not r.is_full())
     unpaid_bills   = Bill.objects.filter(is_paid=False).count()
     open_repairs   = MaintenanceReport.objects.filter(status='open').count()
     recent_tenants = TenantProfile.objects.order_by('-created_at')[:5]
+    total_beds     = sum(r.capacity for r in all_rooms)
+    vacant_beds    = total_beds - TenantProfile.objects.count()
+
+    # ← NEW — get occupied rooms, minimum 3
+    occupied_rooms = [r for r in all_rooms if r.occupied_beds() > 0]
+    if len(occupied_rooms) < 3:
+        # fill remaining slots with vacant rooms
+        vacant = [r for r in all_rooms if r.occupied_beds() == 0]
+        occupied_rooms = occupied_rooms + vacant[:3 - len(occupied_rooms)]
 
     return render(request, 'admin/dashboard.html', {
         'total_tenants' : total_tenants,
@@ -149,8 +160,10 @@ def admin_dashboard(request):
         'unpaid_bills'  : unpaid_bills,
         'open_repairs'  : open_repairs,
         'recent_tenants': recent_tenants,
+        'total_beds'    : total_beds,
+        'vacant_beds'   : vacant_beds,
+        'recent_rooms'  : occupied_rooms[:3],  # ← NEW
     })
-
 
 # ─── ADMIN LIST (Superadmin only) ────────────────────
 @login_required(login_url='/')
@@ -205,9 +218,24 @@ def tenant_dashboard(request):
 def tenant_list(request):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
-    tenants = TenantProfile.objects.select_related('user').order_by('-created_at')
-    return render(request, 'admin/tenant_list.html', {'tenants': tenants})
 
+    search = request.GET.get('search', '')  # ← NEW
+
+    tenants = TenantProfile.objects.select_related('user').order_by('-created_at')
+
+    if search:
+        tenants = tenants.filter(
+            models.Q(full_name__icontains=search)    |
+            models.Q(phone__icontains=search)        |
+            models.Q(room_number__icontains=search)  |
+            models.Q(user__email__icontains=search)  |
+            models.Q(user__username__icontains=search)
+        )
+
+    return render(request, 'admin/tenant_list.html', {
+        'tenants': tenants,
+        'search' : search,   # ← para ma-retain ang search value
+    })
 
 # ─── ADD TENANT ───────────────────────────────────────
 @login_required(login_url='/')
@@ -294,3 +322,169 @@ def delete_tenant(request, tenant_id):
 def logout_view(request):
     logout(request)
     return redirect('login')
+
+
+# ─── ROOM LIST ───────────────────────────────────────
+@login_required(login_url='/')
+def room_list(request):
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+    rooms = Room.objects.all().order_by('room_number')
+    return render(request, 'admin/room_list.html', {'rooms': rooms})
+
+
+# ─── ADD ROOM ────────────────────────────────────────
+@login_required(login_url='/')
+@login_required(login_url='/')
+def add_room(request):
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    if request.method == 'POST':
+        room_number  = request.POST.get('room_number')
+        capacity     = request.POST.get('capacity')
+        monthly_rate = request.POST.get('monthly_rate')
+        photo        = request.FILES.get('photo')  
+
+        if Room.objects.filter(room_number=room_number).exists():
+            rooms = Room.objects.all().order_by('room_number')
+            return render(request, 'admin/room_list.html', {
+                'rooms'         : rooms,
+                'add_error'     : f'Room {room_number} already exists.',
+                'show_add_modal': True,
+            })
+
+        Room.objects.create(
+            room_number=room_number,
+            capacity=capacity,
+            monthly_rate=monthly_rate,
+            photo=photo,  
+        )
+
+        return redirect('room_list')
+
+    return redirect('room_list')
+# ─── ADD ROOM PHOTO ────────────────────────────────────────
+@login_required(login_url='/')
+def edit_room(request, room_id):
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    room = Room.objects.get(id=room_id)
+
+    if request.method == 'POST':
+        room.room_number  = request.POST.get('room_number')
+        room.capacity     = request.POST.get('capacity')
+        room.monthly_rate = request.POST.get('monthly_rate')
+
+        if request.FILES.get('photo'):   # ← NEW
+            room.photo = request.FILES.get('photo')
+
+        room.save()
+        return redirect('room_list')
+
+    return redirect('room_list')
+
+
+# ─── EDIT ROOM ───────────────────────────────────────
+@login_required(login_url='/')
+def edit_room(request, room_id):
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    room = Room.objects.get(id=room_id)
+
+    if request.method == 'POST':
+        room.room_number  = request.POST.get('room_number')
+        room.capacity     = request.POST.get('capacity')
+        room.monthly_rate = request.POST.get('monthly_rate')
+        room.save()
+        return redirect('room_list')
+
+    return redirect('room_list')
+
+
+# ─── DELETE ROOM ─────────────────────────────────────
+@login_required(login_url='/')
+def delete_room(request, room_id):
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    if request.method == 'POST':
+        room = Room.objects.get(id=room_id)
+        room.delete()
+
+    return redirect('room_list')
+
+@login_required(login_url='/')
+def add_room(request):
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    if request.method == 'POST':
+        room_number  = request.POST.get('room_number')
+        floor        = request.POST.get('floor')
+        capacity     = request.POST.get('capacity')
+        monthly_rate = request.POST.get('monthly_rate')
+        photo        = request.FILES.get('photo')
+
+        if Room.objects.filter(room_number=room_number, floor=floor).exists():
+            rooms = Room.objects.all().order_by('floor', 'room_number')
+            return render(request, 'admin/room_list.html', {
+                'rooms'         : rooms,
+                'add_error'     : f'Room {floor}-{room_number} already exists.',
+                'show_add_modal': True,
+            })
+
+        Room.objects.create(
+            room_number=room_number,
+            floor=floor,
+            capacity=capacity,
+            monthly_rate=monthly_rate,
+            photo=photo,
+        )
+
+        return redirect('room_list')
+
+    return redirect('room_list')
+
+
+@login_required(login_url='/')
+def edit_room(request, room_id):
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    room = Room.objects.get(id=room_id)
+
+    if request.method == 'POST':
+        room.room_number  = request.POST.get('room_number')
+        room.floor        = request.POST.get('floor')
+        room.capacity     = request.POST.get('capacity')
+        room.monthly_rate = request.POST.get('monthly_rate')
+
+        if request.FILES.get('photo'):
+            room.photo = request.FILES.get('photo')
+
+        room.save()
+        return redirect('room_list')
+
+    return redirect('room_list')
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    room = Room.objects.get(id=room_id)
+
+    if request.method == 'POST':
+        room.room_number  = request.POST.get('room_number')
+        room.floor        = request.POST.get('floor')
+        room.position     = request.POST.get('position')
+        room.capacity     = request.POST.get('capacity')
+        room.monthly_rate = request.POST.get('monthly_rate')
+
+        if request.FILES.get('photo'):
+            room.photo = request.FILES.get('photo')
+
+        room.save()
+        return redirect('room_list')
+
+    return redirect('room_list')

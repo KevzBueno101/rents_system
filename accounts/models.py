@@ -37,6 +37,7 @@ class Room(models.Model):
     room_number  = models.CharField(max_length=20, unique=True)
     capacity     = models.PositiveIntegerField(default=1)
     monthly_rate = models.DecimalField(max_digits=8, decimal_places=2)
+    photo        = models.ImageField(upload_to='rooms/', blank=True, null=True)  # ← NEW
 
     def occupied_beds(self):
         return TenantProfile.objects.filter(room_number=self.room_number).count()
@@ -47,10 +48,11 @@ class Room(models.Model):
     def status(self):
         return "Occupied" if self.is_full() else "Vacant"
 
+    def get_tenants(self):
+        return TenantProfile.objects.filter(room_number=self.room_number)
+
     def __str__(self):
         return f"Room {self.room_number} ({self.status()})"
-
-
 # ─── BILL ─────────────────────────────────────────────
 class Bill(models.Model):
     tenant     = models.ForeignKey(TenantProfile, on_delete=models.CASCADE)
@@ -89,3 +91,28 @@ class Violation(models.Model):
 
     def __str__(self):
         return f"{self.tenant.full_name} - {self.date}"
+
+class Room(models.Model):
+    room_number  = models.CharField(max_length=20, unique=True)
+    floor        = models.PositiveIntegerField(default=1)
+    capacity     = models.PositiveIntegerField(default=1)
+    monthly_rate = models.DecimalField(max_digits=8, decimal_places=2)
+    photo        = models.ImageField(upload_to='rooms/', blank=True, null=True)
+
+    def occupied_beds(self):
+        return TenantProfile.objects.filter(room_number=self.room_number).count()
+
+    def is_full(self):
+        return self.occupied_beds() >= self.capacity
+
+    def status(self):
+        return "Occupied" if self.is_full() else "Vacant"
+
+    def get_tenants(self):
+        return TenantProfile.objects.filter(room_number=self.room_number)
+
+    def room_code(self):
+        return f"Room {self.floor}-{self.room_number}"
+
+    def __str__(self):
+        return self.room_code()

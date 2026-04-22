@@ -21,4 +21,10 @@ urlpatterns = [
 
     # ─── AUTH ─────────────────────────────────────────
     path('logout/', views.logout_view, name='logout'),
+
+    # ─── ROOMS ───────────────────────────────────────
+    path('room-list/', views.room_list, name='room_list'),
+    path('add-room/', views.add_room, name='add_room'),
+    path('edit-room/<int:room_id>/', views.edit_room, name='edit_room'),
+    path('delete-room/<int:room_id>/', views.delete_room, name='delete_room'),
 ]

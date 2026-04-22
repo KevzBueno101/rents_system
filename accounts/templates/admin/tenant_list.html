@@ -125,17 +125,55 @@
 
 <!-- TENANTS TABLE -->
 <div class="card border-0 shadow-sm">
-    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+    <div class="card-header bg-white py-3">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
+
         <h6 class="mb-0 fw-bold">
-            <i class="bi bi-people"></i> All Tenants
-        </h6>
-        <button class="btn btn-sm btn-dark"
-            data-bs-toggle="modal"
-            data-bs-target="#addTenantModal">
-            <i class="bi bi-person-plus"></i>
-            <span class="d-none d-md-inline">Add Tenant</span>
-        </button>
+    <a href="{% url 'tenant_list' %}" class="text-dark text-decoration-none">
+        <i class="bi bi-people"></i> All Tenants
+    </a>
+    {% if search %}
+        <span class="text-muted fw-normal" style="font-size:13px;">
+            — {{ tenants.count }} result{{ tenants.count|pluralize }} for "{{ search }}"
+        </span>
+    {% else %}
+        <span class="text-muted fw-normal" style="font-size:13px;">
+            {{ tenants.count }} total
+        </span>
+    {% endif %}
+</h6>
+
+        <div class="d-flex gap-2 w-100 w-md-auto">
+            <!-- SEARCH BAR -->
+            <form method="GET" action="{% url 'tenant_list' %}" class="d-flex gap-2 flex-grow-1">
+                <div class="input-group">
+                    <span class="input-group-text bg-white">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text"
+                           name="search"
+                           class="form-control"
+                           placeholder="Search tenant..."
+                           value="{{ search }}">
+                    {% if search %}
+                    <a href="{% url 'tenant_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </form>
+
+            <!-- ADD BUTTON -->
+            <button class="btn btn-sm btn-dark flex-shrink-0"
+                data-bs-toggle="modal"
+                data-bs-target="#addTenantModal">
+                <i class="bi bi-person-plus"></i>
+                <span class="d-none d-md-inline">Add</span>
+            </button>
+        </div>
+
     </div>
+</div>
 
     <div class="card-body p-0">
         <div class="table-responsive">
