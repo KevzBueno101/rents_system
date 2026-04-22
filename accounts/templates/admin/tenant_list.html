@@ -42,10 +42,10 @@
 
                     <div class="input-group mb-2">
                         <span class="input-group-text"><i class="bi bi-door-open"></i></span>
-                        <select name="room_number" class="form-control" id="roomSelect" required>
+                        <select name="room_id" class="form-control" id="roomSelect" required>
                             <option value="">Select Available Room</option>
                             {% for room in available_rooms %}
-                                <option value="{{ room.room_number }}" 
+                                <option value="{{ room.id }}" 
                                         data-rate="{{ room.monthly_rate }}"
                                         data-capacity="{{ room.capacity }}"
                                         data-occupied="{{ room.occupied_beds }}"

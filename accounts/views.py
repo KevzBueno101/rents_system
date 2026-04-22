@@ -312,7 +312,7 @@ def add_tenant(request):
         email       = request.POST.get('email')
         full_name   = request.POST.get('full_name')
         phone       = request.POST.get('phone')
-        room_id     = request.POST.get('room_number')
+        room_id     = request.POST.get('room_id')
         photo       = request.FILES.get('photo')
 
         if User.objects.filter(username=username).exists():
@@ -383,16 +383,39 @@ def delete_tenant(request, tenant_id):
         tenant = TenantProfile.objects.get(id=tenant_id)
         tenant.user.delete()
 
-    return redirect('tenant_list')
-
 
 # ─── ROOM LIST ───────────────────────────────────────
 @login_required(login_url='/')
 def room_list(request):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
-    rooms = Room.objects.all().order_by('floor', 'room_number')
-    return render(request, 'admin/room_list.html', {'rooms': rooms})
+    
+    # Get sorting parameters
+    sort_by = request.GET.get('sort', 'floor')  # Default sort by floor
+    order = request.GET.get('order', 'asc')     # Default order ascending
+    
+    # Define valid sorting options
+    valid_sorts = {
+        'floor': 'floor',
+        'rate': 'monthly_rate',
+        'capacity': 'capacity',
+        'room_number': 'room_number'
+    }
+    
+    # Get the actual field to sort by
+    sort_field = valid_sorts.get(sort_by, 'floor')
+    
+    # Apply sorting
+    if order == 'desc':
+        rooms = Room.objects.all().order_by(f'-{sort_field}', 'floor', 'room_number')
+    else:
+        rooms = Room.objects.all().order_by(sort_field, 'floor', 'room_number')
+    
+    return render(request, 'admin/room_list.html', {
+        'rooms': rooms,
+        'current_sort': sort_by,
+        'current_order': order
+    })
 
 
 # ─── ADD ROOM ────────────────────────────────────────
