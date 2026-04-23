@@ -1,9 +1,22 @@
 from django.urls import path
+from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
     path('', views.login_view, name='login'),
     path('signup/', views.signup_view, name='signup'),
+    
+    # ─── PASSWORD RESET ─────────────────────────────
+    path('password-reset/', views.CustomPasswordResetView.as_view(), name='password_reset'),
+    path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(
+        template_name='registration/password_reset_done.html'
+    ), name='password_reset_done'),
+    path('password-reset/<uidb64>/<token>/', views.CustomPasswordResetConfirmView.as_view(
+        template_name='registration/password_reset_confirm.html'
+    ), name='password_reset_confirm'),
+    path('password-reset/complete/', auth_views.PasswordResetCompleteView.as_view(
+        template_name='registration/password_reset_complete.html'
+    ), name='password_reset_complete'),
     
     # ─── ADMIN ───────────────────────────────────────
     path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),

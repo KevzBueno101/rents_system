@@ -8,14 +8,17 @@ class TenantProfile(models.Model):
     full_name   = models.CharField(max_length=100)
     phone       = models.CharField(max_length=20)
     room        = models.ForeignKey('Room', on_delete=models.SET_NULL, null=True, blank=True)
-    room_number = models.CharField(max_length=20, blank=True)  # Keep for backward compatibility
+    room_number = models.CharField(max_length=20, blank=True)  # legacy fallback
     photo       = models.ImageField(upload_to='profiles/', blank=True, null=True)
     created_at  = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
+    def get_room_display(self):
         if self.room:
-            return f"{self.full_name} - {self.room.room_code}"
-        return f"{self.full_name} - Room {self.room_number}"
+            return self.room.room_code()
+        return f"Room {self.room_number}" if self.room_number else "—"
+
+    def __str__(self):
+        return f"{self.full_name} - {self.get_room_display()}"
 
 
 # ─── ADMIN PROFILE ────────────────────────────────────
@@ -46,7 +49,7 @@ class Bill(models.Model):
 
     def __str__(self):
         status = "Paid" if self.is_paid else "Unpaid"
-        return f"{self.tenant.full_name} - ₱{self.amount} ({status})"
+        return f"{self.tenant.full_name} - P{self.amount} ({status})"
 
 
 # ─── MAINTENANCE REPORT ───────────────────────────────
@@ -75,13 +78,14 @@ class Violation(models.Model):
     def __str__(self):
         return f"{self.tenant.full_name} - {self.date}"
 
+
+# ─── ROOM ─────────────────────────────────────────────
 class Room(models.Model):
 
-    # ── BED TYPE ──────────────────────────────────────
     BED_CHOICES = [
-        ('single', 'Single'),
+        ('single',      'Single'),
         ('double_deck', 'Double Deck'),
-        ('both', 'Both'),
+        ('both',        'Both'),
     ]
 
     # ── BASIC ─────────────────────────────────────────
@@ -92,10 +96,10 @@ class Room(models.Model):
     photo        = models.ImageField(upload_to='rooms/', blank=True, null=True)
 
     # ── ROOM FEATURES ─────────────────────────────────
-    area         = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)  # sq meters
-    num_cr       = models.PositiveIntegerField(default=1)                                       # number of CR
-    bed_type     = models.CharField(max_length=20, choices=BED_CHOICES, default='single')
-    has_lababo   = models.BooleanField(default=False)
+    area       = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    num_cr     = models.PositiveIntegerField(default=1)
+    bed_type   = models.CharField(max_length=20, choices=BED_CHOICES, default='single')
+    has_lababo = models.BooleanField(default=False)  # Sink
 
     # ── INCLUSIONS ────────────────────────────────────
     water_included       = models.BooleanField(default=False)
@@ -124,7 +128,8 @@ class Room(models.Model):
         return TenantProfile.objects.filter(room=self)
 
     def room_code(self):
-        return f"Room {self.floor}-{self.room_number[0]}"
+        # Fixed: use full room_number not just first char
+        return f"Room {self.floor}-{self.room_number}"
 
     def __str__(self):
         return self.room_code()
