@@ -53,6 +53,7 @@ body {
 #sidebar .nav-link:hover {
     background: rgba(255,255,255,0.1);
     color: white;
+    transform: translateX(3px);
 }
 
 #sidebar .nav-link.active {
@@ -73,6 +74,35 @@ body {
     letter-spacing: 1.5px;
     text-transform: uppercase;
     padding: 16px 20px 4px;
+}
+
+/* ── SUB-NAVIGATION ── */
+.nav-sub {
+    margin-left: 35px;
+    margin-top: 0px;
+    margin-bottom: 8px;
+}
+
+.nav-sub .nav-link {
+    padding: 6px 12px;
+    font-size: 12px;
+    margin: 0px;
+    background: rgba(255,255,255,0.03);
+    border-left: 2px solid transparent;
+    border-radius: 4px;
+    color: #aaa;
+}
+
+.nav-sub .nav-link:hover {
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    transform: translateX(2px);
+}
+
+.nav-sub .nav-link.active {
+    background: rgba(255,255,255,0.12);
+    border-left-color: #007bff;
+    color: white;
 }
 
 #sidebar .sidebar-footer {
