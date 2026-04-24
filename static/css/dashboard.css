@@ -1,0 +1,294 @@
+/* ── LAYOUT ── */
+body {
+    display: flex;
+    min-height: 100vh;
+    background: #f4f6f9;
+    margin: 0;
+}
+
+/* ── SIDEBAR ── */
+#sidebar {
+    width: 250px;
+    min-height: 100vh;
+    background: linear-gradient(180deg, #111 0%, #2c2c2c 100%);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    transition: all 0.3s;
+}
+
+#sidebar .brand {
+    padding: 24px 20px 16px;
+    border-bottom: 1px solid #444;
+}
+
+#sidebar .brand h4 {
+    color: white;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: 2px;
+}
+
+#sidebar .brand small {
+    color: #aaa;
+    font-size: 11px;
+}
+
+#sidebar .nav-link {
+    color: #ccc;
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin: 2px 10px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+#sidebar .nav-link:hover {
+    background: rgba(255,255,255,0.1);
+    color: white;
+}
+
+#sidebar .nav-link.active {
+    background: white;
+    color: #111;
+    font-weight: 600;
+}
+
+#sidebar .nav-link i {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+}
+
+#sidebar .nav-section {
+    color: #666;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 16px 20px 4px;
+}
+
+#sidebar .sidebar-footer {
+    margin-top: auto;
+    padding: 16px;
+    border-top: 1px solid #444;
+}
+
+/* ── MAIN CONTENT ── */
+#main {
+    margin-left: 250px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-width: 0;
+}
+
+/* ── TOPBAR ── */
+#topbar {
+    background: white;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #e0e0e0;
+    position: sticky;
+    top: 0;
+    z-index: 999;
+    gap: 8px;
+}
+
+#topbar h6 {
+    font-size: 15px;
+    white-space: nowrap;
+}
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.topbar-date {
+    font-size: 12px;
+    color: #888;
+    white-space: nowrap;
+}
+
+/* ── CONTENT AREA ── */
+#content {
+    padding: 16px;
+    flex: 1;
+}
+
+/* ── STAT CARDS ── */
+.stat-card {
+    border: none;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    background: white;
+    height: 100%;
+}
+
+.stat-card .icon-box {
+    width: 46px;
+    height: 46px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.stat-card .stat-value {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.stat-card .stat-label {
+    font-size: 12px;
+    color: #888;
+    margin-top: 3px;
+}
+
+/* ── TABLE ── */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* MOBILE RESPONSIVE TABLES */
+.table-wrapper-scroll-x {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #ccc #f4f6f9;
+}
+
+.table-wrapper-scroll-x::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-wrapper-scroll-x::-webkit-scrollbar-track {
+    background: #f4f6f9;
+}
+
+.table-wrapper-scroll-x::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+.table-wrapper-scroll-x::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+/* STICKY COLUMNS */
+.sticky-col {
+    position: sticky;
+    left: 0;
+    background: white;
+    z-index: 10;
+    box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+}
+
+.sticky-col-end {
+    position: sticky;
+    right: 0;
+    background: white;
+    z-index: 10;
+    box-shadow: -2px 0 4px rgba(0,0,0,0.1);
+}
+
+/* TABLE HEAD STICKY COLS */
+.table .sticky-col {
+    background: #f8f9fa;
+    font-weight: 600;
+}
+
+.table .sticky-col-end {
+    background: #f8f9fa;
+}
+
+/* ── OVERLAY ── */
+#sidebarOverlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+}
+
+#sidebarOverlay.show {
+    display: block;
+}
+
+/* ── MOBILE (max 768px) ── */
+@media (max-width: 768px) {
+    #sidebar {
+        left: -250px;
+    }
+
+    #sidebar.show {
+        left: 0;
+    }
+
+    #main {
+        margin-left: 0;
+    }
+
+    #content {
+        padding: 12px;
+    }
+
+    #topbar {
+        padding: 10px 12px;
+    }
+
+    .topbar-date {
+        display: none;
+    }
+
+    .stat-card {
+        padding: 14px;
+    }
+
+    .stat-card .stat-value {
+        font-size: 20px;
+    }
+}
+
+/* ── SMALL MOBILE (max 480px) ── */
+@media (max-width: 480px) {
+    .stat-card .icon-box {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+    }
+}
+
+/* ── CLICKABLE ROW ── */
+tbody tr[onclick]:hover {
+    background-color: #f0f4ff !important;
+}
+
+/* ── CLICKABLE STAT CARD ── */
+.col-6[onclick]:hover .stat-card,
+.col-xl-3[onclick]:hover .stat-card {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    transform: translateY(-2px);
+    transition: all 0.2s;
+}

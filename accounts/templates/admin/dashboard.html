@@ -117,6 +117,7 @@
         <div>
             <div class="stat-value">{{ vacant_rooms }}</div>
             <div class="stat-label">Vacant Rooms</div>
+            <small class="text-muted">{{ total_rooms }} Total</small>
         </div>
     </div>
 </div>
@@ -284,6 +285,51 @@
         {% endfor %}
     </div>
 </div>
+
+<!-- PROFILE CHANGE CONFIRMATION MODAL -->
+<div class="modal fade" id="confirmProfileChangeModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header bg-warning bg-opacity-10 border-warning">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-circle"></i> Confirm Changes
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <p class="mb-3">You are about to update your profile with the following changes:</p>
+                
+                <div class="card bg-light border-0 p-3 mb-3">
+                    <div id="confirmationSummary">
+                        <!-- Changes will be populated here by JavaScript -->
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="text-muted mb-0">
+                    <i class="bi bi-info-circle"></i> 
+                    <small>Are you sure you want to save these changes?</small>
+                </p>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-warning" id="confirmSaveBtn">
+                    <i class="bi bi-check-circle"></i> Yes, Save Changes
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
 {% endif %}
 
 {% endblock %}

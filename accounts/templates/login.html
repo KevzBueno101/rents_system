@@ -301,10 +301,10 @@
                 {% if profile and profile.photo %}
                   <img src="{{ profile.photo.url }}"
                        style="width:40px; height:40px; border-radius:50%; object-fit:cover; cursor:pointer;"
-                       onclick="window.location='{% url 'tenant_dashboard' %}'">
+                       onclick="window.location='{% url 'tenant_dashboard' %}'">    
                 {% else %}
                   <div style="width:40px; height:40px; border-radius:50%; background:#f8f9fa; display:flex; align-items:center; justify-content:center; cursor:pointer;"
-                       onclick="window.location='{% url 'tenant_dashboard' %}'">
+                       onclick="window.location='{% url 'tenant_dashboard' %}';">
                     <i class="bi bi-person" style="font-size:20px; color:#6c757d;"></i>
                   </div>
                 {% endif %}
@@ -331,7 +331,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
   <!-- LOGIN JS -->
-  <script src="{% static 'accounts/js/login.js' %}"></script>
+  <script src="{% static 'js/login.js' %}"></script>
   
   <!-- Forgot Password Form Handling -->
   <script>
