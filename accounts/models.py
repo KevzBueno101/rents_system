@@ -79,6 +79,24 @@ class Violation(models.Model):
         return f"{self.tenant.full_name} - {self.date}"
 
 
+# ─── INCLUSION ───────────────────────────────────────
+class Inclusion(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.name
+
+
+# ─── APPLIANCE ───────────────────────────────────────
+class Appliance(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.name
+
+
 # ─── ROOM ─────────────────────────────────────────────
 class Room(models.Model):
 
@@ -104,13 +122,15 @@ class Room(models.Model):
     # ── INCLUSIONS ────────────────────────────────────
     water_included       = models.BooleanField(default=False)
     electricity_included = models.BooleanField(default=False)
+    dynamic_inclusions   = models.ManyToManyField(Inclusion, blank=True)
 
     # ── APPLIANCES ────────────────────────────────────
-    has_fan    = models.BooleanField(default=False)
-    has_aircon = models.BooleanField(default=False)
-    has_ref    = models.BooleanField(default=False)
-    has_tv     = models.BooleanField(default=False)
-    has_wifi   = models.BooleanField(default=False)
+    has_fan      = models.BooleanField(default=False)
+    has_aircon   = models.BooleanField(default=False)
+    has_ref      = models.BooleanField(default=False)
+    has_tv       = models.BooleanField(default=False)
+    has_wifi     = models.BooleanField(default=False)
+    dynamic_appliances = models.ManyToManyField(Appliance, blank=True)
 
     def occupied_beds(self):
         return TenantProfile.objects.filter(room=self).count()

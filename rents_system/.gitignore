@@ -1,6 +1,0 @@
-.env
-__pycache__/
-*.pyc
-media/
-staticfiles/
-db.mysql

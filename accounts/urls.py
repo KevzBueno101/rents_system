@@ -55,4 +55,20 @@ urlpatterns = [
     path('add-room/', views.add_room, name='add_room'),
     path('edit-room/<int:room_id>/', views.edit_room, name='edit_room'),
     path('delete-room/<int:room_id>/', views.delete_room, name='delete_room'),
+    
+    # ─── ROOM FEATURES ─────────────────────────────
+    path('add-inclusion/', views.add_inclusion, name='add_inclusion'),
+    path('add-appliance/', views.add_appliance, name='add_appliance'),
+    path('get-all-inclusions/', views.get_all_inclusions, name='get_all_inclusions'),
+    path('get-all-appliances/', views.get_all_appliances, name='get_all_appliances'),
+    path('get-room-features/', views.get_room_features, name='get_room_features'),
+    
+    # ─── FEATURE MANAGEMENT ─────────────────────────
+    path('manage-features/', views.manage_features, name='manage_features'),
+    path('add-inclusion-management/', views.add_inclusion_management, name='add_inclusion_management'),
+    path('edit-inclusion/<int:inclusion_id>/', views.edit_inclusion, name='edit_inclusion'),
+    path('delete-inclusion/<int:inclusion_id>/', views.delete_inclusion, name='delete_inclusion'),
+    path('add-appliance-management/', views.add_appliance_management, name='add_appliance_management'),
+    path('edit-appliance/<int:appliance_id>/', views.edit_appliance, name='edit_appliance'),
+    path('delete-appliance/<int:appliance_id>/', views.delete_appliance, name='delete_appliance'),
 ]

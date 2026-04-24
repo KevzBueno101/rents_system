@@ -1,12 +1,16 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.views import PasswordResetView, PasswordResetConfirmView
-from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm
 from django.contrib import messages
-from django.db import models, connection
-from .models import TenantProfile, Room, Bill, MaintenanceReport, Violation, AdminProfile
+from django.db.models import Q
+from django.http import JsonResponse
+from django.views.generic.edit import CreateView
+from django.urls import reverse_lazy
+from django.contrib.auth.views import PasswordResetView, PasswordResetConfirmView
+from django.contrib.auth.forms import PasswordResetForm
+from django.template import loader
+from .models import Inclusion, Appliance, Room, TenantProfile, Room, Bill, MaintenanceReport, Violation, AdminProfile
 
 
 # ─── HELPERS ─────────────────────────────────────────
@@ -460,6 +464,28 @@ def edit_room(request, room_id):
         room.has_tv              = request.POST.get('has_tv') == 'on'
         room.has_wifi            = request.POST.get('has_wifi') == 'on'
 
+        # Handle dynamic inclusions
+        room.dynamic_inclusions.clear()
+        for key in request.POST:
+            if key.startswith('dynamic_inclusion_'):
+                inclusion_id = key.split('_')[-1]
+                try:
+                    inclusion = Inclusion.objects.get(id=inclusion_id)
+                    room.dynamic_inclusions.add(inclusion)
+                except Inclusion.DoesNotExist:
+                    pass
+
+        # Handle dynamic appliances
+        room.dynamic_appliances.clear()
+        for key in request.POST:
+            if key.startswith('dynamic_appliance_'):
+                appliance_id = key.split('_')[-1]
+                try:
+                    appliance = Appliance.objects.get(id=appliance_id)
+                    room.dynamic_appliances.add(appliance)
+                except Appliance.DoesNotExist:
+                    pass
+
         if request.FILES.get('photo'):
             room.photo = request.FILES.get('photo')
 
@@ -577,6 +603,244 @@ class CustomPasswordResetConfirmView(PasswordResetConfirmView):
     def form_valid(self, form):
         messages.success(self.request, 'Your password has been reset successfully. You can now log in with your new password.')
         return super().form_valid(form)
+
+
+# ─── ADD INCLUSION ───────────────────────────────────
+@login_required(login_url='/')
+def add_inclusion(request):
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        if name:
+            inclusion, created = Inclusion.objects.get_or_create(name=name)
+            if created:
+                return JsonResponse({'success': True, 'id': inclusion.id, 'name': inclusion.name})
+            else:
+                return JsonResponse({'error': 'Inclusion already exists'}, status=400)
+        else:
+            return JsonResponse({'error': 'Name is required'}, status=400)
+    
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+
+# ─── ADD APPLIANCE ───────────────────────────────────
+@login_required(login_url='/')
+def add_appliance(request):
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        if name:
+            appliance, created = Appliance.objects.get_or_create(name=name)
+            if created:
+                return JsonResponse({'success': True, 'id': appliance.id, 'name': appliance.name})
+            else:
+                return JsonResponse({'error': 'Appliance already exists'}, status=400)
+        else:
+            return JsonResponse({'error': 'Name is required'}, status=400)
+    
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+
+# ─── GET ALL INCLUSIONS ─────────────────────────────
+@login_required(login_url='/')
+def get_all_inclusions(request):
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    inclusions = list(Inclusion.objects.values('id', 'name'))
+    return JsonResponse(inclusions, safe=False)
+
+
+# ─── GET ALL APPLIANCES ─────────────────────────────
+@login_required(login_url='/')
+def get_all_appliances(request):
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    appliances = list(Appliance.objects.values('id', 'name'))
+    return JsonResponse(appliances, safe=False)
+
+
+# ─── GET INCLUSIONS AND APPLIANCES ───────────────────
+@login_required(login_url='/')
+def get_room_features(request):
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    room_id = request.GET.get('room_id')
+    if room_id:
+        try:
+            room = Room.objects.get(id=room_id)
+            inclusions = list(room.dynamic_inclusions.values('id', 'name'))
+            appliances = list(room.dynamic_appliances.values('id', 'name'))
+            
+            return JsonResponse({
+                'inclusions': inclusions,
+                'appliances': appliances
+            })
+        except Room.DoesNotExist:
+            return JsonResponse({'error': 'Room not found'}, status=404)
+    
+    return JsonResponse({'error': 'Room ID is required'}, status=400)
+
+
+# ─── MANAGE INCLUSIONS AND APPLIANCES ───────────────────
+@login_required(login_url='/')
+def manage_features(request):
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+    
+    inclusions = Inclusion.objects.all().order_by('name')
+    appliances = Appliance.objects.all().order_by('name')
+    
+    return render(request, 'admin/manage_features.html', {
+        'inclusions': inclusions,
+        'appliances': appliances
+    })
+
+
+# ─── ADD INCLUSION (MANAGEMENT) ─────────────────────────
+@login_required(login_url='/')
+def add_inclusion_management(request):
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        if name:
+            inclusion, created = Inclusion.objects.get_or_create(name=name)
+            if created:
+                return JsonResponse({
+                    'success': True, 
+                    'id': inclusion.id, 
+                    'name': inclusion.name,
+                    'created_at': inclusion.created_at.strftime('%Y-%m-%d %H:%M')
+                })
+            else:
+                return JsonResponse({'error': 'Inclusion already exists'}, status=400)
+        else:
+            return JsonResponse({'error': 'Name is required'}, status=400)
+    
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+
+# ─── EDIT INCLUSION ───────────────────────────────────
+@login_required(login_url='/')
+def edit_inclusion(request, inclusion_id):
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    try:
+        inclusion = Inclusion.objects.get(id=inclusion_id)
+    except Inclusion.DoesNotExist:
+        return JsonResponse({'error': 'Inclusion not found'}, status=404)
+    
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        if name:
+            # Check if name already exists (excluding current inclusion)
+            if Inclusion.objects.exclude(id=inclusion_id).filter(name=name).exists():
+                return JsonResponse({'error': 'Inclusion with this name already exists'}, status=400)
+            
+            inclusion.name = name
+            inclusion.save()
+            return JsonResponse({
+                'success': True, 
+                'name': inclusion.name,
+                'updated_at': inclusion.created_at.strftime('%Y-%m-%d %H:%M')
+            })
+        else:
+            return JsonResponse({'error': 'Name is required'}, status=400)
+    
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+
+# ─── DELETE INCLUSION ─────────────────────────────────
+@login_required(login_url='/')
+def delete_inclusion(request, inclusion_id):
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    try:
+        inclusion = Inclusion.objects.get(id=inclusion_id)
+        inclusion.delete()
+        return JsonResponse({'success': True})
+    except Inclusion.DoesNotExist:
+        return JsonResponse({'error': 'Inclusion not found'}, status=404)
+
+
+# ─── ADD APPLIANCE (MANAGEMENT) ─────────────────────────
+@login_required(login_url='/')
+def add_appliance_management(request):
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        if name:
+            appliance, created = Appliance.objects.get_or_create(name=name)
+            if created:
+                return JsonResponse({
+                    'success': True, 
+                    'id': appliance.id, 
+                    'name': appliance.name,
+                    'created_at': appliance.created_at.strftime('%Y-%m-%d %H:%M')
+                })
+            else:
+                return JsonResponse({'error': 'Appliance already exists'}, status=400)
+        else:
+            return JsonResponse({'error': 'Name is required'}, status=400)
+    
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+
+# ─── EDIT APPLIANCE ────────────────────────────────────
+@login_required(login_url='/')
+def edit_appliance(request, appliance_id):
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    try:
+        appliance = Appliance.objects.get(id=appliance_id)
+    except Appliance.DoesNotExist:
+        return JsonResponse({'error': 'Appliance not found'}, status=404)
+    
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        if name:
+            # Check if name already exists (excluding current appliance)
+            if Appliance.objects.exclude(id=appliance_id).filter(name=name).exists():
+                return JsonResponse({'error': 'Appliance with this name already exists'}, status=400)
+            
+            appliance.name = name
+            appliance.save()
+            return JsonResponse({
+                'success': True, 
+                'name': appliance.name,
+                'updated_at': appliance.created_at.strftime('%Y-%m-%d %H:%M')
+            })
+        else:
+            return JsonResponse({'error': 'Name is required'}, status=400)
+    
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+
+# ─── DELETE APPLIANCE ─────────────────────────────────
+@login_required(login_url='/')
+def delete_appliance(request, appliance_id):
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    try:
+        appliance = Appliance.objects.get(id=appliance_id)
+        appliance.delete()
+        return JsonResponse({'success': True})
+    except Appliance.DoesNotExist:
+        return JsonResponse({'error': 'Appliance not found'}, status=404)
 
 
 # ─── LOGOUT ──────────────────────────────────────────

@@ -1,0 +1,486 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Manage Features{% endblock %}
+{% block page_title %}Manage Features{% endblock %}
+
+{% block content %}
+
+<!-- ADD INCLUSION MODAL -->
+<div class="modal fade" id="addInclusionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle"></i> Add Inclusion
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Inclusion Name</label>
+                    <input type="text" class="form-control" id="newInclusionName" placeholder="e.g., Parking, Kitchen Access">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="addInclusion()">Add Inclusion</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT INCLUSION MODAL -->
+<div class="modal fade" id="editInclusionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil"></i> Edit Inclusion
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editInclusionId">
+                <div class="mb-3">
+                    <label class="form-label">Inclusion Name</label>
+                    <input type="text" class="form-control" id="editInclusionName">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="updateInclusion()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ADD APPLIANCE MODAL -->
+<div class="modal fade" id="addApplianceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle"></i> Add Appliance
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Appliance Name</label>
+                    <input type="text" class="form-control" id="newApplianceName" placeholder="e.g., Microwave, Water Heater">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="addAppliance()">Add Appliance</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT APPLIANCE MODAL -->
+<div class="modal fade" id="editApplianceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil"></i> Edit Appliance
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editApplianceId">
+                <div class="mb-3">
+                    <label class="form-label">Appliance Name</label>
+                    <input type="text" class="form-control" id="editApplianceName">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="updateAppliance()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- HEADER -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h5 class="fw-bold mb-0">Manage Features</h5>
+        <small class="text-muted">Add, edit, and delete room inclusions and appliances</small>
+    </div>
+</div>
+
+<!-- INCLUSIONS SECTION -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-light">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="bi bi-check2-square text-primary"></i> Inclusions
+                    </h6>
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addInclusionModal">
+                        <i class="bi bi-plus-circle"></i> Add Inclusion
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if inclusions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for inclusion in inclusions %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-light text-dark">{{ inclusion.name }}</span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ inclusion.created_at|date:"Y-m-d H:i" }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button type="button" class="btn btn-outline-primary btn-sm" 
+                                                    onclick="openEditInclusionModal({{ inclusion.id }}, '{{ inclusion.name }}')">
+                                                <i class="bi bi-pencil"></i> Edit
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger btn-sm" 
+                                                    onclick="deleteInclusion({{ inclusion.id }}, '{{ inclusion.name }}')">
+                                                <i class="bi bi-trash"></i> Delete
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-check2-square" style="font-size:48px; color:#ddd;"></i>
+                        <p class="text-muted mt-3">No inclusions yet. Add your first inclusion!</p>
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addInclusionModal">
+                            <i class="bi bi-plus-circle"></i> Add Inclusion
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- APPLIANCES SECTION -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-light">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="bi bi-plug text-success"></i> Appliances
+                    </h6>
+                    <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addApplianceModal">
+                        <i class="bi bi-plus-circle"></i> Add Appliance
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if appliances %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appliance in appliances %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-light text-dark">{{ appliance.name }}</span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ appliance.created_at|date:"Y-m-d H:i" }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button type="button" class="btn btn-outline-primary btn-sm" 
+                                                    onclick="openEditApplianceModal({{ appliance.id }}, '{{ appliance.name }}')">
+                                                <i class="bi bi-pencil"></i> Edit
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger btn-sm" 
+                                                    onclick="deleteAppliance({{ appliance.id }}, '{{ appliance.name }}')">
+                                                <i class="bi bi-trash"></i> Delete
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-plug" style="font-size:48px; color:#ddd;"></i>
+                        <p class="text-muted mt-3">No appliances yet. Add your first appliance!</p>
+                        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addApplianceModal">
+                            <i class="bi bi-plus-circle"></i> Add Appliance
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Get CSRF token
+function getCsrfToken() {
+    let token = getCookie('csrftoken');
+    if (!token) {
+        const metaTag = document.querySelector('meta[name="csrf-token"]');
+        if (metaTag) {
+            token = metaTag.getAttribute('content');
+        }
+    }
+    if (!token) {
+        const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+        if (input) {
+            token = input.value;
+        }
+    }
+    return token;
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Add Inclusion
+async function addInclusion() {
+    const name = document.getElementById('newInclusionName').value.trim();
+    
+    if (!name) {
+        alert('Please enter an inclusion name');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/add-inclusion-management/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: `name=${encodeURIComponent(name)}`
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Close modal and refresh page
+            bootstrap.Modal.getInstance(document.getElementById('addInclusionModal')).hide();
+            location.reload();
+        } else {
+            alert(result.error || 'Failed to add inclusion');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to add inclusion');
+    }
+}
+
+// Edit Inclusion
+function openEditInclusionModal(id, name) {
+    document.getElementById('editInclusionId').value = id;
+    document.getElementById('editInclusionName').value = name;
+    new bootstrap.Modal(document.getElementById('editInclusionModal')).show();
+}
+
+async function updateInclusion() {
+    const id = document.getElementById('editInclusionId').value;
+    const name = document.getElementById('editInclusionName').value.trim();
+    
+    if (!name) {
+        alert('Please enter an inclusion name');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/edit-inclusion/${id}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: `name=${encodeURIComponent(name)}`
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Close modal and refresh page
+            bootstrap.Modal.getInstance(document.getElementById('editInclusionModal')).hide();
+            location.reload();
+        } else {
+            alert(result.error || 'Failed to update inclusion');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to update inclusion');
+    }
+}
+
+// Delete Inclusion
+async function deleteInclusion(id, name) {
+    if (!confirm(`Are you sure you want to delete "${name}"? This will remove it from all rooms that use it.`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/delete-inclusion/${id}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCsrfToken()
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            location.reload();
+        } else {
+            alert(result.error || 'Failed to delete inclusion');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to delete inclusion');
+    }
+}
+
+// Add Appliance
+async function addAppliance() {
+    const name = document.getElementById('newApplianceName').value.trim();
+    
+    if (!name) {
+        alert('Please enter an appliance name');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/add-appliance-management/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: `name=${encodeURIComponent(name)}`
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Close modal and refresh page
+            bootstrap.Modal.getInstance(document.getElementById('addApplianceModal')).hide();
+            location.reload();
+        } else {
+            alert(result.error || 'Failed to add appliance');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to add appliance');
+    }
+}
+
+// Edit Appliance
+function openEditApplianceModal(id, name) {
+    document.getElementById('editApplianceId').value = id;
+    document.getElementById('editApplianceName').value = name;
+    new bootstrap.Modal(document.getElementById('editApplianceModal')).show();
+}
+
+async function updateAppliance() {
+    const id = document.getElementById('editApplianceId').value;
+    const name = document.getElementById('editApplianceName').value.trim();
+    
+    if (!name) {
+        alert('Please enter an appliance name');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/edit-appliance/${id}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: `name=${encodeURIComponent(name)}`
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Close modal and refresh page
+            bootstrap.Modal.getInstance(document.getElementById('editApplianceModal')).hide();
+            location.reload();
+        } else {
+            alert(result.error || 'Failed to update appliance');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to update appliance');
+    }
+}
+
+// Delete Appliance
+async function deleteAppliance(id, name) {
+    if (!confirm(`Are you sure you want to delete "${name}"? This will remove it from all rooms that use it.`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/delete-appliance/${id}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCsrfToken()
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            location.reload();
+        } else {
+            alert(result.error || 'Failed to delete appliance');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to delete appliance');
+    }
+}
+</script>
+
+{% endblock %}

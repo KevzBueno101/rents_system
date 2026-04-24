@@ -5,7 +5,12 @@ A Django-based boarding house management system for managing tenants, rooms, bil
 ## Current Status: **Production Ready** v2.0
 
 **Latest Updates (April 24, 2026):**
-- ✅ Reorganized static files structure (centralized JS/CSS to root `static/` directory)
+- ✅ **Dynamic Room Features System** - Added flexible inclusions and appliances management
+- ✅ **Room Feature Management Page** - Centralized interface for managing room features
+- ✅ **Edit Modal Enhancements** - Add/remove inclusions and appliances directly from room edit
+- ✅ **Real-time Feature Updates** - Dynamic addition and removal of room features
+- ✅ **Feature Management CRUD** - Complete create, read, update, delete operations
+- ✅ **Reorganized static files structure** (centralized JS/CSS to root `static/` directory)
 - ✅ Implemented Django `staticfiles/` with cache-busting (hash versioning)
 - ✅ Secured `.env` file - removed from git tracking, added to `.gitignore`
 - ✅ Created `.env.example` template for configuration reference
@@ -129,6 +134,20 @@ rents_system/
 | created_by_id | FK | → auth_user (Superadmin) |
 | created_at | DATETIME | Account creation date |
 
+### `accounts_inclusion`
+| Field | Type | Description |
+|---|---|---|
+| id | INT | Primary key |
+| name | VARCHAR | Inclusion name (unique) |
+| created_at | DATETIME | Creation timestamp |
+
+### `accounts_appliance`
+| Field | Type | Description |
+|---|---|---|
+| id | INT | Primary key |
+| name | VARCHAR | Appliance name (unique) |
+| created_at | DATETIME | Creation timestamp |
+
 ### `accounts_room`
 | Field | Type | Description |
 |---|---|---|
@@ -149,6 +168,8 @@ rents_system/
 | has_ref | BOOL | Has refrigerator |
 | has_tv | BOOL | Has TV |
 | has_wifi | BOOL | Has WiFi |
+| dynamic_inclusions | M2M | → accounts_inclusion |
+| dynamic_appliances | M2M | → accounts_appliance |
 
 ### `accounts_bill`
 | Field | Type | Description |
@@ -211,6 +232,17 @@ rents_system/
 - **Room Details Modal**: View complete room information
 - **Vacant Badges**: Display available bed count
 - **Room Codes**: Format like "Room 1-A", "Room 2-B"
+
+### Dynamic Features Management
+- **Centralized Management**: Dedicated "Features" page for managing inclusions and appliances
+- **Flexible System**: Add custom inclusions (Water, Internet, Parking, etc.) and appliances (Microwave, Water Heater, etc.)
+- **Room Integration**: Assign features to rooms via edit modal with checkboxes
+- **Real-time Updates**: Add/remove features directly from room edit modal
+- **Quick Add**: "Add" buttons in room edit modal for on-the-fly feature creation
+- **Remove Functionality**: 'x' buttons to remove features from rooms instantly
+- **CRUD Operations**: Complete create, read, update, delete for all features
+- **Data Persistence**: Features saved to database and available across all rooms
+- **Duplicate Prevention**: Smart handling of existing features
 
 ### Tenant Management
 - View all tenants with search functionality
@@ -325,12 +357,18 @@ python manage.py collectstatic --noinput
 python manage.py createsuperuser
 ```
 
-### 8. Run the server
+### 8. Seed Initial Features (Optional)
+```bash
+python manage.py seed_inclusions_appliances
+```
+This creates default inclusions (Water, Electricity, Internet, etc.) and appliances (Fan, Air Conditioner, Microwave, etc.)
+
+### 9. Run the server
 ```bash
 python manage.py runserver
 ```
 
-### 9. Open in browser
+### 10. Open in browser
 ```
 http://127.0.0.1:8000/
 ```
