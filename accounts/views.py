@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import PasswordResetView, PasswordResetConfirmView
 from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm
 from django.contrib import messages
-from django.db import models
+from django.db import models, connection
 from .models import TenantProfile, Room, Bill, MaintenanceReport, Violation, AdminProfile
 
 
@@ -18,6 +18,7 @@ def get_dashboard_context():
     total_tenants = TenantProfile.objects.count()
     total_beds    = sum(r.capacity for r in all_rooms)
     occupied_beds = sum(r.occupied_beds() for r in all_rooms)
+    
 
     occupied_rooms = [r for r in all_rooms if r.occupied_beds() > 0]
     if len(occupied_rooms) < 3:
@@ -35,6 +36,7 @@ def get_dashboard_context():
         'vacant_beds'   : total_beds - occupied_beds,
         'occupancy_rate': (occupied_beds / total_beds * 100) if total_beds > 0 else 0,
         'recent_rooms'  : occupied_rooms[:3],
+        'total_rooms': len(all_rooms),
     }
 
 
@@ -525,10 +527,8 @@ def edit_profile(request):
         if photo:
             admin_profile.photo = photo
         admin_profile.save()
-
         return redirect('admin_dashboard')
 
-    return redirect('admin_dashboard')
 
 
 # ─── PASSWORD RESET VIEWS ─────────────────────────────
@@ -537,6 +537,7 @@ class CustomPasswordResetView(PasswordResetView):
     email_template_name = 'registration/password_reset_email.html'
     subject_template_name = 'registration/password_reset_subject.txt'
     success_url = '/password-reset/done/'
+    form_class = PasswordResetForm
     
     def form_valid(self, form):
         # Check if user exists before sending email
@@ -548,20 +549,25 @@ class CustomPasswordResetView(PasswordResetView):
             messages.info(self.request, 'If an account with that email exists, a password reset link has been sent.')
             return super().form_valid(form)
         
-        # Check if user has appropriate profile (admin or tenant)
-        for user in users:
-            if user.is_staff:
-                try:
-                    AdminProfile.objects.get(user=user)
-                except AdminProfile.DoesNotExist:
-                    continue
-            else:
-                try:
-                    TenantProfile.objects.get(user=user)
-                except TenantProfile.DoesNotExist:
-                    continue
-        
         return super().form_valid(form)
+    
+    def send_mail(self, subject_template_name, email_template_name, context, from_email, to_email, html_email_template_name=None):
+        """
+        Override send_mail to properly handle HTML emails
+        """
+        from django.template.loader import render_to_string
+        from django.core.mail import EmailMultiAlternatives
+        
+        subject = render_to_string(subject_template_name, context)
+        subject = ''.join(subject.splitlines())
+        
+        # Render HTML email
+        html_email = render_to_string(email_template_name, context)
+        
+        # Create email with HTML content
+        email_message = EmailMultiAlternatives(subject, '', from_email, [to_email])
+        email_message.attach_alternative(html_email, "text/html")
+        email_message.send()
 
 
 class CustomPasswordResetConfirmView(PasswordResetConfirmView):

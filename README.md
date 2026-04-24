@@ -43,7 +43,7 @@ rents_system/
 │   └── css/
 │       ├── dashboard.css
 │       ├── avatar.css
-│       └── modal-fix.css
+│       └── modal-fix.css   
 │
 ├── staticfiles/                  ← AUTO-GENERATED (NOT in repo)
 │   ├── js/
