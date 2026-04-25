@@ -7,7 +7,11 @@
 
 {% block content %}
 
-<!-- ADD ROOM MODAL -->
+<!-- ══════════════════════════════════════════════════
+     ADD ROOM MODAL
+     Containers:  dynamicInclusions  /  dynamicAppliances
+     Buttons:     addInclusionBtnAdd / addApplianceBtnAdd
+══════════════════════════════════════════════════ -->
 <div class="modal fade" id="addRoomModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
@@ -85,40 +89,6 @@
 
                     <!-- INCLUSIONS -->
                     <div class="mb-2">
-                        <label class="form-label text-muted mb-1" style="font-size:12px;">
-                            <i class="bi bi-check2-square"></i> Inclusions
-                        </label>
-                        <div class="row g-1">
-                            <div class="col-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="has_sink" id="addSink">
-                                    <label class="form-check-label" style="font-size:13px;" for="addSink">Sink</label>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="water_included" id="addWater">
-                                    <label class="form-check-label" style="font-size:13px;" for="addWater">Water</label>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="electricity_included" id="addElec">
-                                    <label class="form-check-label" style="font-size:13px;" for="addElec">Electricity</label>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="has_wifi" id="addWifi">
-                                    <label class="form-check-label" style="font-size:13px;" for="addWifi">WiFi</label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    
-                    <!-- INCLUSIONS -->
-                    <div class="mb-2">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <label class="form-label text-muted mb-0" style="font-size:12px;">
                                 <i class="bi bi-check2-square"></i> Inclusions
@@ -127,7 +97,6 @@
                                 <i class="bi bi-plus"></i> Add
                             </button>
                         </div>
-                        
                         <!-- Standard Inclusions -->
                         <div class="row g-1 mb-2">
                             <div class="col-6">
@@ -155,14 +124,51 @@
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Dynamic Inclusions -->
-                        <div id="dynamicInclusions" class="row g-1">
-                            <!-- Dynamic inclusions will be added here -->
-                        </div>
+                        <!-- Dynamic Inclusions (Add Room) — unique ID -->
+                        <div id="dynamicInclusions" class="row g-1"></div>
                     </div>
 
-                    
+                    <!-- APPLIANCES -->
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label text-muted mb-0" style="font-size:12px;">
+                                <i class="bi bi-plug"></i> Appliances
+                            </label>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="addApplianceBtnAdd" style="font-size:11px;">
+                                <i class="bi bi-plus"></i> Add
+                            </button>
+                        </div>
+                        <!-- Standard Appliances -->
+                        <div class="row g-1 mb-2">
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="has_fan" id="addFan">
+                                    <label class="form-check-label" style="font-size:13px;" for="addFan">Fan</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="has_aircon" id="addAircon">
+                                    <label class="form-check-label" style="font-size:13px;" for="addAircon">Aircon</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="has_ref" id="addRef">
+                                    <label class="form-check-label" style="font-size:13px;" for="addRef">Refrigerator</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="has_tv" id="addTv">
+                                    <label class="form-check-label" style="font-size:13px;" for="addTv">TV</label>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Dynamic Appliances (Add Room) — unique ID -->
+                        <div id="dynamicAppliances" class="row g-1"></div>
+                    </div>
+
                     <!-- PHOTO -->
                     <div class="mb-2">
                         <label class="form-label text-muted" style="font-size:13px;">
@@ -197,7 +203,11 @@
     </div>
 </div>
 
-<!-- EDIT ROOM MODAL -->
+<!-- ══════════════════════════════════════════════════
+     EDIT ROOM MODAL
+     Containers:  dynamicInclusionsEdit  /  dynamicAppliancesEdit
+     Buttons:     addInclusionBtn        / addApplianceBtn
+══════════════════════════════════════════════════ -->
 <div class="modal fade" id="editRoomModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
@@ -278,7 +288,6 @@
                                 <i class="bi bi-plus"></i> Add
                             </button>
                         </div>
-                        
                         <!-- Standard Inclusions -->
                         <div class="row g-1 mb-2">
                             <div class="col-6">
@@ -306,11 +315,8 @@
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Dynamic Inclusions -->
-                        <div id="dynamicInclusions" class="row g-1">
-                            <!-- Dynamic inclusions will be added here -->
-                        </div>
+                        <!-- Dynamic Inclusions (Edit Room) — unique ID -->
+                        <div id="dynamicInclusionsEdit" class="row g-1"></div>
                     </div>
 
                     <!-- APPLIANCES -->
@@ -319,11 +325,10 @@
                             <label class="form-label text-muted mb-0" style="font-size:12px;">
                                 <i class="bi bi-plug"></i> Appliances
                             </label>
-                            <button type="button" class="btn btn-sm btn-outline-primary" id="addApplianceBtnAdd" style="font-size:11px;">
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="addApplianceBtn" style="font-size:11px;">
                                 <i class="bi bi-plus"></i> Add
                             </button>
                         </div>
-                        
                         <!-- Standard Appliances -->
                         <div class="row g-1 mb-2">
                             <div class="col-6">
@@ -351,11 +356,8 @@
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Dynamic Appliances -->
-                        <div id="dynamicAppliances" class="row g-1">
-                            <!-- Dynamic appliances will be added here -->
-                        </div>
+                        <!-- Dynamic Appliances (Edit Room) — unique ID -->
+                        <div id="dynamicAppliancesEdit" class="row g-1"></div>
                     </div>
 
                     <!-- PHOTO -->
@@ -388,9 +390,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-0">
-
                 <div id="infoRoomPhoto"></div>
-
                 <div class="p-3">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span class="text-muted">Status</span>
@@ -420,21 +420,16 @@
                         <span class="text-muted"><i class="bi bi-moon"></i> Bed Type</span>
                         <span id="infoBedType"></span>
                     </div>
-
                     <hr>
-
                     <p class="text-muted mb-2" style="font-size:13px;">
                         <i class="bi bi-check2-square"></i> Inclusions & Appliances:
                     </p>
                     <div id="infoInclusions" class="mb-3"></div>
-
                     <hr>
-
                     <p class="text-muted mb-2" style="font-size:13px;">
                         <i class="bi bi-person"></i> Tenants in this room:
                     </p>
                     <div id="infoTenants"></div>
-
                 </div>
             </div>
         </div>
@@ -462,12 +457,10 @@
         <small class="text-muted">{{ rooms.count }} room{{ rooms.count|pluralize }} total</small>
     </div>
     <div class="d-flex gap-2">
-        <!-- Add Room Button -->
         <button class="btn btn-dark btn-sm" data-bs-toggle="modal" data-bs-target="#addRoomModal">
             <i class="bi bi-plus-circle"></i>
             <span class="d-none d-md-inline">Add Room</span>
         </button>
-        <!-- Sort Controls -->
         <div class="dropdown">
             <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
                 <i class="bi bi-sort-down"></i> Sort by
@@ -495,7 +488,6 @@
                 </a></li>
             </ul>
         </div>
-        <!-- Inclusions Button -->
         <a href="{% url 'manage_features' %}" class="btn btn-outline-primary btn-sm">
             <i class="bi bi-gear"></i>
             <span class="d-none d-md-inline">Inclusions</span>
@@ -532,7 +524,6 @@
             </div>
 
             <div class="card-body pt-3">
-
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h6 class="fw-bold mb-0">{{ room.room_code }}</h6>
                     <button class="btn btn-sm btn-link p-0 text-muted info-room-btn"
@@ -595,7 +586,6 @@
                         No tenants yet
                     {% endfor %}
                 </div>
-
             </div>
 
             <div class="card-footer bg-white border-0 pt-0 pb-3 px-3">
@@ -631,7 +621,7 @@
 
         </div>
     </div>
-    {% endfor %}
+{% endfor %}
 </div>
 
 {% else %}

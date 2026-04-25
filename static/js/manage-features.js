@@ -55,15 +55,56 @@ async function addInclusion() {
         const result = await response.json();
         
         if (result.success) {
-            // Close modal and refresh page
+            // Close modal and update UI without reload
             bootstrap.Modal.getInstance(document.getElementById('addInclusionModal')).hide();
-            location.reload();
+            // Add to the list
+            addInclusionToList(result.id, result.name);
+            // Clear input
+            document.getElementById('newInclusionName').value = '';
+            // Sync with room modals if they're open
+            syncWithRoomModals('inclusion', result.id, result.name);
         } else {
             alert(result.error || 'Failed to add inclusion');
         }
     } catch (error) {
         console.error('Error:', error);
         alert('Failed to add inclusion');
+    }
+}
+
+// Add inclusion to the list UI
+function addInclusionToList(id, name) {
+    const list = document.getElementById('inclusionsList');
+    if (!list) return;
+    
+    const row = document.createElement('div');
+    row.className = 'd-flex justify-content-between align-items-center mb-2 p-2 border rounded';
+    row.id = `inclusion-${id}`;
+    row.innerHTML = `
+        <span>${name}</span>
+        <div>
+            <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditInclusionModal(${id}, '${name}')">
+                <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteInclusion(${id}, '${name}')">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `;
+    list.appendChild(row);
+}
+
+// Sync with room modals
+function syncWithRoomModals(type, id, name) {
+    // Check if room-features.js is loaded and has the synchronization function
+    if (typeof synchronizeFeatureAcrossModals === 'function') {
+        // Try to sync with both add and edit modals
+        try {
+            synchronizeFeatureAcrossModals(type, id, name, 'add');
+            synchronizeFeatureAcrossModals(type, id, name, 'edit');
+        } catch (e) {
+            console.log('Room modals not open or sync function not available');
+        }
     }
 }
 
@@ -96,9 +137,13 @@ async function updateInclusion() {
         const result = await response.json();
         
         if (result.success) {
-            // Close modal and refresh page
+            // Close modal and update UI without reload
             bootstrap.Modal.getInstance(document.getElementById('editInclusionModal')).hide();
-            location.reload();
+            // Update the list item
+            const listItem = document.getElementById(`inclusion-${id}`);
+            if (listItem) {
+                listItem.querySelector('span').textContent = name;
+            }
         } else {
             alert(result.error || 'Failed to update inclusion');
         }
@@ -126,7 +171,11 @@ async function deleteInclusion(id, name) {
         const result = await response.json();
         
         if (result.success) {
-            location.reload();
+            // Remove from UI without reload
+            const listItem = document.getElementById(`inclusion-${id}`);
+            if (listItem) {
+                listItem.remove();
+            }
         } else {
             alert(result.error || 'Failed to delete inclusion');
         }
@@ -158,9 +207,14 @@ async function addAppliance() {
         const result = await response.json();
         
         if (result.success) {
-            // Close modal and refresh page
+            // Close modal and update UI without reload
             bootstrap.Modal.getInstance(document.getElementById('addApplianceModal')).hide();
-            location.reload();
+            // Add to the list
+            addApplianceToList(result.id, result.name);
+            // Clear input
+            document.getElementById('newApplianceName').value = '';
+            // Sync with room modals if they're open
+            syncWithRoomModals('appliance', result.id, result.name);
         } else {
             alert(result.error || 'Failed to add appliance');
         }
@@ -168,6 +222,28 @@ async function addAppliance() {
         console.error('Error:', error);
         alert('Failed to add appliance');
     }
+}
+
+// Add appliance to the list UI
+function addApplianceToList(id, name) {
+    const list = document.getElementById('appliancesList');
+    if (!list) return;
+    
+    const row = document.createElement('div');
+    row.className = 'd-flex justify-content-between align-items-center mb-2 p-2 border rounded';
+    row.id = `appliance-${id}`;
+    row.innerHTML = `
+        <span>${name}</span>
+        <div>
+            <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditApplianceModal(${id}, '${name}')">
+                <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteAppliance(${id}, '${name}')">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `;
+    list.appendChild(row);
 }
 
 // Edit Appliance
@@ -199,9 +275,13 @@ async function updateAppliance() {
         const result = await response.json();
         
         if (result.success) {
-            // Close modal and refresh page
+            // Close modal and update UI without reload
             bootstrap.Modal.getInstance(document.getElementById('editApplianceModal')).hide();
-            location.reload();
+            // Update the list item
+            const listItem = document.getElementById(`appliance-${id}`);
+            if (listItem) {
+                listItem.querySelector('span').textContent = name;
+            }
         } else {
             alert(result.error || 'Failed to update appliance');
         }
@@ -229,7 +309,11 @@ async function deleteAppliance(id, name) {
         const result = await response.json();
         
         if (result.success) {
-            location.reload();
+            // Remove from UI without reload
+            const listItem = document.getElementById(`appliance-${id}`);
+            if (listItem) {
+                listItem.remove();
+            }
         } else {
             alert(result.error || 'Failed to delete appliance');
         }

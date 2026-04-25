@@ -1,410 +1,322 @@
-// Dynamic Room Features Management JavaScript
+// ══════════════════════════════════════════════════════════════
+//  room-features.js  —  fully corrected
+//
+//  ID MAP (must match room_list.html exactly):
+//
+//  Add Room modal:
+//    containers : #dynamicInclusions      #dynamicAppliances
+//    buttons    : #addInclusionBtnAdd     #addApplianceBtnAdd
+//    checkbox   :  add_inclusion_{id}      add_appliance_{id}
+//
+//  Edit Room modal:
+//    containers : #dynamicInclusionsEdit  #dynamicAppliancesEdit
+//    buttons    : #addInclusionBtn        #addApplianceBtn
+//    checkbox   :  edit_inclusion_{id}     edit_appliance_{id}
+// ══════════════════════════════════════════════════════════════
+
 let currentRoomId = null;
-let allInclusions = [];
-let allAppliances = [];
+let allInclusions  = [];
+let allAppliances  = [];
 let roomInclusions = [];
 let roomAppliances = [];
+let activeModal    = 'edit'; // 'add' or 'edit'
 
-// Load available inclusions and appliances
+// ── LOAD ALL FEATURES FROM BACKEND ───────────────────────────────────────────
 async function loadAvailableFeatures() {
     try {
-        // Get all available inclusions and appliances
-        const inclusionsResponse = await fetch('/get-all-inclusions/');
-        const appliancesResponse = await fetch('/get-all-appliances/');
-        
-        if (inclusionsResponse.ok) {
-            allInclusions = await inclusionsResponse.json();
-        }
-        if (appliancesResponse.ok) {
-            allAppliances = await appliancesResponse.json();
-        }
-    } catch (error) {
-        console.error('Error loading features:', error);
+        const [iRes, aRes] = await Promise.all([
+            fetch('/get-all-inclusions/'),
+            fetch('/get-all-appliances/'),
+        ]);
+        if (iRes.ok) allInclusions = await iRes.json();
+        if (aRes.ok) allAppliances = await aRes.json();
+    } catch (e) {
+        console.error('loadAvailableFeatures error:', e);
     }
 }
 
-// Add inclusion functionality for Edit Room modal
-document.getElementById('addInclusionBtn')?.addEventListener('click', function() {
-    const modal = createAddFeatureModal('inclusion');
-    document.body.appendChild(modal);
-    new bootstrap.Modal(modal).show();
+// ── BUTTON LISTENERS ─────────────────────────────────────────────────────────
+
+document.getElementById('addInclusionBtnAdd')?.addEventListener('click', function () {
+    activeModal = 'add';
+    openMiniModal('inclusion');
 });
 
-// Add appliance functionality for Edit Room modal
-document.getElementById('addApplianceBtn')?.addEventListener('click', function() {
-    const modal = createAddFeatureModal('appliance');
-    document.body.appendChild(modal);
-    new bootstrap.Modal(modal).show();
+document.getElementById('addApplianceBtnAdd')?.addEventListener('click', function () {
+    activeModal = 'add';
+    openMiniModal('appliance');
 });
 
-// Add inclusion functionality for Add Room modal
-document.getElementById('addInclusionBtnAdd')?.addEventListener('click', function() {
-    const modal = createAddFeatureModal('inclusion');
-    document.body.appendChild(modal);
-    new bootstrap.Modal(modal).show();
+document.getElementById('addInclusionBtn')?.addEventListener('click', function () {
+    activeModal = 'edit';
+    openMiniModal('inclusion');
 });
 
-// Add appliance functionality for Add Room modal
-document.getElementById('addApplianceBtnAdd')?.addEventListener('click', function() {
-    const modal = createAddFeatureModal('appliance');
-    document.body.appendChild(modal);
-    new bootstrap.Modal(modal).show();
+document.getElementById('addApplianceBtn')?.addEventListener('click', function () {
+    activeModal = 'edit';
+    openMiniModal('appliance');
 });
 
-// Create modal for adding new feature
-function createAddFeatureModal(type) {
-    const modalId = `addFeatureModal_${type}_${Date.now()}`;
-    const inputId = `newFeatureName_${type}_${Date.now()}`;
-    const modalDiv = document.createElement('div');
-    modalDiv.className = 'modal fade';
-    modalDiv.id = modalId;
-    modalDiv.innerHTML = `
+// ── MINI-MODAL ────────────────────────────────────────────────────────────────
+function openMiniModal(type) {
+    const existing = document.getElementById('roomFeatureMiniModal');
+    if (existing) existing.remove();
+
+    const inputId = `miniFeatureInput_${Date.now()}`;
+    const div = document.createElement('div');
+    div.className = 'modal fade';
+    div.id = 'roomFeatureMiniModal';
+    div.innerHTML = `
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <i class="bi bi-plus-circle"></i> Add New ${type.charAt(0).toUpperCase() + type.slice(1)}
+                        <i class="bi bi-plus-circle"></i>
+                        Add New ${type === 'inclusion' ? 'Inclusion' : 'Appliance'}
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Name</label>
-                        <input type="text" class="form-control" id="${inputId}" placeholder="Enter ${type} name">
-                        <div class="form-text">e.g., ${type === 'inclusion' ? 'Parking, Kitchen Access, Cable TV' : 'Microwave, Water Heater, Rice Cooker'}</div>
-                    </div>
+                    <label class="form-label">Name</label>
+                    <input type="text" class="form-control" id="${inputId}"
+                           placeholder="${type === 'inclusion' ? 'e.g. Parking, Kitchen Access' : 'e.g. Microwave, Water Heater'}">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="addNewFeature('${type}', '${inputId}')">Add ${type.charAt(0).toUpperCase() + type.slice(1)}</button>
+                    <button type="button" class="btn btn-primary"
+                            onclick="saveNewFeature('${type}', '${inputId}')">
+                        Add ${type === 'inclusion' ? 'Inclusion' : 'Appliance'}
+                    </button>
                 </div>
             </div>
-        </div>
-    `;
-    return modalDiv;
+        </div>`;
+    document.body.appendChild(div);
+    new bootstrap.Modal(div).show();
+    div.addEventListener('hidden.bs.modal', () => div.remove());
 }
 
-// Add new feature
-async function addNewFeature(type, inputId) {
-    const nameInput = document.getElementById(inputId);
-    const name = nameInput ? nameInput.value.trim() : '';
-    
-    console.log('Adding feature:', type, name);
-    console.log('Input ID:', inputId);
-    console.log('Input element:', nameInput);
-    
-    if (!name) {
-        alert('Please enter a name');
-        return;
-    }
-    
+// ── SAVE NEW FEATURE TO BACKEND ──────────────────────────────────────────────
+async function saveNewFeature(type, inputId) {
+    const input = document.getElementById(inputId);
+    const name  = input ? input.value.trim() : '';
+
+    if (!name) { alert('Please enter a name'); return; }
+
+    const csrf = getCsrfToken();
+    if (!csrf) { alert('Security token missing — please refresh.'); return; }
+
+    const url = type === 'inclusion'
+        ? '/add-inclusion-management/'
+        : '/add-appliance-management/';
+
     try {
-        const url = type === 'inclusion' ? '/add-inclusion-management/' : '/add-appliance-management/';
-        const csrfToken = getCsrfToken();
-        
-        console.log('CSRF Token:', csrfToken);
-        console.log('URL:', url);
-        
-        if (!csrfToken) {
-            console.error('No CSRF token found');
-            alert('Security token not found. Please refresh the page and try again.');
-            return;
-        }
-        
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRFToken': csrfToken
-            },
-            body: `name=${encodeURIComponent(name)}`
+        const res    = await fetch(url, {
+            method : 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': csrf },
+            body   : `name=${encodeURIComponent(name)}`,
         });
-        
-        console.log('Response status:', response.status);
-        
-        const result = await response.json();
-        console.log('Response data:', result);
-        
+        const result = await res.json();
+        const prefix = activeModal === 'add' ? 'add' : 'edit';
+
         if (result.success) {
-            // Add to the appropriate list
             if (type === 'inclusion') {
-                // Check if it's already in the list
-                if (!allInclusions.some(inc => inc.id == result.id)) {
-                    allInclusions.push({id: result.id, name: result.name});
-                }
-                addDynamicInclusion(result.id, result.name);
-                // Check the newly added inclusion
-                document.getElementById(`inclusion_${result.id}`).checked = true;
+                if (!allInclusions.some(i => i.id == result.id))
+                    allInclusions.push({ id: result.id, name: result.name });
             } else {
-                // Check if it's already in the list
-                if (!allAppliances.some(app => app.id == result.id)) {
-                    allAppliances.push({id: result.id, name: result.name});
-                }
-                addDynamicAppliance(result.id, result.name);
-                // Check the newly added appliance
-                document.getElementById(`appliance_${result.id}`).checked = true;
+                if (!allAppliances.some(a => a.id == result.id))
+                    allAppliances.push({ id: result.id, name: result.name });
             }
-            
-            // Close modal
-            const modal = nameInput.closest('.modal');
-            bootstrap.Modal.getInstance(modal).hide();
-            modal.remove();
+            injectFeatureRow(type, result.id, result.name, prefix, true);
+            synchronizeFeatureAcrossModals(type, result.id, result.name, prefix);
+            closeMiniModal();
+
+        } else if (result.error && result.error.toLowerCase().includes('already exists')) {
+            // Feature exists in DB — just show it checked in the current modal
+            if (type === 'inclusion') {
+                const found = allInclusions.find(i => i.name.toLowerCase() === name.toLowerCase());
+                if (found) { injectFeatureRow('inclusion', found.id, found.name, prefix, true); closeMiniModal(); return; }
+            } else {
+                const found = allAppliances.find(a => a.name.toLowerCase() === name.toLowerCase());
+                if (found) { injectFeatureRow('appliance', found.id, found.name, prefix, true); closeMiniModal(); return; }
+            }
+            alert(result.error);
         } else {
-            console.error('Backend error:', result.error);
-            // If the inclusion already exists, try to find and show it
-            if (result.error && result.error.includes('already exists')) {
-                const name = nameInput.value.trim();
-                if (type === 'inclusion') {
-                    const existing = allInclusions.find(inc => inc.name.toLowerCase() === name.toLowerCase());
-                    if (existing) {
-                        addDynamicInclusion(existing.id, existing.name);
-                        document.getElementById(`inclusion_${existing.id}`).checked = true;
-                        // Close modal
-                        const modal = nameInput.closest('.modal');
-                        bootstrap.Modal.getInstance(modal).hide();
-                        modal.remove();
-                        return;
-                    }
-                } else {
-                    const existing = allAppliances.find(app => app.name.toLowerCase() === name.toLowerCase());
-                    if (existing) {
-                        addDynamicAppliance(existing.id, existing.name);
-                        document.getElementById(`appliance_${existing.id}`).checked = true;
-                        // Close modal
-                        const modal = nameInput.closest('.modal');
-                        bootstrap.Modal.getInstance(modal).hide();
-                        modal.remove();
-                        return;
-                    }
-                }
-            }
-            alert(result.error || 'Failed to add ' + type);
+            alert(result.error || `Failed to add ${type}`);
         }
-    } catch (error) {
-        console.error('Network error:', error);
-        alert('Failed to add ' + type + '. Check console for details.');
+    } catch (e) {
+        console.error('saveNewFeature error:', e);
+        alert(`Failed to add ${type}. Check console.`);
     }
 }
 
-// Add dynamic inclusion to the form
-function addDynamicInclusion(id, name) {
-    const container = document.getElementById('dynamicInclusions');
-    const div = document.createElement('div');
-    div.className = 'col-6';
-    
-    // Create the inner structure
-    const innerDiv = document.createElement('div');
-    innerDiv.className = 'd-flex align-items-center';
-    
-    // Create checkbox
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.className = 'form-check-input me-2';
-    checkbox.name = 'dynamic_inclusion_' + id;
-    checkbox.id = 'inclusion_' + id;
-    
-    // Create label
-    const label = document.createElement('label');
-    label.className = 'form-check-label me-2';
-    label.style.fontSize = '13px';
-    label.htmlFor = 'inclusion_' + id;
-    label.textContent = name;
-    
-    // Create remove button
-    const removeBtn = document.createElement('button');
-    removeBtn.type = 'button';
-    removeBtn.className = 'btn btn-sm btn-outline-danger';
-    removeBtn.style.padding = '1px 4px';
-    removeBtn.style.fontSize = '9px';
-    removeBtn.style.lineHeight = '1';
-    removeBtn.innerHTML = '<i class="bi bi-x"></i>';
-    removeBtn.addEventListener('click', function() {
-        removeInclusionFromRoom(id, name);
+function closeMiniModal() {
+    const el = document.getElementById('roomFeatureMiniModal');
+    if (!el) return;
+    const inst = bootstrap.Modal.getInstance(el);
+    if (inst) inst.hide();
+    // hidden.bs.modal listener removes the element
+}
+
+// ── INJECT A CHECKBOX ROW ────────────────────────────────────────────────────
+// Removes only from the modal list — NEVER deletes from the DB / Inclusion Manager.
+function injectFeatureRow(type, id, name, prefix, checked) {
+    const containerMap = {
+        'add-inclusion' : 'dynamicInclusions',
+        'add-appliance' : 'dynamicAppliances',
+        'edit-inclusion': 'dynamicInclusionsEdit',
+        'edit-appliance': 'dynamicAppliancesEdit',
+    };
+    const container = document.getElementById(containerMap[`${prefix}-${type}`]);
+    if (!container) return;
+
+    const checkboxId = `${prefix}_${type}_${id}`;
+
+    // If row already exists just update its checked state
+    const existing = document.getElementById(checkboxId);
+    if (existing) { existing.checked = checked; return; }
+
+    const col     = document.createElement('div');
+    col.className = 'col-6';
+
+    const wrap     = document.createElement('div');
+    wrap.className = 'd-flex align-items-center gap-1';
+
+    const cb       = document.createElement('input');
+    cb.type        = 'checkbox';
+    cb.className   = 'form-check-input';
+    cb.name        = `dynamic_${type}_${id}`;
+    cb.id          = checkboxId;
+    cb.checked     = checked;
+
+    const lbl       = document.createElement('label');
+    lbl.className   = 'form-check-label me-1';
+    lbl.style.fontSize = '13px';
+    lbl.htmlFor     = checkboxId;
+    lbl.textContent = name;
+
+    // ✕ button — removes row from this modal only, does NOT touch DB
+    const rmBtn     = document.createElement('button');
+    rmBtn.type      = 'button';
+    rmBtn.className = 'btn btn-sm btn-outline-danger p-0 d-flex align-items-center justify-content-center';
+    rmBtn.style.cssText = 'width:18px;height:18px;font-size:10px;line-height:1;flex-shrink:0;';
+    rmBtn.innerHTML = '<i class="bi bi-x"></i>';
+    rmBtn.title     = `Remove "${name}" from this room (does not delete from Inclusion Manager)`;
+    rmBtn.addEventListener('click', function () {
+        col.remove();
+        if (type === 'inclusion') roomInclusions = roomInclusions.filter(x => x.id != id);
+        else                      roomAppliances = roomAppliances.filter(x => x.id != id);
     });
-    
-    // Assemble the elements
-    innerDiv.appendChild(checkbox);
-    innerDiv.appendChild(label);
-    innerDiv.appendChild(removeBtn);
-    div.appendChild(innerDiv);
-    container.appendChild(div);
+
+    wrap.appendChild(cb);
+    wrap.appendChild(lbl);
+    wrap.appendChild(rmBtn);
+    col.appendChild(wrap);
+    container.appendChild(col);
 }
 
-// Add dynamic appliance to the form
-function addDynamicAppliance(id, name) {
-    const container = document.getElementById('dynamicAppliances');
-    const div = document.createElement('div');
-    div.className = 'col-6';
-    
-    // Create the inner structure
-    const innerDiv = document.createElement('div');
-    innerDiv.className = 'd-flex align-items-center';
-    
-    // Create checkbox
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.className = 'form-check-input me-2';
-    checkbox.name = 'dynamic_appliance_' + id;
-    checkbox.id = 'appliance_' + id;
-    
-    // Create label
-    const label = document.createElement('label');
-    label.className = 'form-check-label me-2';
-    label.style.fontSize = '13px';
-    label.htmlFor = 'appliance_' + id;
-    label.textContent = name;
-    
-    // Create remove button
-    const removeBtn = document.createElement('button');
-    removeBtn.type = 'button';
-    removeBtn.className = 'btn btn-sm btn-outline-danger';
-    removeBtn.style.padding = '1px 4px';
-    removeBtn.style.fontSize = '9px';
-    removeBtn.style.lineHeight = '1';
-    removeBtn.innerHTML = '<i class="bi bi-x"></i>';
-    removeBtn.addEventListener('click', function() {
-        removeApplianceFromRoom(id, name);
-    });
-    
-    // Assemble the elements
-    innerDiv.appendChild(checkbox);
-    innerDiv.appendChild(label);
-    innerDiv.appendChild(removeBtn);
-    div.appendChild(innerDiv);
-    container.appendChild(div);
-}
+// ── ON PAGE LOAD ──────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async function () {
+    await loadAvailableFeatures();
 
-// Get CSRF token
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
+    // Populate Add Room modal each time it opens
+    const addRoomModalEl = document.getElementById('addRoomModal');
+    if (addRoomModalEl) {
+        addRoomModalEl.addEventListener('show.bs.modal', function () {
+            activeModal = 'add';
+            const incContainer = document.getElementById('dynamicInclusions');
+            const appContainer = document.getElementById('dynamicAppliances');
+            if (incContainer) incContainer.innerHTML = '';
+            if (appContainer) appContainer.innerHTML = '';
+            allInclusions.forEach(i => injectFeatureRow('inclusion', i.id, i.name, 'add', false));
+            allAppliances.forEach(a => injectFeatureRow('appliance', a.id, a.name, 'add', false));
+        });
     }
-    return cookieValue;
-}
 
-// Remove inclusion from room
-function removeInclusionFromRoom(inclusionId, inclusionName) {
-    if (!confirm('Remove "' + inclusionName + '" from this room?')) {
-        return;
-    }
-    
-    // Find and remove the entire element from the modal
-    const checkbox = document.getElementById('inclusion_' + inclusionId);
-    if (checkbox) {
-        // Get the parent div (col-6) and remove it
-        const colDiv = checkbox.closest('.col-6');
-        if (colDiv) {
-            colDiv.remove();
-        }
-    }
-    
-    // Remove from the room's inclusions list
-    roomInclusions = roomInclusions.filter(inc => inc.id != inclusionId);
-    
-    console.log('Removed inclusion ' + inclusionName + ' from room');
-}
-
-// Remove appliance from room
-function removeApplianceFromRoom(applianceId, applianceName) {
-    if (!confirm('Remove "' + applianceName + '" from this room?')) {
-        return;
-    }
-    
-    // Find and remove the entire element from the modal
-    const checkbox = document.getElementById('appliance_' + applianceId);
-    if (checkbox) {
-        // Get the parent div (col-6) and remove it
-        const colDiv = checkbox.closest('.col-6');
-        if (colDiv) {
-            colDiv.remove();
-        }
-    }
-    
-    // Remove from the room's appliances list
-    roomAppliances = roomAppliances.filter(app => app.id != applianceId);
-    
-    console.log('Removed appliance ' + applianceName + ' from room');
-}
-
-// Get CSRF token with fallback
-function getCsrfToken() {
-    // Try to get from cookie first
-    let token = getCookie('csrftoken');
-    
-    // Fallback: try to get from meta tag
-    if (!token) {
-        const metaTag = document.querySelector('meta[name="csrf-token"]');
-        if (metaTag) {
-            token = metaTag.getAttribute('content');
-        }
-    }
-    
-    // Fallback: try to get from hidden input
-    if (!token) {
-        const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
-        if (input) {
-            token = input.value;
-        }
-    }
-    
-    return token;
-}
-
-// Load room features when edit modal is opened
-document.addEventListener('DOMContentLoaded', function() {
-    loadAvailableFeatures();
-    
-    // Edit room button click handler
+    // Populate Edit Room modal when an edit button is clicked
     document.querySelectorAll('.edit-room-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             currentRoomId = this.dataset.id;
+            activeModal   = 'edit';
             loadRoomFeatures(currentRoomId);
         });
     });
 });
 
-// Load room's current features
+// ── LOAD ROOM'S FEATURES INTO EDIT MODAL ─────────────────────────────────────
 async function loadRoomFeatures(roomId) {
     try {
-        // Load all available features first
         await loadAvailableFeatures();
-        
-        // Get room's current features
-        const response = await fetch(`/get-room-features/?room_id=${roomId}`);
-        if (response.ok) {
-            const data = await response.json();
-            roomInclusions = data.inclusions || [];
-            roomAppliances = data.appliances || [];
-            
-            // Clear dynamic sections
-            document.getElementById('dynamicInclusions').innerHTML = '';
-            document.getElementById('dynamicAppliances').innerHTML = '';
-            
-            // Add ALL available inclusions and check the ones assigned to this room
-            allInclusions.forEach(inclusion => {
-                addDynamicInclusion(inclusion.id, inclusion.name);
-                // Check if this inclusion is assigned to the room
-                const isChecked = roomInclusions.some(roomInc => roomInc.id == inclusion.id);
-                document.getElementById(`inclusion_${inclusion.id}`).checked = isChecked;
-            });
-            
-            // Add ALL available appliances and check the ones assigned to this room
-            allAppliances.forEach(appliance => {
-                addDynamicAppliance(appliance.id, appliance.name);
-                // Check if this appliance is assigned to the room
-                const isChecked = roomAppliances.some(roomApp => roomApp.id == appliance.id);
-                document.getElementById(`appliance_${appliance.id}`).checked = isChecked;
-            });
-        }
-    } catch (error) {
-        console.error('Error loading room features:', error);
+
+        const res = await fetch(`/get-room-features/?room_id=${roomId}`);
+        if (!res.ok) return;
+
+        const data     = await res.json();
+        roomInclusions = data.inclusions || [];
+        roomAppliances = data.appliances || [];
+
+        activeModal = 'edit';
+
+        const incEdit = document.getElementById('dynamicInclusionsEdit');
+        const appEdit = document.getElementById('dynamicAppliancesEdit');
+        if (incEdit) incEdit.innerHTML = '';
+        if (appEdit) appEdit.innerHTML = '';
+
+        allInclusions.forEach(inc => {
+            const checked = roomInclusions.some(r => r.id == inc.id);
+            injectFeatureRow('inclusion', inc.id, inc.name, 'edit', checked);
+        });
+        allAppliances.forEach(app => {
+            const checked = roomAppliances.some(r => r.id == app.id);
+            injectFeatureRow('appliance', app.id, app.name, 'edit', checked);
+        });
+
+    } catch (e) {
+        console.error('loadRoomFeatures error:', e);
     }
+}
+
+// ── SYNCHRONIZE FEATURE ACROSS ALL MODALS ───────────────────────────────────────
+function synchronizeFeatureAcrossModals(type, id, name, currentPrefix) {
+    // Add to the other modal if it's open
+    const otherPrefix = currentPrefix === 'add' ? 'edit' : 'add';
+    const otherContainerId = `${otherPrefix === 'add' ? 'dynamicInclusions' : 'dynamicInclusionsEdit'}`;
+    const otherContainer = document.getElementById(otherContainerId);
+    
+    if (otherContainer) {
+        // Check if the feature already exists in the other modal
+        const existingCheckbox = document.getElementById(`${otherPrefix}_${type}_${id}`);
+        if (!existingCheckbox) {
+            injectFeatureRow(type, id, name, otherPrefix, false);
+        }
+    }
+    
+    // Also sync with the appliance container if needed
+    if (type === 'appliance') {
+        const otherAppContainerId = `${otherPrefix === 'add' ? 'dynamicAppliances' : 'dynamicAppliancesEdit'}`;
+        const otherAppContainer = document.getElementById(otherAppContainerId);
+        if (otherAppContainer) {
+            const existingAppCheckbox = document.getElementById(`${otherPrefix}_${type}_${id}`);
+            if (!existingAppCheckbox) {
+                injectFeatureRow(type, id, name, otherPrefix, false);
+            }
+        }
+    }
+}
+
+// ── CSRF HELPERS ─────────────────────────────────────────────────────────────
+function getCookie(name) {
+    if (!document.cookie) return null;
+    for (const c of document.cookie.split(';')) {
+        const t = c.trim();
+        if (t.startsWith(name + '='))
+            return decodeURIComponent(t.slice(name.length + 1));
+    }
+    return null;
+}
+
+function getCsrfToken() {
+    return getCookie('csrftoken')
+        || document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+        || document.querySelector('input[name="csrfmiddlewaretoken"]')?.value
+        || null;
 }

@@ -148,7 +148,9 @@
                           data-aircon="{{ room.has_aircon|yesno:'Yes,No' }}"
                           data-ref="{{ room.has_ref|yesno:'Yes,No' }}"
                           data-tv="{{ room.has_tv|yesno:'Yes,No' }}"
-                          data-wifi="{{ room.has_wifi|yesno:'Yes,No' }}">
+                          data-wifi="{{ room.has_wifi|yesno:'Yes,No' }}"
+                          data-dynamic-inclusions="{{ room.dynamic_inclusions_list|default:'[]' }}"
+                          data-dynamic-appliances="{{ room.dynamic_appliances_list|default:'[]' }}">
                     {{ room.room_code }} - {{ room.monthly_rate|floatformat:0 }}/month 
                     {% if room.occupied_beds > 0 %}({{ room.occupied_beds }}/{{ room.capacity }} occupied){% endif %}
                   </option>

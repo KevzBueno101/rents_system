@@ -15,7 +15,12 @@ from .models import Inclusion, Appliance, Room, TenantProfile, Room, Bill, Maint
 
 # ─── HELPERS ─────────────────────────────────────────
 def get_available_rooms():
-    return [r for r in Room.objects.all().order_by('floor', 'room_number') if not r.is_full()]
+    rooms = [r for r in Room.objects.all().order_by('floor', 'room_number') if not r.is_full()]
+    # Add dynamic inclusions and appliances to each room
+    for room in rooms:
+        room.dynamic_inclusions_list = [{'id': inc.id, 'name': inc.name} for inc in room.dynamic_inclusions.all()]
+        room.dynamic_appliances_list = [{'id': app.id, 'name': app.name} for app in room.dynamic_appliances.all()]
+    return rooms
 
 def get_dashboard_context():
     all_rooms     = Room.objects.all()

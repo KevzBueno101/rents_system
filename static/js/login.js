@@ -116,6 +116,26 @@ document.addEventListener('DOMContentLoaded', function() {
         appliances.push('WiFi');
       }
       
+      // Parse dynamic inclusions from data attribute
+      try {
+        const dynamicInclusions = JSON.parse(selectedOption.dataset.dynamicInclusions || '[]');
+        dynamicInclusions.forEach(inc => {
+          inclusions.push(inc.name);
+        });
+      } catch (e) {
+        console.log('Error parsing dynamic inclusions:', e);
+      }
+      
+      // Parse dynamic appliances from data attribute
+      try {
+        const dynamicAppliances = JSON.parse(selectedOption.dataset.dynamicAppliances || '[]');
+        dynamicAppliances.forEach(app => {
+          appliances.push(app.name);
+        });
+      } catch (e) {
+        console.log('Error parsing dynamic appliances:', e);
+      }
+      
       // Show inclusions section only if there are inclusions
       if (inclusions.length > 0) {
         signupInclusionsSection.style.display = 'block';
