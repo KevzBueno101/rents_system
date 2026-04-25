@@ -23,15 +23,29 @@ async function loadAvailableFeatures() {
     }
 }
 
-// Add inclusion functionality
-document.getElementById('addInclusionBtn').addEventListener('click', function() {
+// Add inclusion functionality for Edit Room modal
+document.getElementById('addInclusionBtn')?.addEventListener('click', function() {
     const modal = createAddFeatureModal('inclusion');
     document.body.appendChild(modal);
     new bootstrap.Modal(modal).show();
 });
 
-// Add appliance functionality
-document.getElementById('addApplianceBtn').addEventListener('click', function() {
+// Add appliance functionality for Edit Room modal
+document.getElementById('addApplianceBtn')?.addEventListener('click', function() {
+    const modal = createAddFeatureModal('appliance');
+    document.body.appendChild(modal);
+    new bootstrap.Modal(modal).show();
+});
+
+// Add inclusion functionality for Add Room modal
+document.getElementById('addInclusionBtnAdd')?.addEventListener('click', function() {
+    const modal = createAddFeatureModal('inclusion');
+    document.body.appendChild(modal);
+    new bootstrap.Modal(modal).show();
+});
+
+// Add appliance functionality for Add Room modal
+document.getElementById('addApplianceBtnAdd')?.addEventListener('click', function() {
     const modal = createAddFeatureModal('appliance');
     document.body.appendChild(modal);
     new bootstrap.Modal(modal).show();
@@ -39,8 +53,11 @@ document.getElementById('addApplianceBtn').addEventListener('click', function() 
 
 // Create modal for adding new feature
 function createAddFeatureModal(type) {
+    const modalId = `addFeatureModal_${type}_${Date.now()}`;
+    const inputId = `newFeatureName_${type}_${Date.now()}`;
     const modalDiv = document.createElement('div');
     modalDiv.className = 'modal fade';
+    modalDiv.id = modalId;
     modalDiv.innerHTML = `
         <div class="modal-dialog">
             <div class="modal-content">
@@ -53,13 +70,13 @@ function createAddFeatureModal(type) {
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Name</label>
-                        <input type="text" class="form-control" id="newFeatureName" placeholder="Enter ${type} name">
+                        <input type="text" class="form-control" id="${inputId}" placeholder="Enter ${type} name">
                         <div class="form-text">e.g., ${type === 'inclusion' ? 'Parking, Kitchen Access, Cable TV' : 'Microwave, Water Heater, Rice Cooker'}</div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="addNewFeature('${type}')">Add ${type.charAt(0).toUpperCase() + type.slice(1)}</button>
+                    <button type="button" class="btn btn-primary" onclick="addNewFeature('${type}', '${inputId}')">Add ${type.charAt(0).toUpperCase() + type.slice(1)}</button>
                 </div>
             </div>
         </div>
@@ -68,11 +85,13 @@ function createAddFeatureModal(type) {
 }
 
 // Add new feature
-async function addNewFeature(type) {
-    const nameInput = document.getElementById('newFeatureName');
-    const name = nameInput.value.trim();
+async function addNewFeature(type, inputId) {
+    const nameInput = document.getElementById(inputId);
+    const name = nameInput ? nameInput.value.trim() : '';
     
     console.log('Adding feature:', type, name);
+    console.log('Input ID:', inputId);
+    console.log('Input element:', nameInput);
     
     if (!name) {
         alert('Please enter a name');
