@@ -1,61 +1,33 @@
 // ══════════════════════════════════════════════════════════════
-//  room-features.js  —  fully corrected
+//  room-features.js  —  Inclusions Only (Simplified)
 //
 //  ID MAP (must match room_list.html exactly):
 //
 //  Add Room modal:
-//    containers : #dynamicInclusions      #dynamicAppliances
-//    buttons    : #addInclusionBtnAdd     #addApplianceBtnAdd
-//    checkbox   :  add_inclusion_{id}      add_appliance_{id}
+//    container  : #dynamicInclusions
+//    button     : #addInclusionBtnAdd
+//    checkbox   : add_inclusion_{id}
 //
 //  Edit Room modal:
-//    containers : #dynamicInclusionsEdit  #dynamicAppliancesEdit
-//    buttons    : #addInclusionBtn        #addApplianceBtn
-//    checkbox   :  edit_inclusion_{id}     edit_appliance_{id}
+//    container  : #dynamicInclusionsEdit
+//    button     : #addInclusionBtn
+//    checkbox   : edit_inclusion_{id}
 // ══════════════════════════════════════════════════════════════
 
 let currentRoomId = null;
 let allInclusions  = [];
-let allAppliances  = [];
 let roomInclusions = [];
-let roomAppliances = [];
 let activeModal    = 'edit'; // 'add' or 'edit'
 
-// ── LOAD ALL FEATURES FROM BACKEND ───────────────────────────────────────────
+// ── LOAD ALL INCLUSIONS FROM BACKEND ───────────────────────────────────────────
 async function loadAvailableFeatures() {
     try {
-        const [iRes, aRes] = await Promise.all([
-            fetch('/get-all-inclusions/'),
-            fetch('/get-all-appliances/'),
-        ]);
+        const iRes = await fetch('/get-all-inclusions/');
         if (iRes.ok) allInclusions = await iRes.json();
-        if (aRes.ok) allAppliances = await aRes.json();
     } catch (e) {
         console.error('loadAvailableFeatures error:', e);
     }
 }
-
-// ── BUTTON LISTENERS ─────────────────────────────────────────────────────────
-
-document.getElementById('addInclusionBtnAdd')?.addEventListener('click', function () {
-    activeModal = 'add';
-    openMiniModal('inclusion');
-});
-
-document.getElementById('addApplianceBtnAdd')?.addEventListener('click', function () {
-    activeModal = 'add';
-    openMiniModal('appliance');
-});
-
-document.getElementById('addInclusionBtn')?.addEventListener('click', function () {
-    activeModal = 'edit';
-    openMiniModal('inclusion');
-});
-
-document.getElementById('addApplianceBtn')?.addEventListener('click', function () {
-    activeModal = 'edit';
-    openMiniModal('appliance');
-});
 
 // ── MINI-MODAL ────────────────────────────────────────────────────────────────
 function openMiniModal(type) {
@@ -72,20 +44,20 @@ function openMiniModal(type) {
                 <div class="modal-header">
                     <h5 class="modal-title">
                         <i class="bi bi-plus-circle"></i>
-                        Add New ${type === 'inclusion' ? 'Inclusion' : 'Appliance'}
+                        Add New Inclusion
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <label class="form-label">Name</label>
                     <input type="text" class="form-control" id="${inputId}"
-                           placeholder="${type === 'inclusion' ? 'e.g. Parking, Kitchen Access' : 'e.g. Microwave, Water Heater'}">
+                           placeholder="e.g. Parking, Kitchen Access">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-primary"
-                            onclick="saveNewFeature('${type}', '${inputId}')">
-                        Add ${type === 'inclusion' ? 'Inclusion' : 'Appliance'}
+                            onclick="saveNewFeature('inclusion', '${inputId}')">
+                        Add Inclusion
                     </button>
                 </div>
             </div>
@@ -95,7 +67,7 @@ function openMiniModal(type) {
     div.addEventListener('hidden.bs.modal', () => div.remove());
 }
 
-// ── SAVE NEW FEATURE TO BACKEND ──────────────────────────────────────────────
+// ── SAVE NEW INCLUSION TO BACKEND ──────────────────────────────────────────────
 async function saveNewFeature(type, inputId) {
     const input = document.getElementById(inputId);
     const name  = input ? input.value.trim() : '';
@@ -105,9 +77,7 @@ async function saveNewFeature(type, inputId) {
     const csrf = getCsrfToken();
     if (!csrf) { alert('Security token missing — please refresh.'); return; }
 
-    const url = type === 'inclusion'
-        ? '/add-inclusion-management/'
-        : '/add-appliance-management/';
+    const url = '/add-inclusion-management/';
 
     try {
         const res    = await fetch(url, {
@@ -119,33 +89,23 @@ async function saveNewFeature(type, inputId) {
         const prefix = activeModal === 'add' ? 'add' : 'edit';
 
         if (result.success) {
-            if (type === 'inclusion') {
-                if (!allInclusions.some(i => i.id == result.id))
-                    allInclusions.push({ id: result.id, name: result.name });
-            } else {
-                if (!allAppliances.some(a => a.id == result.id))
-                    allAppliances.push({ id: result.id, name: result.name });
-            }
-            injectFeatureRow(type, result.id, result.name, prefix, true);
-            synchronizeFeatureAcrossModals(type, result.id, result.name, prefix);
+            if (!allInclusions.some(i => i.id == result.id))
+                allInclusions.push({ id: result.id, name: result.name });
+            injectFeatureRow('inclusion', result.id, result.name, prefix, true);
+            synchronizeFeatureAcrossModals('inclusion', result.id, result.name, prefix);
             closeMiniModal();
 
         } else if (result.error && result.error.toLowerCase().includes('already exists')) {
             // Feature exists in DB — just show it checked in the current modal
-            if (type === 'inclusion') {
-                const found = allInclusions.find(i => i.name.toLowerCase() === name.toLowerCase());
-                if (found) { injectFeatureRow('inclusion', found.id, found.name, prefix, true); closeMiniModal(); return; }
-            } else {
-                const found = allAppliances.find(a => a.name.toLowerCase() === name.toLowerCase());
-                if (found) { injectFeatureRow('appliance', found.id, found.name, prefix, true); closeMiniModal(); return; }
-            }
+            const found = allInclusions.find(i => i.name.toLowerCase() === name.toLowerCase());
+            if (found) { injectFeatureRow('inclusion', found.id, found.name, prefix, true); closeMiniModal(); return; }
             alert(result.error);
         } else {
-            alert(result.error || `Failed to add ${type}`);
+            alert(result.error || 'Failed to add inclusion');
         }
     } catch (e) {
         console.error('saveNewFeature error:', e);
-        alert(`Failed to add ${type}. Check console.`);
+        alert('Failed to add inclusion. Check console.');
     }
 }
 
@@ -162,9 +122,7 @@ function closeMiniModal() {
 function injectFeatureRow(type, id, name, prefix, checked) {
     const containerMap = {
         'add-inclusion' : 'dynamicInclusions',
-        'add-appliance' : 'dynamicAppliances',
         'edit-inclusion': 'dynamicInclusionsEdit',
-        'edit-appliance': 'dynamicAppliancesEdit',
     };
     const container = document.getElementById(containerMap[`${prefix}-${type}`]);
     if (!container) return;
@@ -203,8 +161,7 @@ function injectFeatureRow(type, id, name, prefix, checked) {
     rmBtn.title     = `Remove "${name}" from this room (does not delete from Inclusion Manager)`;
     rmBtn.addEventListener('click', function () {
         col.remove();
-        if (type === 'inclusion') roomInclusions = roomInclusions.filter(x => x.id != id);
-        else                      roomAppliances = roomAppliances.filter(x => x.id != id);
+        roomInclusions = roomInclusions.filter(x => x.id != id);
     });
 
     wrap.appendChild(cb);
@@ -218,17 +175,31 @@ function injectFeatureRow(type, id, name, prefix, checked) {
 document.addEventListener('DOMContentLoaded', async function () {
     await loadAvailableFeatures();
 
+    // Add button listeners for +Add buttons
+    const addInclusionBtnAdd = document.getElementById('addInclusionBtnAdd');
+    if (addInclusionBtnAdd) {
+        addInclusionBtnAdd.addEventListener('click', function () {
+            activeModal = 'add';
+            openMiniModal('inclusion');
+        });
+    }
+
+    const addInclusionBtn = document.getElementById('addInclusionBtn');
+    if (addInclusionBtn) {
+        addInclusionBtn.addEventListener('click', function () {
+            activeModal = 'edit';
+            openMiniModal('inclusion');
+        });
+    }
+
     // Populate Add Room modal each time it opens
     const addRoomModalEl = document.getElementById('addRoomModal');
     if (addRoomModalEl) {
         addRoomModalEl.addEventListener('show.bs.modal', function () {
             activeModal = 'add';
             const incContainer = document.getElementById('dynamicInclusions');
-            const appContainer = document.getElementById('dynamicAppliances');
             if (incContainer) incContainer.innerHTML = '';
-            if (appContainer) appContainer.innerHTML = '';
             allInclusions.forEach(i => injectFeatureRow('inclusion', i.id, i.name, 'add', false));
-            allAppliances.forEach(a => injectFeatureRow('appliance', a.id, a.name, 'add', false));
         });
     }
 
@@ -237,7 +208,28 @@ document.addEventListener('DOMContentLoaded', async function () {
         btn.addEventListener('click', function () {
             currentRoomId = this.dataset.id;
             activeModal   = 'edit';
+            
+            // Populate form fields from data attributes
+            document.getElementById('editFloor').value = this.dataset.floor;
+            document.getElementById('editRoomNumber').value = this.dataset.room;
+            document.getElementById('editCapacity').value = this.dataset.capacity;
+            document.getElementById('editMonthlyRate').value = this.dataset.rate;
+            document.getElementById('editArea').value = this.dataset.area;
+            document.getElementById('editNumCR').value = this.dataset.cr;
+            document.getElementById('editBedType').value = this.dataset.bedtype;
+            
+            // Set inclusion checkboxes
+            document.getElementById('editSink').checked = this.dataset.sink === 'True';
+            document.getElementById('editWater').checked = this.dataset.water === 'True';
+            document.getElementById('editElec').checked = this.dataset.elec === 'True';
+            document.getElementById('editWifi').checked = this.dataset.wifi === 'True';
+            
+            // Load dynamic inclusions
             loadRoomFeatures(currentRoomId);
+            
+            // Show the modal
+            const editModal = new bootstrap.Modal(document.getElementById('editRoomModal'));
+            editModal.show();
         });
     });
 });
@@ -252,22 +244,15 @@ async function loadRoomFeatures(roomId) {
 
         const data     = await res.json();
         roomInclusions = data.inclusions || [];
-        roomAppliances = data.appliances || [];
 
         activeModal = 'edit';
 
         const incEdit = document.getElementById('dynamicInclusionsEdit');
-        const appEdit = document.getElementById('dynamicAppliancesEdit');
         if (incEdit) incEdit.innerHTML = '';
-        if (appEdit) appEdit.innerHTML = '';
 
         allInclusions.forEach(inc => {
             const checked = roomInclusions.some(r => r.id == inc.id);
             injectFeatureRow('inclusion', inc.id, inc.name, 'edit', checked);
-        });
-        allAppliances.forEach(app => {
-            const checked = roomAppliances.some(r => r.id == app.id);
-            injectFeatureRow('appliance', app.id, app.name, 'edit', checked);
         });
 
     } catch (e) {
@@ -275,7 +260,7 @@ async function loadRoomFeatures(roomId) {
     }
 }
 
-// ── SYNCHRONIZE FEATURE ACROSS ALL MODALS ───────────────────────────────────────
+// ── SYNCHRONIZE INCLUSION ACROSS ALL MODALS ───────────────────────────────────────
 function synchronizeFeatureAcrossModals(type, id, name, currentPrefix) {
     // Add to the other modal if it's open
     const otherPrefix = currentPrefix === 'add' ? 'edit' : 'add';
@@ -287,18 +272,6 @@ function synchronizeFeatureAcrossModals(type, id, name, currentPrefix) {
         const existingCheckbox = document.getElementById(`${otherPrefix}_${type}_${id}`);
         if (!existingCheckbox) {
             injectFeatureRow(type, id, name, otherPrefix, false);
-        }
-    }
-    
-    // Also sync with the appliance container if needed
-    if (type === 'appliance') {
-        const otherAppContainerId = `${otherPrefix === 'add' ? 'dynamicAppliances' : 'dynamicAppliancesEdit'}`;
-        const otherAppContainer = document.getElementById(otherAppContainerId);
-        if (otherAppContainer) {
-            const existingAppCheckbox = document.getElementById(`${otherPrefix}_${type}_${id}`);
-            if (!existingAppCheckbox) {
-                injectFeatureRow(type, id, name, otherPrefix, false);
-            }
         }
     }
 }

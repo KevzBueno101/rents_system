@@ -122,15 +122,8 @@ class Room(models.Model):
     # ── INCLUSIONS ────────────────────────────────────
     water_included       = models.BooleanField(default=False)
     electricity_included = models.BooleanField(default=False)
+    has_wifi             = models.BooleanField(default=False)
     dynamic_inclusions   = models.ManyToManyField(Inclusion, blank=True)
-
-    # ── APPLIANCES ────────────────────────────────────
-    has_fan      = models.BooleanField(default=False)
-    has_aircon   = models.BooleanField(default=False)
-    has_ref      = models.BooleanField(default=False)
-    has_tv       = models.BooleanField(default=False)
-    has_wifi     = models.BooleanField(default=False)
-    dynamic_appliances = models.ManyToManyField(Appliance, blank=True)
 
     def occupied_beds(self):
         return TenantProfile.objects.filter(room=self).count()

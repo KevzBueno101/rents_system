@@ -9,8 +9,8 @@
 
 <!-- ══════════════════════════════════════════════════
      ADD ROOM MODAL
-     Containers:  dynamicInclusions  /  dynamicAppliances
-     Buttons:     addInclusionBtnAdd / addApplianceBtnAdd
+     Container:  dynamicInclusions
+     Button:     addInclusionBtnAdd
 ══════════════════════════════════════════════════ -->
 <div class="modal fade" id="addRoomModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -128,47 +128,6 @@
                         <div id="dynamicInclusions" class="row g-1"></div>
                     </div>
 
-                    <!-- APPLIANCES -->
-                    <div class="mb-2">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label class="form-label text-muted mb-0" style="font-size:12px;">
-                                <i class="bi bi-plug"></i> Appliances
-                            </label>
-                            <button type="button" class="btn btn-sm btn-outline-primary" id="addApplianceBtnAdd" style="font-size:11px;">
-                                <i class="bi bi-plus"></i> Add
-                            </button>
-                        </div>
-                        <!-- Standard Appliances -->
-                        <div class="row g-1 mb-2">
-                            <div class="col-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="has_fan" id="addFan">
-                                    <label class="form-check-label" style="font-size:13px;" for="addFan">Fan</label>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="has_aircon" id="addAircon">
-                                    <label class="form-check-label" style="font-size:13px;" for="addAircon">Aircon</label>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="has_ref" id="addRef">
-                                    <label class="form-check-label" style="font-size:13px;" for="addRef">Refrigerator</label>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="has_tv" id="addTv">
-                                    <label class="form-check-label" style="font-size:13px;" for="addTv">TV</label>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Dynamic Appliances (Add Room) — unique ID -->
-                        <div id="dynamicAppliances" class="row g-1"></div>
-                    </div>
-
                     <!-- PHOTO -->
                     <div class="mb-2">
                         <label class="form-label text-muted" style="font-size:13px;">
@@ -205,8 +164,8 @@
 
 <!-- ══════════════════════════════════════════════════
      EDIT ROOM MODAL
-     Containers:  dynamicInclusionsEdit  /  dynamicAppliancesEdit
-     Buttons:     addInclusionBtn        / addApplianceBtn
+     Container:  dynamicInclusionsEdit
+     Button:     addInclusionBtn
 ══════════════════════════════════════════════════ -->
 <div class="modal fade" id="editRoomModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -319,47 +278,6 @@
                         <div id="dynamicInclusionsEdit" class="row g-1"></div>
                     </div>
 
-                    <!-- APPLIANCES -->
-                    <div class="mb-2">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label class="form-label text-muted mb-0" style="font-size:12px;">
-                                <i class="bi bi-plug"></i> Appliances
-                            </label>
-                            <button type="button" class="btn btn-sm btn-outline-primary" id="addApplianceBtn" style="font-size:11px;">
-                                <i class="bi bi-plus"></i> Add
-                            </button>
-                        </div>
-                        <!-- Standard Appliances -->
-                        <div class="row g-1 mb-2">
-                            <div class="col-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="has_fan" id="editFan">
-                                    <label class="form-check-label" style="font-size:13px;" for="editFan">Fan</label>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="has_aircon" id="editAircon">
-                                    <label class="form-check-label" style="font-size:13px;" for="editAircon">Aircon</label>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="has_ref" id="editRef">
-                                    <label class="form-check-label" style="font-size:13px;" for="editRef">Refrigerator</label>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="has_tv" id="editTv">
-                                    <label class="form-check-label" style="font-size:13px;" for="editTv">TV</label>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Dynamic Appliances (Edit Room) — unique ID -->
-                        <div id="dynamicAppliancesEdit" class="row g-1"></div>
-                    </div>
-
                     <!-- PHOTO -->
                     <div class="mb-3">
                         <label class="form-label text-muted" style="font-size:13px;">
@@ -422,7 +340,7 @@
                     </div>
                     <hr>
                     <p class="text-muted mb-2" style="font-size:13px;">
-                        <i class="bi bi-check2-square"></i> Inclusions & Appliances:
+                        <i class="bi bi-check2-square"></i> Inclusions:
                     </p>
                     <div id="infoInclusions" class="mb-3"></div>
                     <hr>
@@ -542,10 +460,6 @@
                         data-sink="{{ room.has_lababo }}"
                         data-water="{{ room.water_included }}"
                         data-elec="{{ room.electricity_included }}"
-                        data-fan="{{ room.has_fan }}"
-                        data-aircon="{{ room.has_aircon }}"
-                        data-ref="{{ room.has_ref }}"
-                        data-tv="{{ room.has_tv }}"
                         data-wifi="{{ room.has_wifi }}">
                         <i class="bi bi-info-circle fs-5"></i>
                     </button>
@@ -602,10 +516,6 @@
                         data-sink="{{ room.has_lababo }}"
                         data-water="{{ room.water_included }}"
                         data-elec="{{ room.electricity_included }}"
-                        data-fan="{{ room.has_fan }}"
-                        data-aircon="{{ room.has_aircon }}"
-                        data-ref="{{ room.has_ref }}"
-                        data-tv="{{ room.has_tv }}"
                         data-wifi="{{ room.has_wifi }}">
                         <i class="bi bi-pencil"></i> Edit
                     </button>

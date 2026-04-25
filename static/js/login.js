@@ -61,9 +61,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Section containers
     const signupInclusionsSection = document.getElementById('signupInclusionsSection');
-    const signupAppliancesSection = document.getElementById('signupAppliancesSection');
     const signupInclusionsList = document.getElementById('signupInclusionsList');
-    const signupAppliancesList = document.getElementById('signupAppliancesList');
     
     signupRoomSelect.addEventListener('change', function() {
       const selectedOption = this.options[this.selectedIndex];
@@ -87,7 +85,6 @@ document.addEventListener('DOMContentLoaded', function() {
       
       // Clear existing badges
       signupInclusionsList.innerHTML = '';
-      signupAppliancesList.innerHTML = '';
       
       // Collect inclusions that are checked
       const inclusions = [];
@@ -98,24 +95,6 @@ document.addEventListener('DOMContentLoaded', function() {
         inclusions.push('Electricity');
       }
       
-      // Collect appliances that are checked
-      const appliances = [];
-      if (selectedOption.dataset.fan === 'Yes') {
-        appliances.push('Fan');
-      }
-      if (selectedOption.dataset.aircon === 'Yes') {
-        appliances.push('Aircon');
-      }
-      if (selectedOption.dataset.ref === 'Yes') {
-        appliances.push('Refrigerator');
-      }
-      if (selectedOption.dataset.tv === 'Yes') {
-        appliances.push('TV');
-      }
-      if (selectedOption.dataset.wifi === 'Yes') {
-        appliances.push('WiFi');
-      }
-      
       // Parse dynamic inclusions from data attribute
       try {
         const dynamicInclusions = JSON.parse(selectedOption.dataset.dynamicInclusions || '[]');
@@ -124,16 +103,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
       } catch (e) {
         console.log('Error parsing dynamic inclusions:', e);
-      }
-      
-      // Parse dynamic appliances from data attribute
-      try {
-        const dynamicAppliances = JSON.parse(selectedOption.dataset.dynamicAppliances || '[]');
-        dynamicAppliances.forEach(app => {
-          appliances.push(app.name);
-        });
-      } catch (e) {
-        console.log('Error parsing dynamic appliances:', e);
       }
       
       // Show inclusions section only if there are inclusions
@@ -147,19 +116,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
       } else {
         signupInclusionsSection.style.display = 'none';
-      }
-      
-      // Show appliances section only if there are appliances
-      if (appliances.length > 0) {
-        signupAppliancesSection.style.display = 'block';
-        appliances.forEach(appliance => {
-          const badge = document.createElement('span');
-          badge.className = 'badge bg-success text-white';
-          badge.textContent = appliance;
-          signupAppliancesList.appendChild(badge);
-        });
-      } else {
-        signupAppliancesSection.style.display = 'none';
       }
       
       signupRoomDetails.classList.remove('d-none');
