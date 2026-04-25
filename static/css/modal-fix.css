@@ -1,0 +1,4 @@
+/* Modal Z-Index Fix - MINIMAL */
+#confirmProfileChangeModal {
+    z-index: 1055 !important;
+}

@@ -1,50 +1,62 @@
 // Login password toggle
 function toggleLoginPassword() {
-  const pass = document.getElementById("loginPassword");
-  const icon = document.getElementById("loginEyeIcon");
-  if (pass && icon) {
-    if (pass.type === "password") {
-      pass.type = "text";
-      icon.classList.replace("bi-eye", "bi-eye-slash");
-    } else {
-      pass.type = "password";
-      icon.classList.replace("bi-eye-slash", "bi-eye");
+  try {
+    const pass = document.getElementById("loginPassword");
+    const icon = document.getElementById("loginEyeIcon");
+    if (pass && icon) {
+      if (pass.type === "password") {
+        pass.type = "text";
+        icon.classList.replace("bi-eye", "bi-eye-slash");
+      } else {
+        pass.type = "password";
+        icon.classList.replace("bi-eye-slash", "bi-eye");
+      }
     }
+  } catch (error) {
+    console.error('Error in toggleLoginPassword:', error);
   }
 }
 
 // Signup password toggle
 function toggleSignupPassword() {
-  const pass = document.getElementById("signupPassword");
-  const icon = document.getElementById("signupEyeIcon");
-  if (pass && icon) {
-    if (pass.type === "password") {
-      pass.type = "text";
-      icon.classList.replace("bi-eye", "bi-eye-slash");
-    } else {
-      pass.type = "password";
-      icon.classList.replace("bi-eye-slash", "bi-eye");
+  try {
+    const pass = document.getElementById("signupPassword");
+    const icon = document.getElementById("signupEyeIcon");
+    if (pass && icon) {
+      if (pass.type === "password") {
+        pass.type = "text";
+        icon.classList.replace("bi-eye", "bi-eye-slash");
+      } else {
+        pass.type = "password";
+        icon.classList.replace("bi-eye-slash", "bi-eye");
+      }
     }
+  } catch (error) {
+    console.error('Error in toggleSignupPassword:', error);
   }
 }
 
 // Role toggle
 window.selectRole = function(role) {
-  document.getElementById("roleInput").value = role;
-  const btnAdmin = document.getElementById("btnAdmin");
-  const btnTenant = document.getElementById("btnTenant");
-  const signupSection = document.getElementById("signupSection");
+  try {
+    document.getElementById("roleInput").value = role;
+    const btnAdmin = document.getElementById("btnAdmin");
+    const btnTenant = document.getElementById("btnTenant");
+    const signupSection = document.getElementById("signupSection");
 
-  if (role === "admin") {
-    btnAdmin.classList.add("active");
-    btnTenant.classList.remove("active");
-    signupSection.classList.add("d-none");
-  } else {
-    btnTenant.classList.add("active");
-    btnAdmin.classList.remove("active");
-    signupSection.classList.remove("d-none");
+    if (role === "admin") {
+      btnAdmin.classList.add("active");
+      btnTenant.classList.remove("active");
+      signupSection.classList.add("d-none");
+    } else {
+      btnTenant.classList.add("active");
+      btnAdmin.classList.remove("active");
+      signupSection.classList.remove("d-none");
+    }
+  } catch (error) {
+    console.error('Error in selectRole:', error);
   }
-}
+};
 
 // Signup room selection JavaScript
 document.addEventListener('DOMContentLoaded', function() {
@@ -149,36 +161,50 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Profile modal functions for login page
 window.openProfileModal = function () {
-  new bootstrap.Modal(document.getElementById('profileModal')).show();
+  try {
+    new bootstrap.Modal(document.getElementById('profileModal')).show();
+  } catch (error) {
+    console.error('Error in openProfileModal:', error);
+  }
 };
 
 window.toggleProfilePassword = function () {
-  const currentPass = document.getElementById('currentPassword');
-  const newPass = document.getElementById('newPassword');
-  const confirmPass = document.getElementById('confirmPassword');
-  const icon = document.getElementById('profileEyeIcon');
-  
-  if (currentPass.type === 'password') {
-    currentPass.type = 'text';
-    newPass.type = 'text';
-    confirmPass.type = 'text';
-    icon.classList.replace('bi-eye', 'bi-eye-slash');
-  } else {
-    currentPass.type = 'password';
-    newPass.type = 'password';
-    confirmPass.type = 'password';
-    icon.classList.replace('bi-eye-slash', 'bi-eye');
+  try {
+    const currentPass = document.getElementById('currentPassword');
+    const newPass = document.getElementById('newPassword');
+    const confirmPass = document.getElementById('confirmPassword');
+    const icon = document.getElementById('profileEyeIcon');
+    
+    if (currentPass && newPass && confirmPass && icon) {
+      if (currentPass.type === 'password') {
+        currentPass.type = 'text';
+        newPass.type = 'text';
+        confirmPass.type = 'text';
+        icon.classList.replace('bi-eye', 'bi-eye-slash');
+      } else {
+        currentPass.type = 'password';
+        newPass.type = 'password';
+        confirmPass.type = 'password';
+        icon.classList.replace('bi-eye-slash', 'bi-eye');
+      }
+    }
+  } catch (error) {
+    console.error('Error in toggleProfilePassword:', error);
   }
 };
 
 window.previewProfilePhoto = function (event) {
-  const file = event.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      const preview = document.getElementById('profilePreview');
-      preview.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+  try {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const preview = document.getElementById('profilePreview');
+        preview.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  } catch (error) {
+    console.error('Error in previewProfilePhoto:', error);
   }
 };

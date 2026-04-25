@@ -7,9 +7,21 @@
     <title>RENTS - {% block title %}Dashboard{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="{% static 'accounts/css/dashboard.css' %}">
-    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <link rel="icon" href="https://img.icons8.com/ios-filled/50/door.png" type="image/png">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% csrf_token %}
+    <meta name="csrf-token" content="{{ csrf_token }}">
+
+    <!-- BOOTSTRAP JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
+
+    <!-- DASHBOARD JS -->
+    <script src="{% static 'js/dashboard.js' %}" defer></script>
+    <!-- PROFILE CONFIRMATION JS -->
+    <script src="{% static 'js/profile-confirmation.js' %}" defer></script>
+    {% comment %} Modal fix CSSs {% endcomment %}
+    <link rel="stylesheet" href="{% static 'css/modal-fix.css' %}">
 </head>
 
 <body>
@@ -22,7 +34,7 @@
 
         <div class="brand">
             <h4>RENTS</h4>
-            <small>Boarding House System</small>
+            <small>Residents Entry, Navigaion, Tenants Tracking System</small>
         </div>
 
         <nav class="mt-2 flex-grow-1">
@@ -39,9 +51,14 @@
                 <i class="bi bi-people"></i> Tenants
             </a>
 
-            <a href="#"
-                class="nav-link {% if request.resolver_match.url_name == 'rooms' %}active{% endif %}">
+            <a href="{% url 'room_list' %}"
+                class="nav-link {% if request.resolver_match.url_name == 'room_list' %}active{% endif %}">
                 <i class="bi bi-door-open"></i> Rooms
+            </a>
+
+            <a href="{% url 'manage_features' %}"
+                class="nav-link {% if request.resolver_match.url_name == 'manage_features' %}active{% endif %}">
+                <i class="bi bi-gear"></i> Features
             </a>
 
             {% if request.user.is_superuser %}
@@ -72,17 +89,30 @@
 
         </nav>
 
-        <div class="sidebar-footer">
-            <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-person-circle text-white fs-4"></i>
-                <div>
-                    <div class="text-white" style="font-size:13px; font-weight:600;">
-                        {{ request.user.username }}
-                    </div>
-                    <div style="font-size:11px; color:#aaa;">Administrator</div>
-                </div>
+<div class="sidebar-footer">
+    <div class="d-flex align-items-center gap-2" style="cursor:pointer;" onclick="openProfileModal()">
+
+        {% if admin_profile and admin_profile.photo %}
+            <img src="{{ admin_profile.photo.url }}"
+                 style="width:36px; height:36px; border-radius:50%; object-fit:cover; flex-shrink:0;">
+        {% else %}
+            <div style="width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:15px;">
+                {{ request.user.username|first|upper }}
+            </div>
+        {% endif %}
+
+        <div>
+            <div class="text-white" style="font-size:13px; font-weight:600;">
+                {{ request.user.username }}
+            </div>
+            <div style="font-size:11px; color:#aaa;">
+                {% if request.user.is_superuser %}Superadmin{% else %}Administrator{% endif %}
             </div>
         </div>
+
+    </div>
+</div>
+       
 
     </div>
 
@@ -147,12 +177,173 @@
         </div>
     </div>
 
-    <!-- BOOTSTRAP JS (once lang!) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- PROFILE EDIT MODAL -->
+<div class="modal fade" id="profileModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-person-gear"></i> Edit Profile
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- UPDATED FORM WITH ALL IDs -->
+                <form id="profileForm" method="POST" action="{% url 'edit_profile' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <!-- PROFILE PHOTO -->
+                    <div class="text-center mb-3">
+                        <div class="mb-2 position-relative" style="cursor:pointer;" onclick="document.getElementById('profilePhotoInput').click()">
+                            {% if admin_profile and admin_profile.photo %}
+                                <img src="{{ admin_profile.photo.url }}" 
+                                     id="profilePreview"
+                                     style="width:80px; height:80px; border-radius:50%; object-fit:cover; border:3px solid #dee2e6; transition:all 0.3s;">
+                                <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" 
+                                     style="background:rgba(0,0,0,0.5); border-radius:50%; opacity:0; transition:all 0.3s;">
+                                    <i class="bi bi-camera text-white" style="font-size:24px;"></i>
+                                </div>
+                            {% else %}
+                                <div style="width:80px; height:80px; border-radius:50%; background:#f8f9fa; display:flex; align-items:center; justify-content:center; border:3px solid #dee2e6; position:relative; cursor:pointer; transition:all 0.3s;">
+                                    <i class="bi bi-person" style="font-size:32px; color:#6c757d;"></i>
+                                    <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" 
+                                         style="background:rgba(0,0,0,0.5); border-radius:50%; opacity:0; transition:all 0.3s;">
+                                        <i class="bi bi-camera text-white" style="font-size:24px;"></i>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <input type="file" name="photo" id="profilePhotoInput" class="form-control d-none" accept="image/*" 
+                                   onchange="previewProfilePhoto(event)">
+                        </div>
+                    </div>
 
-    <!-- DASHBOARD JS -->
-    <script src="{% static 'accounts/js/dashboard.js' %}"></script>
+                    <!-- USERNAME -->
+                    <div class="mb-3">
+                        <label class="form-label text-muted" style="font-size:13px;">
+                            <i class="bi bi-person"></i> Username
+                        </label>
+                        <input type="text" id="usernameInput" name="username" class="form-control" 
+                               value="{{ request.user.username }}" >
+                    </div>
 
+                    <!-- FULL NAME -->
+                    <div class="mb-3">
+                        <label class="form-label text-muted" style="font-size:13px;">
+                            <i class="bi bi-person-vcard"></i> Full Name
+                        </label>
+                        <input type="text" id="fullNameInput" name="full_name" class="form-control" 
+                               value="{{ admin_profile.full_name|default:request.user.username }}" >
+                    </div>
+
+                    <!-- EMAIL -->
+                    <div class="mb-3">
+                        <label class="form-label text-muted" style="font-size:13px;">
+                            <i class="bi bi-envelope"></i> Email
+                        </label>
+                        <input type="email" id="emailInput" name="email" class="form-control" 
+                               value="{{ request.user.email }}" >
+                    </div>
+
+                    <!-- PHONE -->
+                    <div class="mb-3">
+                        <label class="form-label text-muted" style="font-size:13px;">
+                            <i class="bi bi-phone"></i> Phone
+                        </label>
+                        <input type="text" id="phoneInput" name="phone" class="form-control" 
+                               value="{{ admin_profile.phone|default:'' }}" >
+                    </div>
+
+                    <!-- PASSWORD -->
+                    <div class="mb-3">
+                        <label class="form-label text-muted" style="font-size:13px;">
+                            <i class="bi bi-lock"></i> Change Password
+                        </label>
+                        <div class="mb-2">
+                            <div class="input-group">
+                                <input type="password" id="currentPassword" name="current_password" class="form-control" 
+                                       placeholder="Current password" >
+                                <span class="input-group-text" onclick="toggleProfilePassword()" style="cursor:pointer;">
+                                    <i class="bi bi-eye" id="profileEyeIcon"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="input-group">
+                                <input type="password" id="newPassword" name="password" class="form-control" 
+                                       placeholder="Enter new password">
+                                <span class="input-group-text" onclick="toggleProfilePassword()" style="cursor:pointer;">
+                                    <i class="bi bi-eye" id="profileEyeIcon"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="input-group">
+                                <input type="password" id="confirmPassword" name="confirm_password" class="form-control" 
+                                       placeholder="Confirm new password" >
+                                <span class="input-group-text">
+                                    <i class="bi bi-lock-fill"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-dark flex-fill">
+                            <i class="bi bi-check-circle"></i> Save Changes
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- PROFILE CHANGE CONFIRMATION MODAL -->
+<div class="modal fade" id="confirmProfileChangeModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header bg-warning bg-opacity-10 border-warning">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-circle"></i> Confirm Changes
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <p class="mb-3">You are about to update your profile with the following changes:</p>
+                
+                <div class="card bg-light border-0 p-3 mb-3">
+                    <div id="confirmationSummary">
+                        <!-- Changes will be populated here by JavaScript -->
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="text-muted mb-0">
+                    <i class="bi bi-info-circle"></i> 
+                    <small>Are you sure you want to save these changes?</small>
+                </p>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-warning" id="confirmSaveBtn">
+                    <i class="bi bi-check-circle"></i> Yes, Save Changes
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
 </body>
 
 </html>
