@@ -1,4 +1,5 @@
 {% extends 'base_dashboard.html' %}
+{% load static %}
 {% load avatar_tags %}
 
 {% block title %}Rooms{% endblock %}
@@ -6,7 +7,11 @@
 
 {% block content %}
 
-<!-- ADD ROOM MODAL -->
+<!-- ══════════════════════════════════════════════════
+     ADD ROOM MODAL
+     Container:  dynamicInclusions
+     Button:     addInclusionBtnAdd
+══════════════════════════════════════════════════ -->
 <div class="modal fade" id="addRoomModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
@@ -84,10 +89,16 @@
 
                     <!-- INCLUSIONS -->
                     <div class="mb-2">
-                        <label class="form-label text-muted mb-1" style="font-size:12px;">
-                            <i class="bi bi-check2-square"></i> Inclusions
-                        </label>
-                        <div class="row g-1">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label text-muted mb-0" style="font-size:12px;">
+                                <i class="bi bi-check2-square"></i> Inclusions
+                            </label>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="addInclusionBtnAdd" style="font-size:11px;">
+                                <i class="bi bi-plus"></i> Add
+                            </button>
+                        </div>
+                        <!-- Standard Inclusions -->
+                        <div class="row g-1 mb-2">
                             <div class="col-6">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="has_sink" id="addSink">
@@ -113,39 +124,8 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- APPLIANCES -->
-                    <div class="mb-2">
-                        <label class="form-label text-muted mb-1" style="font-size:12px;">
-                            <i class="bi bi-plug"></i> Appliances
-                        </label>
-                        <div class="row g-1">
-                            <div class="col-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="has_fan" id="addFan">
-                                    <label class="form-check-label" style="font-size:13px;" for="addFan">Fan</label>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="has_aircon" id="addAircon">
-                                    <label class="form-check-label" style="font-size:13px;" for="addAircon">Aircon</label>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="has_ref" id="addRef">
-                                    <label class="form-check-label" style="font-size:13px;" for="addRef">Refrigerator</label>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="has_tv" id="addTv">
-                                    <label class="form-check-label" style="font-size:13px;" for="addTv">TV</label>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Dynamic Inclusions (Add Room) — unique ID -->
+                        <div id="dynamicInclusions" class="row g-1"></div>
                     </div>
 
                     <!-- PHOTO -->
@@ -182,7 +162,11 @@
     </div>
 </div>
 
-<!-- EDIT ROOM MODAL -->
+<!-- ══════════════════════════════════════════════════
+     EDIT ROOM MODAL
+     Container:  dynamicInclusionsEdit
+     Button:     addInclusionBtn
+══════════════════════════════════════════════════ -->
 <div class="modal fade" id="editRoomModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
@@ -263,7 +247,6 @@
                                 <i class="bi bi-plus"></i> Add
                             </button>
                         </div>
-                        
                         <!-- Standard Inclusions -->
                         <div class="row g-1 mb-2">
                             <div class="col-6">
@@ -291,56 +274,8 @@
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Dynamic Inclusions -->
-                        <div id="dynamicInclusions" class="row g-1">
-                            <!-- Dynamic inclusions will be added here -->
-                        </div>
-                    </div>
-
-                    <!-- APPLIANCES -->
-                    <div class="mb-2">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label class="form-label text-muted mb-0" style="font-size:12px;">
-                                <i class="bi bi-plug"></i> Appliances
-                            </label>
-                            <button type="button" class="btn btn-sm btn-outline-primary" id="addApplianceBtn" style="font-size:11px;">
-                                <i class="bi bi-plus"></i> Add
-                            </button>
-                        </div>
-                        
-                        <!-- Standard Appliances -->
-                        <div class="row g-1 mb-2">
-                            <div class="col-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="has_fan" id="editFan">
-                                    <label class="form-check-label" style="font-size:13px;" for="editFan">Fan</label>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="has_aircon" id="editAircon">
-                                    <label class="form-check-label" style="font-size:13px;" for="editAircon">Aircon</label>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="has_ref" id="editRef">
-                                    <label class="form-check-label" style="font-size:13px;" for="editRef">Refrigerator</label>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="has_tv" id="editTv">
-                                    <label class="form-check-label" style="font-size:13px;" for="editTv">TV</label>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Dynamic Appliances -->
-                        <div id="dynamicAppliances" class="row g-1">
-                            <!-- Dynamic appliances will be added here -->
-                        </div>
+                        <!-- Dynamic Inclusions (Edit Room) — unique ID -->
+                        <div id="dynamicInclusionsEdit" class="row g-1"></div>
                     </div>
 
                     <!-- PHOTO -->
@@ -373,9 +308,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-0">
-
                 <div id="infoRoomPhoto"></div>
-
                 <div class="p-3">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span class="text-muted">Status</span>
@@ -405,26 +338,35 @@
                         <span class="text-muted"><i class="bi bi-moon"></i> Bed Type</span>
                         <span id="infoBedType"></span>
                     </div>
-
                     <hr>
-
                     <p class="text-muted mb-2" style="font-size:13px;">
-                        <i class="bi bi-check2-square"></i> Inclusions & Appliances:
+                        <i class="bi bi-check2-square"></i> Inclusions:
                     </p>
                     <div id="infoInclusions" class="mb-3"></div>
-
                     <hr>
-
                     <p class="text-muted mb-2" style="font-size:13px;">
                         <i class="bi bi-person"></i> Tenants in this room:
                     </p>
                     <div id="infoTenants"></div>
-
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- BREADCRUMBS -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item">
+            <a href="{% url 'admin_dashboard' %}" class="text-decoration-none text-muted">
+                <i class="bi bi-house"></i> Dashboard
+            </a>
+        </li>
+        <li class="breadcrumb-item active text-primary fw-bold" aria-current="page">
+            <i class="bi bi-door-open"></i> All Rooms
+        </li>
+    </ol>
+</nav>
 
 <!-- HEADER -->
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -433,7 +375,10 @@
         <small class="text-muted">{{ rooms.count }} room{{ rooms.count|pluralize }} total</small>
     </div>
     <div class="d-flex gap-2">
-        <!-- Sort Controls -->
+        <button class="btn btn-dark btn-sm" data-bs-toggle="modal" data-bs-target="#addRoomModal">
+            <i class="bi bi-plus-circle"></i>
+            <span class="d-none d-md-inline">Add Room</span>
+        </button>
         <div class="dropdown">
             <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
                 <i class="bi bi-sort-down"></i> Sort by
@@ -459,24 +404,19 @@
                     <i class="bi bi-people"></i> Capacity (High to Low)
                     {% if current_sort == 'capacity' and current_order == 'desc' %}<i class="bi bi-check text-success"></i>{% endif %}
                 </a></li>
-                <li><a class="dropdown-item" href="?sort=room_number&order=asc">
-                    <i class="bi bi-door-open"></i> Room Number
-                    {% if current_sort == 'room_number' %}<i class="bi bi-check text-success"></i>{% endif %}
-                </a></li>
             </ul>
         </div>
-        <button class="btn btn-dark btn-sm" data-bs-toggle="modal" data-bs-target="#addRoomModal">
-            <i class="bi bi-plus-circle"></i>
-            <span class="d-none d-md-inline">Add Room</span>
-        </button>
+        <a href="{% url 'manage_features' %}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-gear"></i>
+            <span class="d-none d-md-inline">Inclusions</span>
+        </a>
     </div>
 </div>
 
-<!-- ROOM CARDS -->
 {% if rooms %}
-<div class="row g-3">
-    {% for room in rooms %}
-    <div class="col-sm-6 col-lg-4 col-xl-3">
+<div class="row g-4">
+{% for room in rooms %}
+    <div class="col-sm-6 col-md-4 col-lg-4">
         <div class="card border-0 shadow-sm h-100">
 
             {% if room.photo %}
@@ -502,7 +442,6 @@
             </div>
 
             <div class="card-body pt-3">
-
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h6 class="fw-bold mb-0">{{ room.room_code }}</h6>
                     <button class="btn btn-sm btn-link p-0 text-muted info-room-btn"
@@ -521,10 +460,6 @@
                         data-sink="{{ room.has_lababo }}"
                         data-water="{{ room.water_included }}"
                         data-elec="{{ room.electricity_included }}"
-                        data-fan="{{ room.has_fan }}"
-                        data-aircon="{{ room.has_aircon }}"
-                        data-ref="{{ room.has_ref }}"
-                        data-tv="{{ room.has_tv }}"
                         data-wifi="{{ room.has_wifi }}">
                         <i class="bi bi-info-circle fs-5"></i>
                     </button>
@@ -565,7 +500,6 @@
                         No tenants yet
                     {% endfor %}
                 </div>
-
             </div>
 
             <div class="card-footer bg-white border-0 pt-0 pb-3 px-3">
@@ -582,10 +516,6 @@
                         data-sink="{{ room.has_lababo }}"
                         data-water="{{ room.water_included }}"
                         data-elec="{{ room.electricity_included }}"
-                        data-fan="{{ room.has_fan }}"
-                        data-aircon="{{ room.has_aircon }}"
-                        data-ref="{{ room.has_ref }}"
-                        data-tv="{{ room.has_tv }}"
                         data-wifi="{{ room.has_wifi }}">
                         <i class="bi bi-pencil"></i> Edit
                     </button>
@@ -601,7 +531,7 @@
 
         </div>
     </div>
-    {% endfor %}
+{% endfor %}
 </div>
 
 {% else %}
@@ -622,398 +552,6 @@
 </script>
 {% endif %}
 
-<!-- Dynamic Inclusions and Appliances JavaScript -->
-<script>
-let currentRoomId = null;
-let allInclusions = [];
-let allAppliances = [];
-let roomInclusions = [];
-let roomAppliances = [];
-
-// Load available inclusions and appliances
-async function loadAvailableFeatures() {
-    try {
-        // Get all available inclusions and appliances
-        const inclusionsResponse = await fetch('/get-all-inclusions/');
-        const appliancesResponse = await fetch('/get-all-appliances/');
-        
-        if (inclusionsResponse.ok) {
-            allInclusions = await inclusionsResponse.json();
-        }
-        if (appliancesResponse.ok) {
-            allAppliances = await appliancesResponse.json();
-        }
-    } catch (error) {
-        console.error('Error loading features:', error);
-    }
-}
-
-// Add inclusion functionality
-document.getElementById('addInclusionBtn').addEventListener('click', function() {
-    const modal = createAddFeatureModal('inclusion');
-    document.body.appendChild(modal);
-    new bootstrap.Modal(modal).show();
-});
-
-// Add appliance functionality
-document.getElementById('addApplianceBtn').addEventListener('click', function() {
-    const modal = createAddFeatureModal('appliance');
-    document.body.appendChild(modal);
-    new bootstrap.Modal(modal).show();
-});
-
-// Create modal for adding new feature
-function createAddFeatureModal(type) {
-    const modalDiv = document.createElement('div');
-    modalDiv.className = 'modal fade';
-    modalDiv.innerHTML = `
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="bi bi-plus-circle"></i> Add New ${type.charAt(0).toUpperCase() + type.slice(1)}
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Name</label>
-                        <input type="text" class="form-control" id="newFeatureName" placeholder="Enter ${type} name">
-                        <div class="form-text">e.g., ${type === 'inclusion' ? 'Parking, Kitchen Access, Cable TV' : 'Microwave, Water Heater, Rice Cooker'}</div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="addNewFeature('${type}')">Add ${type.charAt(0).toUpperCase() + type.slice(1)}</button>
-                </div>
-            </div>
-        </div>
-    `;
-    return modalDiv;
-}
-
-// Add new feature
-async function addNewFeature(type) {
-    const nameInput = document.getElementById('newFeatureName');
-    const name = nameInput.value.trim();
-    
-    console.log('Adding feature:', type, name);
-    
-    if (!name) {
-        alert('Please enter a name');
-        return;
-    }
-    
-    try {
-        const url = type === 'inclusion' ? '/add-inclusion-management/' : '/add-appliance-management/';
-        const csrfToken = getCsrfToken();
-        
-        console.log('CSRF Token:', csrfToken);
-        console.log('URL:', url);
-        
-        if (!csrfToken) {
-            console.error('No CSRF token found');
-            alert('Security token not found. Please refresh the page and try again.');
-            return;
-        }
-        
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRFToken': csrfToken
-            },
-            body: `name=${encodeURIComponent(name)}`
-        });
-        
-        console.log('Response status:', response.status);
-        
-        const result = await response.json();
-        console.log('Response data:', result);
-        
-        if (result.success) {
-            // Add to the appropriate list
-            if (type === 'inclusion') {
-                // Check if it's already in the list
-                if (!allInclusions.some(inc => inc.id == result.id)) {
-                    allInclusions.push({id: result.id, name: result.name});
-                }
-                addDynamicInclusion(result.id, result.name);
-                // Check the newly added inclusion
-                document.getElementById(`inclusion_${result.id}`).checked = true;
-            } else {
-                // Check if it's already in the list
-                if (!allAppliances.some(app => app.id == result.id)) {
-                    allAppliances.push({id: result.id, name: result.name});
-                }
-                addDynamicAppliance(result.id, result.name);
-                // Check the newly added appliance
-                document.getElementById(`appliance_${result.id}`).checked = true;
-            }
-            
-            // Close modal
-            const modal = nameInput.closest('.modal');
-            bootstrap.Modal.getInstance(modal).hide();
-            modal.remove();
-        } else {
-            console.error('Backend error:', result.error);
-            // If the inclusion already exists, try to find and show it
-            if (result.error && result.error.includes('already exists')) {
-                const name = nameInput.value.trim();
-                if (type === 'inclusion') {
-                    const existing = allInclusions.find(inc => inc.name.toLowerCase() === name.toLowerCase());
-                    if (existing) {
-                        addDynamicInclusion(existing.id, existing.name);
-                        document.getElementById(`inclusion_${existing.id}`).checked = true;
-                        // Close modal
-                        const modal = nameInput.closest('.modal');
-                        bootstrap.Modal.getInstance(modal).hide();
-                        modal.remove();
-                        return;
-                    }
-                } else {
-                    const existing = allAppliances.find(app => app.name.toLowerCase() === name.toLowerCase());
-                    if (existing) {
-                        addDynamicAppliance(existing.id, existing.name);
-                        document.getElementById(`appliance_${existing.id}`).checked = true;
-                        // Close modal
-                        const modal = nameInput.closest('.modal');
-                        bootstrap.Modal.getInstance(modal).hide();
-                        modal.remove();
-                        return;
-                    }
-                }
-            }
-            alert(result.error || 'Failed to add ' + type);
-        }
-    } catch (error) {
-        console.error('Network error:', error);
-        alert('Failed to add ' + type + '. Check console for details.');
-    }
-}
-
-// Add dynamic inclusion to the form
-function addDynamicInclusion(id, name) {
-    const container = document.getElementById('dynamicInclusions');
-    const div = document.createElement('div');
-    div.className = 'col-6';
-    
-    // Create the inner structure
-    const innerDiv = document.createElement('div');
-    innerDiv.className = 'd-flex align-items-center';
-    
-    // Create checkbox
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.className = 'form-check-input me-2';
-    checkbox.name = 'dynamic_inclusion_' + id;
-    checkbox.id = 'inclusion_' + id;
-    
-    // Create label
-    const label = document.createElement('label');
-    label.className = 'form-check-label me-2';
-    label.style.fontSize = '13px';
-    label.htmlFor = 'inclusion_' + id;
-    label.textContent = name;
-    
-    // Create remove button
-    const removeBtn = document.createElement('button');
-    removeBtn.type = 'button';
-    removeBtn.className = 'btn btn-sm btn-outline-danger';
-    removeBtn.style.padding = '1px 4px';
-    removeBtn.style.fontSize = '9px';
-    removeBtn.style.lineHeight = '1';
-    removeBtn.innerHTML = '<i class="bi bi-x"></i>';
-    removeBtn.addEventListener('click', function() {
-        removeInclusionFromRoom(id, name);
-    });
-    
-    // Assemble the elements
-    innerDiv.appendChild(checkbox);
-    innerDiv.appendChild(label);
-    innerDiv.appendChild(removeBtn);
-    div.appendChild(innerDiv);
-    container.appendChild(div);
-}
-
-// Add dynamic appliance to the form
-function addDynamicAppliance(id, name) {
-    const container = document.getElementById('dynamicAppliances');
-    const div = document.createElement('div');
-    div.className = 'col-6';
-    
-    // Create the inner structure
-    const innerDiv = document.createElement('div');
-    innerDiv.className = 'd-flex align-items-center';
-    
-    // Create checkbox
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.className = 'form-check-input me-2';
-    checkbox.name = 'dynamic_appliance_' + id;
-    checkbox.id = 'appliance_' + id;
-    
-    // Create label
-    const label = document.createElement('label');
-    label.className = 'form-check-label me-2';
-    label.style.fontSize = '13px';
-    label.htmlFor = 'appliance_' + id;
-    label.textContent = name;
-    
-    // Create remove button
-    const removeBtn = document.createElement('button');
-    removeBtn.type = 'button';
-    removeBtn.className = 'btn btn-sm btn-outline-danger';
-    removeBtn.style.padding = '1px 4px';
-    removeBtn.style.fontSize = '9px';
-    removeBtn.style.lineHeight = '1';
-    removeBtn.innerHTML = '<i class="bi bi-x"></i>';
-    removeBtn.addEventListener('click', function() {
-        removeApplianceFromRoom(id, name);
-    });
-    
-    // Assemble the elements
-    innerDiv.appendChild(checkbox);
-    innerDiv.appendChild(label);
-    innerDiv.appendChild(removeBtn);
-    div.appendChild(innerDiv);
-    container.appendChild(div);
-}
-
-// Get CSRF token
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
-// Remove inclusion from room
-function removeInclusionFromRoom(inclusionId, inclusionName) {
-    if (!confirm('Remove "' + inclusionName + '" from this room?')) {
-        return;
-    }
-    
-    // Find and remove the entire element from the modal
-    const checkbox = document.getElementById('inclusion_' + inclusionId);
-    if (checkbox) {
-        // Get the parent div (col-6) and remove it
-        const colDiv = checkbox.closest('.col-6');
-        if (colDiv) {
-            colDiv.remove();
-        }
-    }
-    
-    // Remove from the room's inclusions list
-    roomInclusions = roomInclusions.filter(inc => inc.id != inclusionId);
-    
-    console.log('Removed inclusion ' + inclusionName + ' from room');
-}
-
-// Remove appliance from room
-function removeApplianceFromRoom(applianceId, applianceName) {
-    if (!confirm('Remove "' + applianceName + '" from this room?')) {
-        return;
-    }
-    
-    // Find and remove the entire element from the modal
-    const checkbox = document.getElementById('appliance_' + applianceId);
-    if (checkbox) {
-        // Get the parent div (col-6) and remove it
-        const colDiv = checkbox.closest('.col-6');
-        if (colDiv) {
-            colDiv.remove();
-        }
-    }
-    
-    // Remove from the room's appliances list
-    roomAppliances = roomAppliances.filter(app => app.id != applianceId);
-    
-    console.log('Removed appliance ' + applianceName + ' from room');
-}
-
-// Get CSRF token with fallback
-function getCsrfToken() {
-    // Try to get from cookie first
-    let token = getCookie('csrftoken');
-    
-    // Fallback: try to get from meta tag
-    if (!token) {
-        const metaTag = document.querySelector('meta[name="csrf-token"]');
-        if (metaTag) {
-            token = metaTag.getAttribute('content');
-        }
-    }
-    
-    // Fallback: try to get from hidden input
-    if (!token) {
-        const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
-        if (input) {
-            token = input.value;
-        }
-    }
-    
-    return token;
-}
-
-// Load room features when edit modal is opened
-document.addEventListener('DOMContentLoaded', function() {
-    loadAvailableFeatures();
-    
-    // Edit room button click handler
-    document.querySelectorAll('.edit-room-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            currentRoomId = this.dataset.id;
-            loadRoomFeatures(currentRoomId);
-        });
-    });
-});
-
-// Load room's current features
-async function loadRoomFeatures(roomId) {
-    try {
-        // Load all available features first
-        await loadAvailableFeatures();
-        
-        // Get room's current features
-        const response = await fetch(`/get-room-features/?room_id=${roomId}`);
-        if (response.ok) {
-            const data = await response.json();
-            roomInclusions = data.inclusions || [];
-            roomAppliances = data.appliances || [];
-            
-            // Clear dynamic sections
-            document.getElementById('dynamicInclusions').innerHTML = '';
-            document.getElementById('dynamicAppliances').innerHTML = '';
-            
-            // Add ALL available inclusions and check the ones assigned to this room
-            allInclusions.forEach(inclusion => {
-                addDynamicInclusion(inclusion.id, inclusion.name);
-                // Check if this inclusion is assigned to the room
-                const isChecked = roomInclusions.some(roomInc => roomInc.id == inclusion.id);
-                document.getElementById(`inclusion_${inclusion.id}`).checked = isChecked;
-            });
-            
-            // Add ALL available appliances and check the ones assigned to this room
-            allAppliances.forEach(appliance => {
-                addDynamicAppliance(appliance.id, appliance.name);
-                // Check if this appliance is assigned to the room
-                const isChecked = roomAppliances.some(roomApp => roomApp.id == appliance.id);
-                document.getElementById(`appliance_${appliance.id}`).checked = isChecked;
-            });
-        }
-    } catch (error) {
-        console.error('Error loading room features:', error);
-    }
-}
-</script>
+<script src="{% static 'js/room-features.js' %}" defer></script>
 
 {% endblock %}

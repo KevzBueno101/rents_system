@@ -1,9 +1,9 @@
 from django.core.management.base import BaseCommand
-from accounts.models import Inclusion, Appliance
+from accounts.models import Inclusion
 
 
 class Command(BaseCommand):
-    help = 'Seed initial inclusions and appliances'
+    help = 'Seed initial inclusions'
 
     def handle(self, *args, **options):
         # Seed initial inclusions
@@ -22,22 +22,4 @@ class Command(BaseCommand):
             Inclusion.objects.get_or_create(name=inclusion_name)
             self.stdout.write(f'Created inclusion: {inclusion_name}')
 
-        # Seed initial appliances
-        appliances = [
-            'Fan',
-            'Air Conditioner',
-            'Refrigerator',
-            'TV',
-            'WiFi Router',
-            'Microwave',
-            'Electric Kettle',
-            'Rice Cooker',
-            'Washing Machine',
-            'Water Heater',
-        ]
-
-        for appliance_name in appliances:
-            Appliance.objects.get_or_create(name=appliance_name)
-            self.stdout.write(f'Created appliance: {appliance_name}')
-
-        self.stdout.write(self.style.SUCCESS('Successfully seeded inclusions and appliances!'))
+        self.stdout.write(self.style.SUCCESS('Successfully seeded inclusions!'))

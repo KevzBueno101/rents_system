@@ -15,7 +15,11 @@ from .models import Inclusion, Appliance, Room, TenantProfile, Room, Bill, Maint
 
 # ─── HELPERS ─────────────────────────────────────────
 def get_available_rooms():
-    return [r for r in Room.objects.all().order_by('floor', 'room_number') if not r.is_full()]
+    rooms = [r for r in Room.objects.all().order_by('floor', 'room_number') if not r.is_full()]
+    # Add dynamic inclusions to each room
+    for room in rooms:
+        room.dynamic_inclusions_list = [{'id': inc.id, 'name': inc.name} for inc in room.dynamic_inclusions.all()]
+    return rooms
 
 def get_dashboard_context():
     all_rooms     = Room.objects.all()
@@ -401,10 +405,6 @@ def add_room(request):
         has_sink             = request.POST.get('has_sink') == 'on'
         water_included       = request.POST.get('water_included') == 'on'
         electricity_included = request.POST.get('electricity_included') == 'on'
-        has_fan              = request.POST.get('has_fan') == 'on'
-        has_aircon           = request.POST.get('has_aircon') == 'on'
-        has_ref              = request.POST.get('has_ref') == 'on'
-        has_tv               = request.POST.get('has_tv') == 'on'
         has_wifi             = request.POST.get('has_wifi') == 'on'
 
         if Room.objects.filter(room_number=room_number, floor=floor).exists():
@@ -427,10 +427,6 @@ def add_room(request):
             has_lababo=has_sink,
             water_included=water_included,
             electricity_included=electricity_included,
-            has_fan=has_fan,
-            has_aircon=has_aircon,
-            has_ref=has_ref,
-            has_tv=has_tv,
             has_wifi=has_wifi,
         )
 
@@ -458,10 +454,6 @@ def edit_room(request, room_id):
         room.has_lababo          = request.POST.get('has_sink') == 'on'
         room.water_included      = request.POST.get('water_included') == 'on'
         room.electricity_included= request.POST.get('electricity_included') == 'on'
-        room.has_fan             = request.POST.get('has_fan') == 'on'
-        room.has_aircon          = request.POST.get('has_aircon') == 'on'
-        room.has_ref             = request.POST.get('has_ref') == 'on'
-        room.has_tv              = request.POST.get('has_tv') == 'on'
         room.has_wifi            = request.POST.get('has_wifi') == 'on'
 
         # Handle dynamic inclusions
@@ -473,17 +465,6 @@ def edit_room(request, room_id):
                     inclusion = Inclusion.objects.get(id=inclusion_id)
                     room.dynamic_inclusions.add(inclusion)
                 except Inclusion.DoesNotExist:
-                    pass
-
-        # Handle dynamic appliances
-        room.dynamic_appliances.clear()
-        for key in request.POST:
-            if key.startswith('dynamic_appliance_'):
-                appliance_id = key.split('_')[-1]
-                try:
-                    appliance = Appliance.objects.get(id=appliance_id)
-                    room.dynamic_appliances.add(appliance)
-                except Appliance.DoesNotExist:
                     pass
 
         if request.FILES.get('photo'):
@@ -676,11 +657,9 @@ def get_room_features(request):
         try:
             room = Room.objects.get(id=room_id)
             inclusions = list(room.dynamic_inclusions.values('id', 'name'))
-            appliances = list(room.dynamic_appliances.values('id', 'name'))
             
             return JsonResponse({
-                'inclusions': inclusions,
-                'appliances': appliances
+                'inclusions': inclusions
             })
         except Room.DoesNotExist:
             return JsonResponse({'error': 'Room not found'}, status=404)
@@ -704,6 +683,9 @@ def manage_features(request):
 
 
 # ─── ADD INCLUSION (MANAGEMENT) ─────────────────────────
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
 @login_required(login_url='/')
 def add_inclusion_management(request):
     if not request.user.is_staff:

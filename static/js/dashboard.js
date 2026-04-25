@@ -48,16 +48,6 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('editNumCR').value       = this.dataset.cr;
             document.getElementById('editBedType').value     = this.dataset.bedtype;
 
-            // Checkboxes
-            document.getElementById('editSink').checked   = this.dataset.sink === 'True';
-            document.getElementById('editWater').checked  = this.dataset.water === 'True';
-            document.getElementById('editElec').checked   = this.dataset.elec === 'True';
-            document.getElementById('editWifi').checked   = this.dataset.wifi === 'True';
-            document.getElementById('editFan').checked    = this.dataset.fan === 'True';
-            document.getElementById('editAircon').checked = this.dataset.aircon === 'True';
-            document.getElementById('editRef').checked    = this.dataset.ref === 'True';
-            document.getElementById('editTv').checked     = this.dataset.tv === 'True';
-
             document.getElementById('editRoomForm').action = '/edit-room/' + this.dataset.id + '/';
             new bootstrap.Modal(document.getElementById('editRoomModal')).show();
         });
@@ -110,10 +100,6 @@ document.addEventListener('DOMContentLoaded', function () {
             if (this.dataset.water  === 'True') inclusions.push('Water');
             if (this.dataset.elec   === 'True') inclusions.push('Electricity');
             if (this.dataset.wifi   === 'True') inclusions.push('WiFi');
-            if (this.dataset.fan    === 'True') inclusions.push('Fan');
-            if (this.dataset.aircon === 'True') inclusions.push('Aircon');
-            if (this.dataset.ref    === 'True') inclusions.push('Refrigerator');
-            if (this.dataset.tv     === 'True') inclusions.push('TV');
 
             const inclusionsEl = document.getElementById('infoInclusions');
             if (inclusions.length > 0) {
