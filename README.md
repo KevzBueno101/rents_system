@@ -5,6 +5,11 @@ A Django-based boarding house management system for managing tenants, rooms, bil
 ## Current Status: **Production Ready** v2.0
 
 **Latest Updates (April 24, 2026):**
+- ✅ **Enhanced Navigation System** - Added breadcrumbs with active page highlighting (blue/bold)
+- ✅ **Improved Room Layout** - Fixed 3 cards per row with proper Bootstrap g-4 spacing
+- ✅ **Relocated Inclusions Button** - Moved from sidebar to room list header for better accessibility
+- ✅ **Extended Add Room Modal** - Added dynamic inclusions and appliances functionality matching Edit Room
+- ✅ **Fixed Template Issues** - Resolved duplications and syntax errors in room management
 - ✅ **Dynamic Room Features System** - Added flexible inclusions and appliances management
 - ✅ **Room Feature Management Page** - Centralized interface for managing room features
 - ✅ **Edit Modal Enhancements** - Add/remove inclusions and appliances directly from room edit
