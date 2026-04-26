@@ -1,6 +1,5 @@
 /* ── LAYOUT ── */
 body {
-    display: flex;
     min-height: 100vh;
     background: #f4f6f9;
     margin: 0;
@@ -114,11 +113,8 @@ body {
 /* ── MAIN CONTENT ── */
 #main {
     margin-left: 250px;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
     min-height: 100vh;
-    min-width: 0;
+    width: auto;
 }
 
 /* ── TOPBAR ── */
@@ -155,8 +151,7 @@ body {
 
 /* ── CONTENT AREA ── */
 #content {
-    padding: 16px;
-    flex: 1;
+    padding: 1.5rem;
 }
 
 /* ── STAT CARDS ── */
@@ -278,6 +273,7 @@ body {
 
     #main {
         margin-left: 0;
+        width: 100%;
     }
 
     #content {
@@ -321,4 +317,7 @@ tbody tr[onclick]:hover {
     box-shadow: 0 4px 16px rgba(0,0,0,0.12);
     transform: translateY(-2px);
     transition: all 0.2s;
+}
+.card {
+    border-radius: 12px;
 }

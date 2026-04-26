@@ -208,7 +208,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         btn.addEventListener('click', function () {
             currentRoomId = this.dataset.id;
             activeModal   = 'edit';
-            
+
             // Populate form fields from data attributes
             document.getElementById('editFloor').value = this.dataset.floor;
             document.getElementById('editRoomNumber').value = this.dataset.room;
@@ -217,20 +217,27 @@ document.addEventListener('DOMContentLoaded', async function () {
             document.getElementById('editArea').value = this.dataset.area;
             document.getElementById('editNumCR').value = this.dataset.cr;
             document.getElementById('editBedType').value = this.dataset.bedtype;
-            
+
             // Set inclusion checkboxes
             document.getElementById('editSink').checked = this.dataset.sink === 'True';
             document.getElementById('editWater').checked = this.dataset.water === 'True';
             document.getElementById('editElec').checked = this.dataset.elec === 'True';
             document.getElementById('editWifi').checked = this.dataset.wifi === 'True';
-            
+
+            document.getElementById('editRoomForm').action = `/edit-room/${currentRoomId}/`;
+
             // Load dynamic inclusions
             loadRoomFeatures(currentRoomId);
-            
+
             // Show the modal
             const editModal = new bootstrap.Modal(document.getElementById('editRoomModal'));
             editModal.show();
         });
+    });
+
+    // Render inclusion badges for all room cards on page load
+    document.querySelectorAll('[id^="room-inclusions-"]').forEach(containerEl => {
+        renderRoomInclusions(containerEl);
     });
 });
 
@@ -274,6 +281,72 @@ function synchronizeFeatureAcrossModals(type, id, name, currentPrefix) {
             injectFeatureRow(type, id, name, otherPrefix, false);
         }
     }
+}
+
+// ── RENDER ROOM INCLUSIONS BADGES ─────────────────────────────────────────────
+function renderRoomInclusions(containerEl) {
+    if (!containerEl) return;
+
+    containerEl.innerHTML = '';
+
+    const hasWater = containerEl.dataset.water === '1';
+    const hasElec = containerEl.dataset.electricity === '1';
+    const hasWifi = containerEl.dataset.wifi === '1';
+    const hasSink = containerEl.dataset.sink === '1';
+    const dynamicStr = containerEl.dataset.dynamicInclusions || '[]';
+
+    let dynamicInclusions = [];
+    try {
+        dynamicInclusions = JSON.parse(dynamicStr);
+    } catch (e) {
+        console.warn('Failed to parse dynamic inclusions:', e);
+    }
+
+    const inclusions = [];
+    if (hasSink) inclusions.push({ name: 'Sink', from: 'bool' });
+    if (hasWater) inclusions.push({ name: 'Water', from: 'bool' });
+    if (hasElec) inclusions.push({ name: 'Electricity', from: 'bool' });
+    if (hasWifi) inclusions.push({ name: 'WiFi', from: 'bool' });
+
+    dynamicInclusions.forEach(inc => {
+        inclusions.push({ name: inc.name, from: 'dynamic', id: inc.id });
+    });
+
+    if (inclusions.length === 0) {
+        containerEl.innerHTML = '<span class="text-muted" style="font-size:11px;">No inclusions</span>';
+        return;
+    }
+
+    inclusions.forEach(inc => {
+        const iconData = getInclusionIcon(inc.name);
+        const badge = document.createElement('div');
+        badge.className = 'd-flex align-items-center gap-1 px-2 py-1 rounded-pill';
+        badge.style.backgroundColor = 'rgba(0,0,0,0.05)';
+        badge.style.fontSize = '11px';
+        badge.title = iconData.title;
+        badge.innerHTML = `<i class="bi ${iconData.icon}" style="color: ${iconData.color}; font-size: 12px;"></i>
+                           <span style="font-size:10px; color:#666;">${inc.name}</span>`;
+        containerEl.appendChild(badge);
+    });
+}
+
+// ── MAP INCLUSION NAME TO BOOTSTRAP ICON ─────────────────────────────────────
+function getInclusionIcon(name) {
+    const nameLC = name.toLowerCase().trim();
+
+    if (nameLC === 'water' || nameLC === 'water included') return { icon: 'bi-droplet', color: '#0dcaf0', title: 'Water' };
+    if (nameLC === 'electricity' || nameLC === 'electricity included') return { icon: 'bi-lightning', color: '#ffc107', title: 'Electricity' };
+    if (nameLC === 'wifi' || nameLC === 'wifi included' || nameLC === 'internet') return { icon: 'bi-wifi', color: '#0d6efd', title: 'WiFi/Internet' };
+    if (nameLC === 'sink' || nameLC === 'lababo') return { icon: 'bi-water', color: '#20c997', title: 'Sink' };
+
+    if (nameLC.includes('parking')) return { icon: 'bi-p-circle', color: '#6f42c1', title: 'Parking' };
+    if (nameLC.includes('kitchen')) return { icon: 'bi-house-check', color: '#198754', title: 'Kitchen' };
+    if (nameLC.includes('ac') || nameLC.includes('air') || nameLC.includes('conditioning')) return { icon: 'bi-snow', color: '#0dcaf0', title: 'A/C' };
+    if (nameLC.includes('heater') || nameLC.includes('heating')) return { icon: 'bi-fire', color: '#ff6b6b', title: 'Heater' };
+    if (nameLC.includes('tv') || nameLC.includes('television')) return { icon: 'bi-tv', color: '#6c757d', title: 'TV' };
+    if (nameLC.includes('ref') || nameLC.includes('fridge') || nameLC.includes('refrigerator')) return { icon: 'bi-box-seam', color: '#17a2b8', title: 'Refrigerator' };
+
+    return { icon: 'bi-check2', color: '#28a745', title: name };
 }
 
 // ── CSRF HELPERS ─────────────────────────────────────────────────────────────

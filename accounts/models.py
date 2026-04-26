@@ -14,7 +14,7 @@ class TenantProfile(models.Model):
 
     def get_room_display(self):
         if self.room:
-            return self.room.room_code()
+            return self.room.room_code
         return f"Room {self.room_number}" if self.room_number else "—"
 
     def __str__(self):
@@ -88,6 +88,11 @@ class Inclusion(models.Model):
         return self.name
 
 
+
+
+
+
+
 # ─── APPLIANCE ───────────────────────────────────────
 class Appliance(models.Model):
     name = models.CharField(max_length=50, unique=True)
@@ -140,9 +145,8 @@ class Room(models.Model):
     def get_tenants(self):
         return TenantProfile.objects.filter(room=self)
 
+    @property          
     def room_code(self):
-        # Fixed: use full room_number not just first char
         return f"Room {self.floor}-{self.room_number}"
-
     def __str__(self):
-        return self.room_code()
+        return self.room_code
