@@ -223,67 +223,68 @@
     </div>
 
     <div class="row g-3">
-        {% for room in recent_rooms %}
-        <div class="col-12 col-md-4" style="cursor:pointer;"
-            onclick="window.location='{% url 'room_list' %}'">
-            <div class="card border-0 shadow-sm h-100">
+    {% for room in recent_rooms %}
+    <div class="col-lg-4 col-md-6 col-12" style="cursor:pointer;"
+         onclick="window.location='{% url 'room_list' %}'">
+        
+        <div class="card border-0 shadow-sm h-100">
 
-                <!-- ROOM PHOTO -->
-                {% if room.photo %}
-                    <img src="{{ room.photo.url }}"
-                         alt="Room {{ room.room_number }}"
-                         style="width:100%; height:130px; object-fit:cover; border-radius:12px 12px 0 0;">
-                {% else %}
-                    <div style="width:100%; height:130px; background:#f4f6f9; border-radius:12px 12px 0 0; display:flex; align-items:center; justify-content:center;">
-                        <i class="bi bi-door-open" style="font-size:40px; color:#ccc;"></i>
-                    </div>
-                {% endif %}
+            <!-- ROOM PHOTO -->
+            {% if room.photo %}
+                <img src="{{ room.photo.url }}"
+                     alt="Room {{ room.room_number }}"
+                     style="width:100%; height:130px; object-fit:cover; border-radius:12px 12px 0 0;">
+            {% else %}
+                <div style="width:100%; height:130px; background:#f4f6f9; border-radius:12px 12px 0 0; display:flex; align-items:center; justify-content:center;">
+                    <i class="bi bi-door-open" style="font-size:40px; color:#ccc;"></i>
+                </div>
+            {% endif %}
 
-                <!-- STATUS BADGE -->
-                <div style="position:relative;">
-                    <span class="badge position-absolute"
-                        style="top:-14px; right:12px;
-                               background:{% if room.is_full %}#e53935{% else %}#1db954{% endif %};">
-                        {{ room.status }}
+            <!-- STATUS BADGE -->
+            <div style="position:relative;">
+                <span class="badge position-absolute"
+                      style="top:-14px; right:12px;
+                             background:{% if room.is_full %}#e53935{% else %}#1db954{% endif %};">
+                    {{ room.status }}
+                </span>
+            </div>
+
+            <div class="card-body pt-3">
+                <h6 class="fw-bold mb-2">Room {{ room.room_number }}</h6>
+
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted" style="font-size:12px;">
+                        <i class="bi bi-people"></i> Occupancy
+                    </span>
+                    <span style="font-size:12px; font-weight:600;">
+                        {{ room.occupied_beds }} / {{ room.capacity }}
                     </span>
                 </div>
 
-                <div class="card-body pt-3">
-                    <h6 class="fw-bold mb-2">Room {{ room.room_number }}</h6>
-
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted" style="font-size:12px;">
-                            <i class="bi bi-people"></i> Occupancy
-                        </span>
-                        <span style="font-size:12px; font-weight:600;">
-                            {{ room.occupied_beds }} / {{ room.capacity }}
-                        </span>
-                    </div>
-
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted" style="font-size:12px;">
-                            <i class="bi bi-cash"></i> Rate
-                        </span>
-                        <span style="font-size:12px; font-weight:600;">
-                            ₱{{ room.monthly_rate }}
-                        </span>
-                    </div>
-
-                    <!-- PROGRESS BAR -->
-                    <div class="progress mt-2" style="height:5px;">
-                        {% if room.capacity > 0 %}
-                        <div class="progress-bar"
-                            style="width:{% widthratio room.occupied_beds room.capacity 100 %}%;
-                                   background:{% if room.is_full %}#e53935{% else %}#1db954{% endif %};">
-                        </div>
-                        {% endif %}
-                    </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted" style="font-size:12px;">
+                        <i class="bi bi-cash"></i> Rate
+                    </span>
+                    <span style="font-size:12px; font-weight:600;">
+                        ₱{{ room.monthly_rate }}
+                    </span>
                 </div>
 
+                <!-- PROGRESS BAR -->
+                <div class="progress mt-2" style="height:5px;">
+                    {% if room.capacity > 0 %}
+                    <div class="progress-bar"
+                         style="width:{% widthratio room.occupied_beds room.capacity 100 %}%;
+                                background:{% if room.is_full %}#e53935{% else %}#1db954{% endif %};">
+                    </div>
+                    {% endif %}
+                </div>
             </div>
+
         </div>
-        {% endfor %}
     </div>
+    {% endfor %}
+</div>
 </div>
 
 <!-- PROFILE CHANGE CONFIRMATION MODAL -->

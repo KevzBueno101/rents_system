@@ -318,53 +318,6 @@ tbody tr[onclick]:hover {
     transform: translateY(-2px);
     transition: all 0.2s;
 }
-
-/* ── FIX ROOM CARD GRID ── */
-#content .row {
-    display: flex !important;
-    flex-wrap: wrap !important;
-}
-
-#content .row.g-4 {
-    margin-right: -12px;
-    margin-left: -12px;
-}
-
-#content .row > [class^="col-"],
-#content .row > [class*=" col-"] {
-    padding-right: 12px;
-    padding-left: 12px;
-}
-
-#content .row > .col-lg-4 {
-    flex: 0 0 auto !important;
-    width: 33.33333333% !important;
-    max-width: 33.33333333% !important;
-}
-
-#content .row > .col-md-6 {
-    flex: 0 0 auto !important;
-    width: 50% !important;
-    max-width: 50% !important;
-}
-
-#content .row > .col-12 {
-    flex: 0 0 auto !important;
-    width: 100% !important;
-    max-width: 100% !important;
-}
-
-@media (max-width: 991.98px) {
-    #content .row > .col-lg-4 {
-        width: 50% !important;
-        max-width: 50% !important;
-    }
-}
-
-@media (max-width: 767.98px) {
-    #content .row > .col-lg-4,
-    #content .row > .col-md-6 {
-        width: 100% !important;
-        max-width: 100% !important;
-    }
+.card {
+    border-radius: 12px;
 }
