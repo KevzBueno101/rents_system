@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib import messages
-from django.db.models import Q
+from django.db.models import Q, ProtectedError
 from django.http import JsonResponse
 from django.views.generic.edit import CreateView
 from django.urls import reverse_lazy
@@ -97,7 +97,7 @@ def signup_view(request):
         password  = request.POST.get('password')
         email     = request.POST.get('email')
         full_name = request.POST.get('full_name')
-        phone     = request.POST.get('phone')
+        phone     = int(request.POST.get('phone')) if request.POST.get('phone') else None
         room_id   = request.POST.get('room_id')
         photo     = request.FILES.get('photo')
 
@@ -155,7 +155,7 @@ def register_admin(request):
         password  = request.POST.get('password')
         email     = request.POST.get('email')
         full_name = request.POST.get('full_name')
-        phone     = request.POST.get('phone')
+        phone     = int(request.POST.get('phone')) if request.POST.get('phone') else None
         photo     = request.FILES.get('photo')
 
         if User.objects.filter(username=username).exists():
@@ -253,7 +253,7 @@ def tenant_list(request):
     if search:
         tenants = tenants.filter(
             models.Q(full_name__icontains=search)   |
-            models.Q(phone__icontains=search)       |
+            models.Q(phone__exact=search) if search.isdigit() else models.Q() |
             models.Q(room_number__icontains=search) |
             models.Q(user__email__icontains=search) |
             models.Q(user__username__icontains=search)
@@ -277,7 +277,7 @@ def add_tenant(request):
         password  = request.POST.get('password')
         email     = request.POST.get('email')
         full_name = request.POST.get('full_name')
-        phone     = request.POST.get('phone')
+        phone     = int(request.POST.get('phone')) if request.POST.get('phone') else None
         room_id   = request.POST.get('room_id')
         photo     = request.FILES.get('photo')
 
@@ -322,15 +322,15 @@ def edit_tenant(request, tenant_id):
 
     if request.method == 'POST':
         tenant.full_name  = request.POST.get('full_name')
-        tenant.phone      = request.POST.get('phone')
+        tenant.phone      = int(request.POST.get('phone')) if request.POST.get('phone') else None
         tenant.user.email = request.POST.get('email')
 
-        # Fixed: update room FK properly
+        # Fixed: update room FK properly using room_id
         room_id = request.POST.get('room_id')
         if room_id:
             try:
-                selected_room      = Room.objects.get(id=room_id)
-                tenant.room        = selected_room
+                selected_room = Room.objects.get(id=room_id)
+                tenant.room = selected_room
                 tenant.room_number = selected_room.room_number
             except Room.DoesNotExist:
                 pass
@@ -519,6 +519,9 @@ def edit_room(request, room_id):
 
 
 # ─── DELETE ROOM ─────────────────────────────────────
+from django.db.models import ProtectedError
+from django.contrib import messages
+
 @login_required(login_url='/')
 def delete_room(request, room_id):
     if not request.user.is_staff:
@@ -526,7 +529,17 @@ def delete_room(request, room_id):
 
     if request.method == 'POST':
         room = Room.objects.get(id=room_id)
-        room.delete()
+
+        # Check if room has tenants before attempting deletion
+        if room.occupied_beds() > 0:
+            messages.error(request, f'Cannot delete {room.room_code} because it still has tenants assigned.')
+            return redirect('room_list')
+
+        try:
+            room.delete()
+            messages.success(request, f'{room.room_code} has been deleted successfully.')
+        except ProtectedError:
+            messages.error(request, f'Cannot delete {room.room_code} because it still has tenants assigned.')
 
     return redirect('room_list')
 
@@ -576,7 +589,7 @@ def edit_profile(request):
         username         = request.POST.get('username')
         full_name        = request.POST.get('full_name')
         email            = request.POST.get('email')
-        phone            = request.POST.get('phone')
+        phone            = int(request.POST.get('phone')) if request.POST.get('phone') else None
         current_password = request.POST.get('current_password')
         new_password     = request.POST.get('password')
         confirm_password = request.POST.get('confirm_password')

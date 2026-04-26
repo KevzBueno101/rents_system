@@ -6,8 +6,8 @@ from django.contrib.auth.models import User
 class TenantProfile(models.Model):
     user        = models.OneToOneField(User, on_delete=models.CASCADE)
     full_name   = models.CharField(max_length=100)
-    phone       = models.CharField(max_length=20)
-    room        = models.ForeignKey('Room', on_delete=models.SET_NULL, null=True, blank=True)
+    phone       = models.BigIntegerField()
+    room        = models.ForeignKey('Room', on_delete=models.PROTECT, null=True, blank=True)
     room_number = models.CharField(max_length=20, blank=True)  # legacy fallback
     photo       = models.ImageField(upload_to='profiles/', blank=True, null=True)
     created_at  = models.DateTimeField(auto_now_add=True)
@@ -25,7 +25,7 @@ class TenantProfile(models.Model):
 class AdminProfile(models.Model):
     user       = models.OneToOneField(User, on_delete=models.CASCADE)
     full_name  = models.CharField(max_length=100)
-    phone      = models.CharField(max_length=20)
+    phone      = models.BigIntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     photo      = models.ImageField(upload_to='profiles/', blank=True, null=True)
     created_by = models.ForeignKey(

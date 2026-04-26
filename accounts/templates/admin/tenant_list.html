@@ -155,9 +155,18 @@
                         <input type="text" name="phone" id="editPhone" class="form-control" placeholder="Phone Number" required>
                     </div>
 
-                    <div class="input-group mb-3">
+                    <div class="input-group mb-2">
                         <span class="input-group-text"><i class="bi bi-door-open"></i></span>
-                        <input type="text" name="room_number" id="editRoomNumber" class="form-control" placeholder="Room Number" required>
+                        <select name="room_id" id="editRoomNumber" class="form-control" required>
+                            <option value="">Select Room</option>
+                            {% for room in available_rooms %}
+                                <option value="{{ room.id }}">
+                                    {{ room.room_code }}
+                                </option>
+                            {% empty %}
+                                <option value="" disabled>No rooms available</option>
+                            {% endfor %}
+                        </select>
                     </div>
 
                     <div class="mb-3">
@@ -270,7 +279,9 @@
                                     data-fullname="{{ tenant.full_name }}"
                                     data-email="{{ tenant.user.email }}"
                                     data-phone="{{ tenant.phone }}"
-                                    data-room="{{ tenant.room_number }}">
+                                    data-room="{{ tenant.room.id|default:'' }}"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#editTenantModal">
                                     <i class="bi bi-pencil"></i>
                                     <span class="d-none d-md-inline">Edit</span>
                                 </button>
@@ -303,7 +314,11 @@
 {% if show_add_modal %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        new bootstrap.Modal(document.getElementById('addTenantModal')).show();
+        // Trigger the Add button click to open modal
+        const addBtn = document.querySelector('[data-bs-target="#addTenantModal"]');
+        if (addBtn) {
+            addBtn.click();
+        }
     });
 </script>
 {% endif %}
@@ -405,6 +420,33 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         roomDetails.classList.remove('d-none');
+    });
+});
+</script>
+
+<!-- EDIT TENANT MODAL JAVASCRIPT -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Listen for modal show event to populate fields
+    const editModalEl = document.getElementById('editTenantModal');
+    editModalEl.addEventListener('show.bs.modal', function(event) {
+        // Get the button that triggered the modal
+        const button = event.relatedTarget;
+        
+        const tenantId = button.dataset.id;
+        const fullName = button.dataset.fullname;
+        const email = button.dataset.email;
+        const phone = button.dataset.phone;
+        const roomNumber = button.dataset.room;
+
+        // Populate modal fields
+        document.getElementById('editFullName').value = fullName;
+        document.getElementById('editEmail').value = email;
+        document.getElementById('editPhone').value = phone;
+        document.getElementById('editRoomNumber').value = roomNumber;
+
+        // Set form action
+        document.getElementById('editTenantForm').action = `/edit-tenant/${tenantId}/`;
     });
 });
 </script>

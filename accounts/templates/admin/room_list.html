@@ -533,13 +533,20 @@
                             data-wifi="{{ room.has_wifi }}">
                             <i class="bi bi-pencil"></i> Edit
                         </button>
-                        <form method="POST" action="{% url 'delete_room' room.id %}"
-                            onsubmit="return confirm('Delete {{ room.room_code }}? This cannot be undone!')">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                        {% if room.occupied_beds > 0 %}
+                            <button type="button" class="btn btn-sm btn-outline-danger" disabled
+                                    title="Cannot delete room with tenants">
                                 <i class="bi bi-trash"></i>
                             </button>
-                        </form>
+                        {% else %}
+                            <form method="POST" action="{% url 'delete_room' room.id %}"
+                                onsubmit="return confirm('Delete {{ room.room_code }}? This cannot be undone!')">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        {% endif %}
                     </div>
                 </div>
 
