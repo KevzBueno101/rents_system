@@ -11,13 +11,13 @@ from django.contrib.auth.views import PasswordResetView, PasswordResetConfirmVie
 from django.contrib.auth.forms import PasswordResetForm
 from django.template import loader
 from django.utils.safestring import mark_safe
-from .models import Inclusion, Appliance, Room, TenantProfile, Room, Bill, MaintenanceReport, Violation, AdminProfile
+from .models import Inclusion, Appliance, Room, TenantProfile, Bill, MaintenanceReport, Violation, AdminProfile
 import json
 
 
 # ─── HELPERS ─────────────────────────────────────────
 def get_available_rooms():
-    rooms = [r for r in Room.objects.all().order_by('floor', 'room_number') if not r.is_full()]
+    rooms = [r for r in Room.objects.prefetch_related('dynamic_inclusions').order_by('floor', 'room_number') if not r.is_full()]
     # Add dynamic inclusions to each room
     for room in rooms:
         room.dynamic_inclusions_list = [{'id': inc.id, 'name': inc.name} for inc in room.dynamic_inclusions.all()]
@@ -378,14 +378,14 @@ def room_list(request):
     sort_field = valid_sorts.get(sort_by, 'floor')
 
     if order == 'desc':
-        rooms = Room.objects.all().order_by(f'-{sort_field}', 'room_number')
+        rooms = Room.objects.prefetch_related('dynamic_inclusions').order_by(f'-{sort_field}', 'room_number')
     else:
-        rooms = Room.objects.all().order_by(sort_field, 'room_number')
+        rooms = Room.objects.prefetch_related('dynamic_inclusions').order_by(sort_field, 'room_number')
 
     # Add dynamic inclusions list to each room for template display
     for room in rooms:
         inclusions_list = [{'id': inc.id, 'name': inc.name} for inc in room.dynamic_inclusions.all()]
-        room.dynamic_inclusions_list = mark_safe(json.dumps(inclusions_list))
+        room.dynamic_inclusions_list = inclusions_list
 
     return render(request, 'admin/room_list.html', {
         'rooms'        : rooms,

@@ -1,4 +1,5 @@
 {% load static %}
+{% load json_filters %}
 
 <!DOCTYPE html>
 <html>
@@ -146,7 +147,7 @@
                             data-water="{{ room.water_included|yesno:'Yes,No' }}"
                             data-electricity="{{ room.electricity_included|yesno:'Yes,No' }}"
                             data-wifi="{{ room.has_wifi|yesno:'Yes,No' }}"
-                            data-dynamic-inclusions="{{ room.dynamic_inclusions_list|default:'[]' }}">
+                            data-dynamic-inclusions='{{ room.dynamic_inclusions_list|json_attr }}'>
                       {{ room.room_code }} - ₱{{ room.monthly_rate|floatformat:0 }}/month
                       {% if room.occupied_beds > 0 %}({{ room.occupied_beds }}/{{ room.capacity }} occupied){% endif %}
                     </option>
