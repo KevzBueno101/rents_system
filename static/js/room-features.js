@@ -22,8 +22,21 @@ let activeModal    = 'edit'; // 'add' or 'edit'
 // ── LOAD ALL INCLUSIONS FROM BACKEND ───────────────────────────────────────────
 async function loadAvailableFeatures() {
     try {
-        const iRes = await fetch('/get-all-inclusions/');
-        if (iRes.ok) allInclusions = await iRes.json();
+        const iRes = await fetch('/get-all-inclusions/', {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        if (!iRes.ok) {
+            console.error('loadAvailableFeatures: Response not OK', iRes.status);
+            return;
+        }
+        const contentType = iRes.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            console.error('loadAvailableFeatures: Expected JSON, got', contentType);
+            return;
+        }
+        allInclusions = await iRes.json();
     } catch (e) {
         console.error('loadAvailableFeatures error:', e);
     }
@@ -82,9 +95,27 @@ async function saveNewFeature(type, inputId) {
     try {
         const res    = await fetch(url, {
             method : 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': csrf },
+            headers: { 
+                'Content-Type': 'application/x-www-form-urlencoded', 
+                'X-CSRFToken': csrf,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
             body   : `name=${encodeURIComponent(name)}`,
         });
+        
+        if (!res.ok) {
+            console.error('saveNewFeature: Response not OK', res.status);
+            alert('Failed to add inclusion. Server returned error.');
+            return;
+        }
+        
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            console.error('saveNewFeature: Expected JSON, got', contentType);
+            alert('Failed to add inclusion. Invalid response from server.');
+            return;
+        }
+        
         const result = await res.json();
         const prefix = activeModal === 'add' ? 'add' : 'edit';
 
@@ -246,8 +277,20 @@ async function loadRoomFeatures(roomId) {
     try {
         await loadAvailableFeatures();
 
-        const res = await fetch(`/get-room-features/?room_id=${roomId}`);
-        if (!res.ok) return;
+        const res = await fetch(`/get-room-features/?room_id=${roomId}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        if (!res.ok) {
+            console.error('loadRoomFeatures: Response not OK', res.status);
+            return;
+        }
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            console.error('loadRoomFeatures: Expected JSON, got', contentType);
+            return;
+        }
 
         const data     = await res.json();
         roomInclusions = data.inclusions || [];

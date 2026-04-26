@@ -107,7 +107,18 @@ document.addEventListener('DOMContentLoaded', function () {
         const roomId = this.dataset.id;
 
         fetch(`/api/room-data/${roomId}/`)
-            .then(r => r.json())
+            .then(r => {
+                if (!r.ok) {
+                    console.error('Room info modal: Response not OK', r.status);
+                    throw new Error('Failed to load room data');
+                }
+                const contentType = r.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    console.error('Room info modal: Expected JSON, got', contentType);
+                    throw new Error('Invalid response format');
+                }
+                return r.json();
+            })
             .then(data => {
                 document.getElementById('infoRoomCode').textContent = data.code;
 
@@ -144,6 +155,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     : '<span class="text-muted" style="font-size:13px;">No tenants yet</span>';
 
                 new bootstrap.Modal(document.getElementById('roomInfoModal')).show();
+            })
+            .catch(err => {
+                console.error('Error loading room info:', err);
+                alert('Failed to load room information. Please try again.');
             });
     });
 });

@@ -18,11 +18,6 @@
     .role-btn {
       transition: all 0.2s;
     }
-
-    .role-btn.active {
-      background-color: #212529;
-      color: white;
-    }
   </style>
 </head>
 
@@ -68,12 +63,12 @@
 
           <form id="forgotPasswordForm" method="post" action="{% url 'password_reset' %}">
             {% csrf_token %}
-            
+
             <div class="mb-3">
               <label for="id_email" class="form-label">Email Address</label>
               <div class="input-group">
                 <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                <input type="email" class="form-control" id="id_email" name="email" 
+                <input type="email" class="form-control" id="id_email" name="email"
                        placeholder="Enter your email" required>
               </div>
             </div>
@@ -136,24 +131,23 @@
               <span class="input-group-text"><i class="bi bi-door-open"></i></span>
               <select name="room_id" class="form-control" id="signupRoomSelect" required>
                 <option value="">Select Available Room</option>
-                
-                  {% for room in available_rooms %}
-                    <option value="{{ room.id }}" 
-                            data-rate="{{ room.monthly_rate }}"
-                            data-capacity="{{ room.capacity }}"
-                            data-occupied="{{ room.occupied_beds }}"
-                            data-floor="{{ room.floor }}"
-                            data-bed-type="{{ room.bed_type }}"
-                            data-water="{{ room.water_included|yesno:'Yes,No' }}"
-                            data-electricity="{{ room.electricity_included|yesno:'Yes,No' }}"
-                            data-wifi="{{ room.has_wifi|yesno:'Yes,No' }}"
-                            data-dynamic-inclusions='{{ room.dynamic_inclusions_list|json_attr }}'>
-                      {{ room.room_code }} - ₱{{ room.monthly_rate|floatformat:0 }}/month
-                      {% if room.occupied_beds > 0 %}({{ room.occupied_beds }}/{{ room.capacity }} occupied){% endif %}
-                    </option>
-                  {% empty %}
-                    <option value="" disabled>No available rooms</option>
-                  {% endfor %}
+                {% for room in available_rooms %}
+                  <option value="{{ room.id }}"
+                          data-rate="{{ room.monthly_rate }}"
+                          data-capacity="{{ room.capacity }}"
+                          data-occupied="{{ room.occupied_beds }}"
+                          data-floor="{{ room.floor }}"
+                          data-bed-type="{{ room.bed_type }}"
+                          data-water="{{ room.water_included|yesno:'Yes,No' }}"
+                          data-electricity="{{ room.electricity_included|yesno:'Yes,No' }}"
+                          data-wifi="{{ room.has_wifi|yesno:'Yes,No' }}"
+                          data-dynamic-inclusions='{{ room.dynamic_inclusions_list|json_attr }}'>
+                    {{ room.room_code }} - ₱{{ room.monthly_rate|floatformat:0 }}/month
+                    {% if room.occupied_beds > 0 %}({{ room.occupied_beds }}/{{ room.capacity }} occupied){% endif %}
+                  </option>
+                {% empty %}
+                  <option value="" disabled>No available rooms</option>
+                {% endfor %}
               </select>
             </div>
 
@@ -179,8 +173,7 @@
               </div>
               <div class="mt-2" id="signupInclusionsSection" style="display: none;">
                 <strong>Inclusions:</strong>
-                <div class="d-flex flex-wrap gap-1 mt-1" id="signupInclusionsList">
-                </div>
+                <div class="d-flex flex-wrap gap-1 mt-1" id="signupInclusionsList"></div>
               </div>
             </div>
 
@@ -193,12 +186,12 @@
             <!-- PASSWORD (SIGNUP) -->
             <div class="input-group mb-3">
               <span class="input-group-text"><i class="bi bi-lock"></i></span>
-              <input type="password" id="signupPassword" name="password" class="form-control" placeholder="Password"
-                required>
+              <input type="password" id="signupPassword" name="password" class="form-control" placeholder="Password" required>
               <span class="input-group-text" onclick="toggleSignupPassword()" style="cursor:pointer;">
                 <i class="bi bi-eye" id="signupEyeIcon"></i>
               </span>
             </div>
+
             <!-- PHOTO (optional) -->
             <div class="mb-3">
               <label class="form-label text-muted" style="font-size:13px;">
@@ -223,8 +216,7 @@
     <div class="row min-vh-100">
 
       <!-- LEFT PANEL -->
-      <div
-        class="col-md-5 d-none d-md-flex left-panel text-white flex-column justify-content-center align-items-center text-center p-3">
+      <div class="col-md-5 d-none d-md-flex left-panel text-white flex-column justify-content-center align-items-center text-center p-3">
         <h1 class="fw-bold display-4">RENTS</h1>
         <p class="mb-2">Residents Entry, Navigation, and Tenant Tracking System</p>
         <p class="px-4">Manage tenants, rooms, and payments efficiently in one system.</p>
@@ -238,8 +230,7 @@
           <!-- ROLE TOGGLE -->
           <div class="d-flex justify-content-center mb-4">
             <div class="btn-group w-100" role="group">
-              <button type="button" class="btn btn-outline-dark role-btn active" id="btnAdmin"
-                onclick="selectRole('admin')">
+              <button type="button" class="btn btn-dark role-btn" id="btnAdmin" onclick="selectRole('admin')">
                 <i class="bi bi-shield-lock"></i> Admin
               </button>
               <button type="button" class="btn btn-outline-dark role-btn" id="btnTenant" onclick="selectRole('tenant')">
@@ -262,8 +253,7 @@
             <!-- PASSWORD (LOGIN) -->
             <div class="input-group mb-3">
               <span class="input-group-text"><i class="bi bi-lock"></i></span>
-              <input type="password" id="loginPassword" name="password" class="form-control" placeholder="Password"
-                required>
+              <input type="password" id="loginPassword" name="password" class="form-control" placeholder="Password" required>
               <span class="input-group-text" onclick="toggleLoginPassword()" style="cursor:pointer;">
                 <i class="bi bi-eye" id="loginEyeIcon"></i>
               </span>
@@ -280,8 +270,7 @@
 
             <!-- SIGNUP BUTTON (Tenant only) -->
             <div id="signupSection" class="mt-2 d-none">
-              <button type="button" class="btn btn-outline-primary w-100" data-bs-toggle="modal"
-                data-bs-target="#signupModal">
+              <button type="button" class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#signupModal">
                 Sign up as Tenant
               </button>
             </div>
@@ -295,7 +284,7 @@
                 {% if profile and profile.photo %}
                   <img src="{{ profile.photo.url }}"
                        style="width:40px; height:40px; border-radius:50%; object-fit:cover; cursor:pointer;"
-                       onclick="window.location='{% url 'tenant_dashboard' %}'">    
+                       onclick="window.location='{% url 'tenant_dashboard' %}'">
                 {% else %}
                   <div style="width:40px; height:40px; border-radius:50%; background:#f8f9fa; display:flex; align-items:center; justify-content:center; cursor:pointer;"
                        onclick="window.location='{% url 'tenant_dashboard' %}';">
@@ -303,12 +292,8 @@
                   </div>
                 {% endif %}
                 <div>
-                  <div class="text-dark" style="font-size:13px; font-weight:600;">
-                    {{ user.username }}
-                  </div>
-                  <div style="font-size:11px; color:#6c757d;">
-                    Tenant
-                  </div>
+                  <div class="text-dark" style="font-size:13px; font-weight:600;">{{ user.username }}</div>
+                  <div style="font-size:11px; color:#6c757d;">Tenant</div>
                 </div>
               </div>
             </div>
@@ -326,49 +311,35 @@
 
   <!-- LOGIN JS -->
   <script src="{% static 'js/login.js' %}"></script>
-  
+
   <!-- Forgot Password Form Handling -->
   <script>
     function handleForgotPasswordSubmit(e) {
       e.preventDefault();
-      
+
       const form = e.target;
       const formData = new FormData(form);
       const submitBtn = form.querySelector('button[type="submit"]');
       const originalText = submitBtn.innerHTML;
-      
-      // Show loading state
+
       submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Sending...';
       submitBtn.disabled = true;
-      
+
       fetch('{% url "password_reset" %}', {
         method: 'POST',
         body: formData,
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest'
-        }
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
       })
       .then(response => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
+        if (!response.ok) throw new Error('Network response was not ok');
         return response.text();
       })
       .then(html => {
-        console.log('Password reset response received');
-        
-        // Hide form and show success state
         const modalBody = document.querySelector('#forgotPasswordModal .modal-body');
         const formElement = modalBody.querySelector('form');
-        
-        if (formElement) {
-          formElement.style.display = 'none';
-        }
-        
-        // Remove any existing alerts
+        if (formElement) formElement.style.display = 'none';
         modalBody.querySelectorAll('.alert').forEach(alert => alert.remove());
-        
-        // Add success message
+
         const successDiv = document.createElement('div');
         successDiv.className = 'text-center';
         successDiv.innerHTML = `
@@ -381,80 +352,48 @@
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         `;
         modalBody.appendChild(successDiv);
-        
-        // Update modal footer
+
         const modalFooter = document.querySelector('#forgotPasswordModal .modal-footer');
-        if (modalFooter) {
-          modalFooter.style.display = 'none';
-        }
+        if (modalFooter) modalFooter.style.display = 'none';
       })
       .catch(error => {
         console.error('Error:', error);
-        
-        // Show error message
         const modalBody = document.querySelector('#forgotPasswordModal .modal-body');
         const errorDiv = document.createElement('div');
         errorDiv.className = 'alert alert-danger';
         errorDiv.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>An error occurred. Please try again.';
-        
-        // Insert error before the form
         const formElement = modalBody.querySelector('form');
-        if (formElement) {
-          modalBody.insertBefore(errorDiv, formElement);
-        } else {
-          modalBody.appendChild(errorDiv);
-        }
+        if (formElement) modalBody.insertBefore(errorDiv, formElement);
+        else modalBody.appendChild(errorDiv);
       })
       .finally(() => {
-        // Reset button state
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
       });
     }
-    
-    // Add event listener when DOM is ready
+
     document.addEventListener('DOMContentLoaded', function() {
       const forgotPasswordForm = document.getElementById('forgotPasswordForm');
       if (forgotPasswordForm) {
         forgotPasswordForm.addEventListener('submit', handleForgotPasswordSubmit);
-        console.log('Forgot password form listener attached');
-      } else {
-        console.error('Forgot password form not found');
       }
     });
-    
-    // Reset modal when hidden
+
     document.getElementById('forgotPasswordModal').addEventListener('hidden.bs.modal', function () {
       const modalBody = this.querySelector('.modal-body');
       const form = modalBody.querySelector('form');
-      
-      // Remove all alerts
       modalBody.querySelectorAll('.alert').forEach(alert => alert.remove());
-      
-      // Remove any success div
       const successDiv = modalBody.querySelector('.text-center');
-      if (successDiv && successDiv.innerHTML.includes('Email Sent!')) {
-        successDiv.remove();
-      }
-      
-      // Show form again
-      if (form) {
-        form.style.display = 'block';
-        form.reset();
-      }
-      
-      // Show modal footer
+      if (successDiv && successDiv.innerHTML.includes('Email Sent!')) successDiv.remove();
+      if (form) { form.style.display = 'block'; form.reset(); }
       const modalFooter = this.querySelector('.modal-footer');
-      if (modalFooter) {
-        modalFooter.style.display = 'flex';
-      }
+      if (modalFooter) modalFooter.style.display = 'flex';
     });
   </script>
 
-  <!-- Ensure selectRole function is available immediately -->
+  <!-- Fallback selectRole (in case login.js fails to load) -->
   <script>
     if (typeof selectRole === 'undefined') {
-      // Fallback in case the main script doesn't load properly
       window.selectRole = function(role) {
         document.getElementById("roleInput").value = role;
         const btnAdmin = document.getElementById("btnAdmin");
@@ -462,12 +401,12 @@
         const signupSection = document.getElementById("signupSection");
 
         if (role === "admin") {
-          btnAdmin.classList.add("active");
-          btnTenant.classList.remove("active");
+          btnAdmin.className = "btn btn-dark role-btn";
+          btnTenant.className = "btn btn-outline-dark role-btn";
           signupSection.classList.add("d-none");
         } else {
-          btnTenant.classList.add("active");
-          btnAdmin.classList.remove("active");
+          btnTenant.className = "btn btn-dark role-btn";
+          btnAdmin.className = "btn btn-outline-dark role-btn";
           signupSection.classList.remove("d-none");
         }
       };

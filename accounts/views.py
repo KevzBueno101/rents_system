@@ -13,6 +13,15 @@ from django.template import loader
 from django.utils.safestring import mark_safe
 from .models import Inclusion, Appliance, Room, TenantProfile, Bill, MaintenanceReport, Violation, AdminProfile
 import json
+import re
+
+# ─── HELPER: clean phone number to digits only ────────
+def parse_phone(raw):
+    if not raw:
+        return None
+    digits = re.sub(r"\D", "", str(raw))
+    return int(digits) if digits else None
+
 
 
 # ─── HELPERS ─────────────────────────────────────────
@@ -97,7 +106,7 @@ def signup_view(request):
         password  = request.POST.get('password')
         email     = request.POST.get('email')
         full_name = request.POST.get('full_name')
-        phone     = int(request.POST.get('phone')) if request.POST.get('phone') else None
+        phone     = parse_phone(request.POST.get('phone'))
         room_id   = request.POST.get('room_id')
         photo     = request.FILES.get('photo')
 
@@ -145,7 +154,7 @@ def signup_view(request):
 
 
 # ─── REGISTER ADMIN (Superadmin only) ────────────────
-@login_required(login_url='/')
+
 def register_admin(request):
     if not request.user.is_superuser:
         return redirect('admin_dashboard')
@@ -155,7 +164,7 @@ def register_admin(request):
         password  = request.POST.get('password')
         email     = request.POST.get('email')
         full_name = request.POST.get('full_name')
-        phone     = int(request.POST.get('phone')) if request.POST.get('phone') else None
+        phone     = parse_phone(request.POST.get('phone'))
         photo     = request.FILES.get('photo')
 
         if User.objects.filter(username=username).exists():
@@ -190,7 +199,7 @@ def register_admin(request):
 
 
 # ─── ADMIN DASHBOARD ─────────────────────────────────
-@login_required(login_url='/')
+
 def admin_dashboard(request):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
@@ -198,7 +207,7 @@ def admin_dashboard(request):
 
 
 # ─── ADMIN LIST (Superadmin only) ────────────────────
-@login_required(login_url='/')
+
 def admin_list(request):
     if not request.user.is_superuser:
         return redirect('admin_dashboard')
@@ -208,7 +217,7 @@ def admin_list(request):
 
 
 # ─── TOGGLE ADMIN STATUS (Superadmin only) ────────────
-@login_required(login_url='/')
+
 def toggle_admin_status(request, user_id):
     if not request.user.is_superuser:
         return redirect('admin_dashboard')
@@ -220,7 +229,7 @@ def toggle_admin_status(request, user_id):
 
 
 # ─── DELETE ADMIN (Superadmin only) ──────────────────
-@login_required(login_url='/')
+
 def delete_admin(request, user_id):
     if not request.user.is_superuser:
         return redirect('admin_dashboard')
@@ -233,6 +242,7 @@ def delete_admin(request, user_id):
 
 
 # ─── TENANT DASHBOARD ────────────────────────────────
+
 @login_required(login_url='/')
 def tenant_dashboard(request):
     if request.user.is_staff:
@@ -242,7 +252,7 @@ def tenant_dashboard(request):
 
 
 # ─── TENANT LIST ─────────────────────────────────────
-@login_required(login_url='/')
+
 def tenant_list(request):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
@@ -267,7 +277,7 @@ def tenant_list(request):
 
 
 # ─── ADD TENANT ───────────────────────────────────────
-@login_required(login_url='/')
+
 def add_tenant(request):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
@@ -277,7 +287,7 @@ def add_tenant(request):
         password  = request.POST.get('password')
         email     = request.POST.get('email')
         full_name = request.POST.get('full_name')
-        phone     = int(request.POST.get('phone')) if request.POST.get('phone') else None
+        phone     = parse_phone(request.POST.get('phone'))
         room_id   = request.POST.get('room_id')
         photo     = request.FILES.get('photo')
 
@@ -313,7 +323,7 @@ def add_tenant(request):
 
 
 # ─── EDIT TENANT ──────────────────────────────────────
-@login_required(login_url='/')
+
 def edit_tenant(request, tenant_id):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
@@ -322,7 +332,7 @@ def edit_tenant(request, tenant_id):
 
     if request.method == 'POST':
         tenant.full_name  = request.POST.get('full_name')
-        tenant.phone      = int(request.POST.get('phone')) if request.POST.get('phone') else None
+        tenant.phone      = parse_phone(request.POST.get('phone'))
         tenant.user.email = request.POST.get('email')
 
         # Fixed: update room FK properly using room_id
@@ -347,7 +357,7 @@ def edit_tenant(request, tenant_id):
 
 
 # ─── DELETE TENANT ────────────────────────────────────
-@login_required(login_url='/')
+
 def delete_tenant(request, tenant_id):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
@@ -360,7 +370,7 @@ def delete_tenant(request, tenant_id):
 
 
 # ─── ROOM LIST ───────────────────────────────────────
-@login_required(login_url='/')
+
 def room_list(request):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
@@ -395,7 +405,7 @@ def room_list(request):
 
 
 # ─── ADD ROOM ────────────────────────────────────────
-@login_required(login_url='/')
+
 def add_room(request):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
@@ -443,9 +453,12 @@ def add_room(request):
 
 
 # ─── EDIT ROOM ───────────────────────────────────────
+
 @login_required(login_url='/')
 def edit_room(request, room_id):
     if not request.user.is_staff:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'error': 'Unauthorized'}, status=403)
         return redirect('tenant_dashboard')
 
     room = Room.objects.get(id=room_id)
@@ -522,7 +535,7 @@ def edit_room(request, room_id):
 from django.db.models import ProtectedError
 from django.contrib import messages
 
-@login_required(login_url='/')
+
 def delete_room(request, room_id):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
@@ -583,13 +596,13 @@ def get_room_data_api(request, room_id):
 
 
 # ─── EDIT PROFILE ────────────────────────────────────
-@login_required(login_url='/')
+
 def edit_profile(request):
     if request.method == 'POST':
         username         = request.POST.get('username')
         full_name        = request.POST.get('full_name')
         email            = request.POST.get('email')
-        phone            = int(request.POST.get('phone')) if request.POST.get('phone') else None
+        phone            = parse_phone(request.POST.get('phone'))
         current_password = request.POST.get('current_password')
         new_password     = request.POST.get('password')
         confirm_password = request.POST.get('confirm_password')
@@ -723,7 +736,9 @@ def add_appliance(request):
 @login_required(login_url='/')
 def get_all_inclusions(request):
     if not request.user.is_staff:
-        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'error': 'Unauthorized'}, status=403)
+        return redirect('admin_dashboard')
     
     inclusions = list(Inclusion.objects.values('id', 'name'))
     return JsonResponse(inclusions, safe=False)
@@ -733,7 +748,9 @@ def get_all_inclusions(request):
 @login_required(login_url='/')
 def get_all_appliances(request):
     if not request.user.is_staff:
-        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'error': 'Unauthorized'}, status=403)
+        return redirect('admin_dashboard')
     
     appliances = list(Appliance.objects.values('id', 'name'))
     return JsonResponse(appliances, safe=False)
@@ -743,7 +760,9 @@ def get_all_appliances(request):
 @login_required(login_url='/')
 def get_room_features(request):
     if not request.user.is_staff:
-        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'error': 'Unauthorized'}, status=403)
+        return redirect('admin_dashboard')
     
     room_id = request.GET.get('room_id')
     if room_id:
@@ -761,7 +780,7 @@ def get_room_features(request):
 
 
 # ─── MANAGE INCLUSIONS AND APPLIANCES ───────────────────
-@login_required(login_url='/')
+
 def manage_features(request):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
