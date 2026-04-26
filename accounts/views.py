@@ -10,7 +10,9 @@ from django.urls import reverse_lazy
 from django.contrib.auth.views import PasswordResetView, PasswordResetConfirmView
 from django.contrib.auth.forms import PasswordResetForm
 from django.template import loader
+from django.utils.safestring import mark_safe
 from .models import Inclusion, Appliance, Room, TenantProfile, Room, Bill, MaintenanceReport, Violation, AdminProfile
+import json
 
 
 # ─── HELPERS ─────────────────────────────────────────
@@ -380,6 +382,11 @@ def room_list(request):
     else:
         rooms = Room.objects.all().order_by(sort_field, 'room_number')
 
+    # Add dynamic inclusions list to each room for template display
+    for room in rooms:
+        inclusions_list = [{'id': inc.id, 'name': inc.name} for inc in room.dynamic_inclusions.all()]
+        room.dynamic_inclusions_list = mark_safe(json.dumps(inclusions_list))
+
     return render(request, 'admin/room_list.html', {
         'rooms'        : rooms,
         'current_sort' : sort_by,
@@ -450,11 +457,20 @@ def edit_room(request, room_id):
         room.monthly_rate        = request.POST.get('monthly_rate')
         room.area                = request.POST.get('area') or None
         room.num_cr              = request.POST.get('num_cr', 1)
+
         room.bed_type            = request.POST.get('bed_type', 'single')
         room.has_lababo          = request.POST.get('has_sink') == 'on'
         room.water_included      = request.POST.get('water_included') == 'on'
         room.electricity_included= request.POST.get('electricity_included') == 'on'
         room.has_wifi            = request.POST.get('has_wifi') == 'on'
+
+        # Ensure capacity is always an int
+        capacity_val = request.POST.get('capacity')
+        if capacity_val is not None:
+            try:
+                room.capacity = int(capacity_val)
+            except (ValueError, TypeError):
+                room.capacity = 1
 
         # Handle dynamic inclusions
         room.dynamic_inclusions.clear()
@@ -471,6 +487,32 @@ def edit_room(request, room_id):
             room.photo = request.FILES.get('photo')
 
         room.save()
+        
+        # Check if this is an AJAX request — return full room data so JS can update the card
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            tenants = list(room.get_tenants().values_list('full_name', flat=True))
+            dynamic_inclusions = [inc.name for inc in room.dynamic_inclusions.all()]
+            return JsonResponse({
+                'success'           : True,
+                'id'                : room.id,
+                'code'              : room.room_code,
+                'floor'             : room.floor,
+                'occupied'          : room.occupied_beds(),
+                'capacity'          : room.capacity,
+                'rate'              : float(room.monthly_rate),
+                'status'            : room.status(),
+                'photo'             : room.photo.url if room.photo else None,
+                'tenants'           : tenants,
+                'area'              : float(room.area) if room.area else None,
+                'cr'                : room.num_cr,
+                'bedtype'           : room.get_bed_type_display(),
+                'sink'              : room.has_lababo,
+                'water'             : room.water_included,
+                'elec'              : room.electricity_included,
+                'wifi'              : room.has_wifi,
+                'dynamic_inclusions': dynamic_inclusions,
+            })
+        
         return redirect('room_list')
 
     return redirect('room_list')
@@ -487,6 +529,44 @@ def delete_room(request, room_id):
         room.delete()
 
     return redirect('room_list')
+
+
+# ─── GET ROOM DATA API (for AJAX updates) ──────────────
+@login_required(login_url='/')
+def get_room_data_api(request, room_id):
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    try:
+        room = Room.objects.get(id=room_id)
+        
+        # Get all tenants for this room
+        tenants = list(room.get_tenants().values_list('full_name', flat=True))
+        
+        # Get dynamic inclusions
+        dynamic_inclusions = [inc.name for inc in room.dynamic_inclusions.all()]
+        
+        return JsonResponse({
+            'id': room.id,
+            'code': room.room_code,
+            'floor': room.floor,
+            'occupied': room.occupied_beds(),
+            'capacity': room.capacity,
+            'rate': float(room.monthly_rate),
+            'status': room.status(),
+            'photo': room.photo.url if room.photo else None,
+            'tenants': tenants,
+            'area': float(room.area) if room.area else None,
+            'cr': room.num_cr,
+            'bedtype': room.get_bed_type_display(),
+            'sink': room.has_lababo,
+            'water': room.water_included,
+            'elec': room.electricity_included,
+            'wifi': room.has_wifi,
+            'dynamic_inclusions': dynamic_inclusions,
+        })
+    except Room.DoesNotExist:
+        return JsonResponse({'error': 'Room not found'}, status=404)
 
 
 # ─── EDIT PROFILE ────────────────────────────────────

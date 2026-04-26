@@ -135,23 +135,24 @@
               <span class="input-group-text"><i class="bi bi-door-open"></i></span>
               <select name="room_id" class="form-control" id="signupRoomSelect" required>
                 <option value="">Select Available Room</option>
-                {% for room in available_rooms %}
-                  <option value="{{ room.id }}" 
-                          data-rate="{{ room.monthly_rate }}"
-                          data-capacity="{{ room.capacity }}"
-                          data-occupied="{{ room.occupied_beds }}"
-                          data-floor="{{ room.floor }}"
-                          data-bed-type="{{ room.bed_type }}"
-                          data-water="{{ room.water_included|yesno:'Yes,No' }}"
-                          data-electricity="{{ room.electricity_included|yesno:'Yes,No' }}"
-                          data-wifi="{{ room.has_wifi|yesno:'Yes,No' }}"
-                          data-dynamic-inclusions="{{ room.dynamic_inclusions_list|default:'[]' }}">
-                    {{ room.room_code }} - {{ room.monthly_rate|floatformat:0 }}/month 
-                    {% if room.occupied_beds > 0 %}({{ room.occupied_beds }}/{{ room.capacity }} occupied){% endif %}
-                  </option>
-                {% empty %}
-                  <option value="" disabled>No available rooms</option>
-                {% endfor %}
+                
+                  {% for room in available_rooms %}
+                    <option value="{{ room.id }}" 
+                            data-rate="{{ room.monthly_rate }}"
+                            data-capacity="{{ room.capacity }}"
+                            data-occupied="{{ room.occupied_beds }}"
+                            data-floor="{{ room.floor }}"
+                            data-bed-type="{{ room.bed_type }}"
+                            data-water="{{ room.water_included|yesno:'Yes,No' }}"
+                            data-electricity="{{ room.electricity_included|yesno:'Yes,No' }}"
+                            data-wifi="{{ room.has_wifi|yesno:'Yes,No' }}"
+                            data-dynamic-inclusions="{{ room.dynamic_inclusions_list|default:'[]' }}">
+                      {{ room.room_code }} - ₱{{ room.monthly_rate|floatformat:0 }}/month
+                      {% if room.occupied_beds > 0 %}({{ room.occupied_beds }}/{{ room.capacity }} occupied){% endif %}
+                    </option>
+                  {% empty %}
+                    <option value="" disabled>No available rooms</option>
+                  {% endfor %}
               </select>
             </div>
 

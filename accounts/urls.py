@@ -55,6 +55,7 @@ urlpatterns = [
     path('add-room/', views.add_room, name='add_room'),
     path('edit-room/<int:room_id>/', views.edit_room, name='edit_room'),
     path('delete-room/<int:room_id>/', views.delete_room, name='delete_room'),
+    path('api/room-data/<int:room_id>/', views.get_room_data_api, name='get_room_data_api'),
     
     # ─── ROOM FEATURES ─────────────────────────────
     path('add-inclusion/', views.add_inclusion, name='add_inclusion'),
