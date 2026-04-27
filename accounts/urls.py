@@ -82,4 +82,27 @@ urlpatterns = [
     path('billing/pay/<int:bill_id>/', views.record_payment, name='record_payment'),
     path('billing/delete-payment/<int:payment_id>/', views.delete_payment, name='delete_payment'),
     path('billing/mark-sent/<int:bill_id>/', views.mark_as_sent, name='mark_as_sent'),
+
+    # ─── REMINDERS ───────────────────────────────────
+    path('reminders/', views.reminder_list, name='reminder_list'),
+    path('reminders/create/', views.create_reminder, name='create_reminder'),
+    path('reminders/view/<int:reminder_id>/', views.view_reminder, name='view_reminder'),
+    path('reminders/delete/<int:reminder_id>/', views.delete_reminder, name='delete_reminder'),
+    path('reminders/send/<int:reminder_id>/', views.send_reminder_now, name='send_reminder_now'),
+
+    # ─── NOTIFICATIONS ───────────────────────────────
+    path('notifications/', views.notification_list, name='notification_list'),
+    path('notifications/<int:notification_id>/read/', views.mark_notification_read, name='mark_notification_read'),
+    path('notifications/read-all/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
+
+    # ─── MAINTENANCE ─────────────────────────────────
+    path('maintenance/', views.maintenance_list, name='maintenance_list'),
+    path('maintenance/create/', views.create_maintenance, name='create_maintenance'),
+    path('maintenance/update/<int:report_id>/', views.update_maintenance_status, name='update_maintenance_status'),
+    path('maintenance/delete/<int:report_id>/', views.delete_maintenance, name='delete_maintenance'),
+
+    # ─── VIOLATIONS ─────────────────────────────────
+    path('violations/', views.violation_list, name='violation_list'),
+    path('violations/create/', views.create_violation, name='create_violation'),
+    path('violations/delete/<int:violation_id>/', views.delete_violation, name='delete_violation'),
 ]

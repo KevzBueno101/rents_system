@@ -1,0 +1,221 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}Reminders{% endblock %}
+{% block page_title %}Tenant Reminders{% endblock %}
+
+{% block content %}
+
+<!-- CREATE REMINDER MODAL -->
+<div class="modal fade" id="createReminderModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-bell"></i> Create Reminder
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{% url 'create_reminder' %}">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Tenant</label>
+                        <select name="tenant" class="form-select" required>
+                            <option value="">Select Tenant</option>
+                            {% for tenant in available_tenants %}
+                                <option value="{{ tenant.id }}">{{ tenant.full_name }} - {{ tenant.get_room_display }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Title</label>
+                        <input type="text" name="title" class="form-control" placeholder="Reminder title" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Message</label>
+                        <textarea name="message" class="form-control" rows="4" placeholder="Reminder message" required></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Type</label>
+                        <select name="reminder_type" class="form-select">
+                            <option value="general">General</option>
+                            <option value="cleanliness">Cleanliness</option>
+                            <option value="rules">House Rules</option>
+                            <option value="payment">Payment Reminder</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Schedule (Optional)</label>
+                        <input type="datetime-local" name="scheduled_at" class="form-control">
+                        <small class="text-muted">Leave empty to send immediately</small>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-send"></i> Send Reminder
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- REMINDER LIST -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-0 py-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 fw-bold">
+                <i class="bi bi-bell me-2"></i>Reminders
+            </h6>
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createReminderModal">
+                <i class="bi bi-plus"></i> New Reminder
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- FILTERS -->
+        <div class="row g-2 mb-3">
+            <div class="col-md-4">
+                <input type="text" name="search" class="form-control form-control-sm" 
+                       placeholder="Search reminders..." value="{{ search }}">
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All Status</option>
+                    <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="sent" {% if status_filter == 'sent' %}selected{% endif %}>Sent</option>
+                    <option value="read" {% if status_filter == 'read' %}selected{% endif %}>Read</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="type" class="form-select form-select-sm">
+                    <option value="">All Types</option>
+                    <option value="general" {% if type_filter == 'general' %}selected{% endif %}>General</option>
+                    <option value="cleanliness" {% if type_filter == 'cleanliness' %}selected{% endif %}>Cleanliness</option>
+                    <option value="rules" {% if type_filter == 'rules' %}selected{% endif %}>House Rules</option>
+                    <option value="payment" {% if type_filter == 'payment' %}selected{% endif %}>Payment</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-secondary btn-sm w-100">Filter</button>
+            </div>
+        </div>
+
+        <!-- TABLE -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tenant</th>
+                        <th>Title</th>
+                        <th>Type</th>
+                        <th>Scheduled</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reminder in reminders %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" 
+                                     style="width: 35px; height: 35px;">
+                                    <i class="bi bi-person text-muted"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-semibold">{{ reminder.tenant.full_name }}</div>
+                                    <small class="text-muted">{{ reminder.tenant.get_room_display }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-medium">{{ reminder.title }}</div>
+                            <small class="text-muted text-truncate d-block" style="max-width: 200px;">
+                                {{ reminder.message|truncatewords:10 }}
+                            </small>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark">{{ reminder.get_reminder_type_display }}</span>
+                        </td>
+                        <td>
+                            {% if reminder.scheduled_at %}
+                                <small>{{ reminder.scheduled_at|date:"M d, Y H:i" }}</small>
+                            {% else %}
+                                <small class="text-muted">Immediate</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if reminder.status == 'pending' %}
+                                <span class="badge bg-secondary">Pending</span>
+                            {% elif reminder.status == 'sent' %}
+                                <span class="badge bg-success">Sent</span>
+                            {% elif reminder.status == 'read' %}
+                                <span class="badge bg-primary">Read</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'view_reminder' reminder.id %}" class="btn btn-outline-primary">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if reminder.status == 'pending' %}
+                                <a href="{% url 'send_reminder_now' reminder.id %}" class="btn btn-outline-success">
+                                    <i class="bi bi-send"></i>
+                                </a>
+                                {% endif %}
+                                <button class="btn btn-outline-danger" onclick="deleteReminder({{ reminder.id }})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">
+                            <i class="bi bi-bell-slash fs-1 d-block mb-2"></i>
+                            No reminders found
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- DELETE CONFIRMATION MODAL -->
+<div class="modal fade" id="deleteReminderModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Reminder</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this reminder?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="" id="deleteReminderForm" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function deleteReminder(id) {
+    const form = document.getElementById('deleteReminderForm');
+    form.action = `/reminders/delete/${id}/`;
+    new bootstrap.Modal(document.getElementById('deleteReminderModal')).show();
+}
+</script>
+
+{% endblock %}

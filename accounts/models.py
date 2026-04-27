@@ -269,6 +269,8 @@ class ActivityLog(models.Model):
         ('maintenance_created', 'Maintenance Created'),
         ('maintenance_updated', 'Maintenance Updated'),
         ('maintenance_completed', 'Maintenance Completed'),
+        ('reminder_created', 'Reminder Created'),
+        ('reminder_sent', 'Reminder Sent'),
     ]
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='activities')
@@ -294,3 +296,75 @@ class ActivityLog(models.Model):
         """Return human-readable time ago string"""
         from django.utils.timesince import timesince
         return timesince(self.timestamp) + ' ago'
+
+
+# ─── NOTIFICATION ─────────────────────────────────────
+class Notification(models.Model):
+    """Generic notification model for tenant reminders and system alerts"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Notification'
+        verbose_name_plural = 'Notifications'
+
+    def __str__(self):
+        return f"{self.user.username} - {self.title}"
+
+
+# ─── TENANT REMINDER ───────────────────────────────────
+class TenantReminder(models.Model):
+    """Reminders sent to tenants (cleanliness, rules, etc.) with scheduling support"""
+    REMINDER_TYPES = [
+        ('cleanliness', 'Cleanliness'),
+        ('rules', 'House Rules'),
+        ('payment', 'Payment Reminder'),
+        ('general', 'General'),
+    ]
+
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('sent', 'Sent'),
+        ('read', 'Read'),
+    ]
+
+    tenant = models.ForeignKey(TenantProfile, on_delete=models.CASCADE, related_name='reminders')
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    reminder_type = models.CharField(max_length=20, choices=REMINDER_TYPES, default='general')
+    
+    # Scheduling fields
+    scheduled_at = models.DateTimeField(null=True, blank=True, help_text='Optional: Schedule for future delivery')
+    is_sent = models.BooleanField(default=False)
+    
+    # Tracking
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Tenant Reminder'
+        verbose_name_plural = 'Tenant Reminders'
+
+    def __str__(self):
+        return f"{self.tenant.full_name} - {self.title}"
+
+    def mark_as_sent(self):
+        """Mark reminder as sent and create notification"""
+        from django.utils import timezone
+        self.is_sent = True
+        self.status = 'sent'
+        self.sent_at = timezone.now()
+        self.save(update_fields=['is_sent', 'status', 'sent_at'])
+        
+        # Create notification for tenant
+        Notification.objects.create(
+            user=self.tenant.user,
+            title=self.title,
+            message=self.message
+        )

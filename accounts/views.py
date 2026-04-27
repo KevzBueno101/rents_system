@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib import messages
-from django.db.models import Q, ProtectedError
+from django.db.models import Q, ProtectedError, Sum
 from django.http import JsonResponse
 from django.views.generic.edit import CreateView
 from django.urls import reverse_lazy
@@ -11,7 +11,7 @@ from django.contrib.auth.views import PasswordResetView, PasswordResetConfirmVie
 from django.contrib.auth.forms import PasswordResetForm
 from django.template import loader
 from django.utils.safestring import mark_safe
-from .models import Inclusion, Appliance, Room, TenantProfile, Bill, Payment, MaintenanceReport, Violation, AdminProfile, ActivityLog
+from .models import Inclusion, Appliance, Room, TenantProfile, Bill, Payment, MaintenanceReport, Violation, AdminProfile, ActivityLog, TenantReminder, Notification
 from .activity_utils import log_activity, get_recent_activities
 import json
 import re
@@ -39,7 +39,10 @@ def get_dashboard_context():
     total_beds    = sum(r.capacity for r in all_rooms)
     occupied_beds = sum(r.occupied_beds() for r in all_rooms)
 
-    
+    # Calculate total revenue from all payments
+    total_revenue = Payment.objects.aggregate(
+        total=Sum('amount')
+    )['total'] or 0
 
     occupied_rooms = [r for r in all_rooms if r.occupied_beds() > 0]
     if len(occupied_rooms) < 3:
@@ -51,13 +54,14 @@ def get_dashboard_context():
         'vacant_rooms'  : sum(1 for r in all_rooms if not r.is_full()),
         'unpaid_bills'  : Bill.objects.exclude(status='paid').count(),
         'open_repairs'  : MaintenanceReport.objects.filter(status='open').count(),
-        'recent_tenants': TenantProfile.objects.select_related('user', 'room').order_by('-created_at')[:5],
+        'recent_tenants': TenantProfile.objects.select_related('user', 'room').order_by('-created_at')[:8],
         'total_beds'    : total_beds,
         'occupied_beds' : occupied_beds,
         'vacant_beds'   : total_beds - occupied_beds,
         'occupancy_rate': (occupied_beds / total_beds * 100) if total_beds > 0 else 0,
         'recent_rooms'  : occupied_rooms[:3],
         'total_rooms': len(all_rooms),
+        'total_revenue': total_revenue,
     }
 
 
@@ -218,7 +222,9 @@ def register_admin(request):
 def admin_dashboard(request):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
-    return render(request, 'admin/dashboard.html', get_dashboard_context())
+    context = get_dashboard_context()
+    context['activities'] = get_recent_activities(limit=3)
+    return render(request, 'admin/dashboard.html', context)
 
 
 # ─── ADMIN LIST (Superadmin only) ────────────────────
@@ -227,8 +233,18 @@ def admin_list(request):
     if not request.user.is_superuser:
         return redirect('admin_dashboard')
 
+    search = request.GET.get('search', '')
     admins = AdminProfile.objects.select_related('user', 'created_by').order_by('-created_at')
-    return render(request, 'admin/admin_list.html', {'admins': admins})
+
+    if search:
+        admins = admins.filter(
+            Q(full_name__icontains=search) |
+            Q(user__username__icontains=search) |
+            Q(user__email__icontains=search) |
+            Q(phone__icontains=search)
+        )
+
+    return render(request, 'admin/admin_list.html', {'admins': admins, 'search': search})
 
 
 # ─── TOGGLE ADMIN STATUS (Superadmin only) ────────────
@@ -277,11 +293,11 @@ def tenant_list(request):
 
     if search:
         tenants = tenants.filter(
-            models.Q(full_name__icontains=search)   |
-            models.Q(phone__exact=search) if search.isdigit() else models.Q() |
-            models.Q(room_number__icontains=search) |
-            models.Q(user__email__icontains=search) |
-            models.Q(user__username__icontains=search)
+            Q(full_name__icontains=search) |
+            Q(phone__icontains=search) |
+            Q(room_number__icontains=search) |
+            Q(user__email__icontains=search) |
+            Q(user__username__icontains=search)
         )
 
     return render(request, 'admin/tenant_list.html', {
@@ -409,6 +425,7 @@ def room_list(request):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
 
+    search  = request.GET.get('search', '')
     sort_by = request.GET.get('sort', 'floor')
     order   = request.GET.get('order', 'asc')
 
@@ -421,10 +438,19 @@ def room_list(request):
 
     sort_field = valid_sorts.get(sort_by, 'floor')
 
+    rooms = Room.objects.prefetch_related('dynamic_inclusions')
+
+    if search:
+        rooms = rooms.filter(
+            Q(room_number__icontains=search) |
+            Q(floor__icontains=search) |
+            Q(monthly_rate__icontains=search)
+        )
+
     if order == 'desc':
-        rooms = Room.objects.prefetch_related('dynamic_inclusions').order_by(f'-{sort_field}', 'room_number')
+        rooms = rooms.order_by(f'-{sort_field}', 'room_number')
     else:
-        rooms = Room.objects.prefetch_related('dynamic_inclusions').order_by(sort_field, 'room_number')
+        rooms = rooms.order_by(sort_field, 'room_number')
 
     # ── calculate BEFORE the loop ──────────────────────
     all_rooms     = Room.objects.all()
@@ -994,9 +1020,9 @@ def billing_list(request):
 
     if search:
         bills = bills.filter(
-            models.Q(bill_number__icontains=search) |
-            models.Q(tenant__full_name__icontains=search) |
-            models.Q(tenant__user__username__icontains=search)
+            Q(bill_number__icontains=search) |
+            Q(tenant__full_name__icontains=search) |
+            Q(tenant__user__username__icontains=search)
         )
 
     if status_filter:
@@ -1260,6 +1286,372 @@ def mark_as_sent(request, bill_id):
         messages.error(request, 'Bill not found')
 
     return redirect('billing_list')
+
+
+# ─── TENANT REMINDERS ─────────────────────────────────
+
+@login_required(login_url='/')
+def reminder_list(request):
+    """List all tenant reminders with filtering"""
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    search = request.GET.get('search', '')
+    status_filter = request.GET.get('status', '')
+    type_filter = request.GET.get('type', '')
+
+    reminders = TenantReminder.objects.select_related('tenant', 'tenant__user', 'tenant__room').order_by('-created_at')
+
+    if search:
+        reminders = reminders.filter(
+            Q(title__icontains=search) |
+            Q(tenant__full_name__icontains=search) |
+            Q(message__icontains=search)
+        )
+
+    if status_filter:
+        reminders = reminders.filter(status=status_filter)
+
+    if type_filter:
+        reminders = reminders.filter(reminder_type=type_filter)
+
+    # Get all tenants for the create reminder modal
+    all_tenants = TenantProfile.objects.select_related('user', 'room').filter(room__isnull=False).order_by('full_name')
+
+    return render(request, 'admin/reminder_list.html', {
+        'reminders': reminders,
+        'search': search,
+        'status_filter': status_filter,
+        'type_filter': type_filter,
+        'available_tenants': all_tenants,
+    })
+
+
+@login_required(login_url='/')
+def create_reminder(request):
+    """Create a new tenant reminder with optional scheduling"""
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    if request.method == 'POST':
+        from .forms import TenantReminderForm
+        form = TenantReminderForm(request.POST)
+        
+        if form.is_valid():
+            reminder = form.save(commit=False)
+            
+            # If no scheduled time, send immediately
+            if not reminder.scheduled_at:
+                reminder.status = 'sent'
+                reminder.is_sent = True
+                reminder.sent_at = timezone.now()
+                reminder.save()
+                
+                # Create notification immediately
+                Notification.objects.create(
+                    user=reminder.tenant.user,
+                    title=reminder.title,
+                    message=reminder.message
+                )
+                
+                log_activity(
+                    user=request.user,
+                    action='reminder_created',
+                    description=f'Sent reminder "{reminder.title}" to {reminder.tenant.full_name}',
+                    content_type='TenantReminder',
+                    object_id=reminder.id
+                )
+                
+                messages.success(request, f'Reminder sent to {reminder.tenant.full_name}!')
+            else:
+                # Schedule for future
+                reminder.status = 'pending'
+                reminder.save()
+                
+                log_activity(
+                    user=request.user,
+                    action='reminder_created',
+                    description=f'Scheduled reminder "{reminder.title}" for {reminder.tenant.full_name} at {reminder.scheduled_at}',
+                    content_type='TenantReminder',
+                    object_id=reminder.id
+                )
+                
+                messages.success(request, f'Reminder scheduled for {reminder.scheduled_at}!')
+            
+            return redirect('reminder_list')
+    else:
+        from .forms import TenantReminderForm
+        form = TenantReminderForm()
+
+    return render(request, 'admin/reminder_create.html', {'form': form})
+
+
+@login_required(login_url='/')
+def view_reminder(request, reminder_id):
+    """View a single reminder details"""
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    try:
+        reminder = TenantReminder.objects.select_related('tenant', 'tenant__user', 'tenant__room').get(id=reminder_id)
+    except TenantReminder.DoesNotExist:
+        messages.error(request, 'Reminder not found')
+        return redirect('reminder_list')
+
+    return render(request, 'admin/reminder_view.html', {'reminder': reminder})
+
+
+@login_required(login_url='/')
+def delete_reminder(request, reminder_id):
+    """Delete a reminder"""
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    if request.method == 'POST':
+        try:
+            reminder = TenantReminder.objects.get(id=reminder_id)
+            reminder.delete()
+            messages.success(request, 'Reminder deleted successfully!')
+        except TenantReminder.DoesNotExist:
+            messages.error(request, 'Reminder not found')
+
+    return redirect('reminder_list')
+
+
+@login_required(login_url='/')
+def send_reminder_now(request, reminder_id):
+    """Manually trigger a scheduled reminder to send now"""
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    try:
+        reminder = TenantReminder.objects.get(id=reminder_id)
+        reminder.mark_as_sent()
+        
+        log_activity(
+            user=request.user,
+            action='reminder_sent',
+            description=f'Manually sent reminder "{reminder.title}" to {reminder.tenant.full_name}',
+            content_type='TenantReminder',
+            object_id=reminder.id
+        )
+        
+        messages.success(request, f'Reminder sent to {reminder.tenant.full_name}!')
+    except TenantReminder.DoesNotExist:
+        messages.error(request, 'Reminder not found')
+
+    return redirect('reminder_list')
+
+
+# ─── NOTIFICATIONS (TENANT SIDE - FUTURE READY) ─────────
+
+@login_required(login_url='/')
+def notification_list(request):
+    """List notifications for the current user (future-ready for tenant dashboard)"""
+    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+    
+    return render(request, 'tenant/notifications.html', {
+        'notifications': notifications,
+        'unread_count': notifications.filter(is_read=False).count()
+    })
+
+
+@login_required(login_url='/')
+def mark_notification_read(request, notification_id):
+    """Mark a notification as read"""
+    try:
+        notification = Notification.objects.get(id=notification_id, user=request.user)
+        notification.is_read = True
+        notification.save(update_fields=['is_read'])
+    except Notification.DoesNotExist:
+        pass
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'success': True})
+    
+    return redirect('notification_list')
+
+
+@login_required(login_url='/')
+def mark_all_notifications_read(request):
+    """Mark all notifications as read for the current user"""
+    if request.method == 'POST':
+        Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'success': True})
+    
+    return redirect('notification_list')
+
+
+# ─── MAINTENANCE ─────────────────────────────────────
+
+@login_required(login_url='/')
+def maintenance_list(request):
+    """List all maintenance reports"""
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    status_filter = request.GET.get('status', '')
+    
+    reports = MaintenanceReport.objects.select_related('tenant', 'tenant__user', 'tenant__room').order_by('-created_at')
+
+    if status_filter:
+        reports = reports.filter(status=status_filter)
+
+    # Get all tenants for the create maintenance modal
+    tenants = TenantProfile.objects.select_related('user', 'room').filter(room__isnull=False).order_by('full_name')
+
+    return render(request, 'admin/maintenance_list.html', {
+        'reports': reports,
+        'status_filter': status_filter,
+        'tenants': tenants,
+    })
+
+
+@login_required(login_url='/')
+def create_maintenance(request):
+    """Create a new maintenance report"""
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    if request.method == 'POST':
+        tenant_id = request.POST.get('tenant')
+        description = request.POST.get('description')
+        
+        try:
+            tenant = TenantProfile.objects.get(id=tenant_id)
+            report = MaintenanceReport.objects.create(
+                tenant=tenant,
+                description=description
+            )
+            
+            log_activity(
+                user=request.user,
+                action='maintenance_created',
+                description=f'Created maintenance report for {tenant.full_name}',
+                content_type='MaintenanceReport',
+                object_id=report.id
+            )
+            
+            messages.success(request, 'Maintenance report created successfully!')
+        except TenantProfile.DoesNotExist:
+            messages.error(request, 'Tenant not found')
+        
+        return redirect('maintenance_list')
+
+    tenants = TenantProfile.objects.select_related('user', 'room').filter(room__isnull=False).order_by('full_name')
+    return render(request, 'admin/maintenance_create.html', {'tenants': tenants})
+
+
+@login_required(login_url='/')
+def update_maintenance_status(request, report_id):
+    """Update maintenance report status"""
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    if request.method == 'POST':
+        try:
+            report = MaintenanceReport.objects.get(id=report_id)
+            old_status = report.status
+            report.status = request.POST.get('status')
+            report.save()
+            
+            log_activity(
+                user=request.user,
+                action='maintenance_updated',
+                description=f'Updated maintenance status from {old_status} to {report.status}',
+                content_type='MaintenanceReport',
+                object_id=report.id
+            )
+            
+            messages.success(request, 'Maintenance status updated!')
+        except MaintenanceReport.DoesNotExist:
+            messages.error(request, 'Maintenance report not found')
+
+    return redirect('maintenance_list')
+
+
+@login_required(login_url='/')
+def delete_maintenance(request, report_id):
+    """Delete a maintenance report"""
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    if request.method == 'POST':
+        try:
+            report = MaintenanceReport.objects.get(id=report_id)
+            report.delete()
+            messages.success(request, 'Maintenance report deleted!')
+        except MaintenanceReport.DoesNotExist:
+            messages.error(request, 'Maintenance report not found')
+
+    return redirect('maintenance_list')
+
+
+# ─── VIOLATIONS ───────────────────────────────────────
+
+@login_required(login_url='/')
+def violation_list(request):
+    """List all violations"""
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    violations = Violation.objects.select_related('tenant', 'tenant__user', 'tenant__room').order_by('-date')
+    
+    # Get all tenants for the create violation modal
+    tenants = TenantProfile.objects.select_related('user', 'room').filter(room__isnull=False).order_by('full_name')
+    
+    return render(request, 'admin/violation_list.html', {
+        'violations': violations,
+        'tenants': tenants,
+    })
+
+
+@login_required(login_url='/')
+def create_violation(request):
+    """Create a new violation"""
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    if request.method == 'POST':
+        tenant_id = request.POST.get('tenant')
+        description = request.POST.get('description')
+        date = request.POST.get('date')
+        
+        try:
+            tenant = TenantProfile.objects.get(id=tenant_id)
+            Violation.objects.create(
+                tenant=tenant,
+                description=description,
+                date=date
+            )
+            
+            messages.success(request, 'Violation recorded successfully!')
+        except TenantProfile.DoesNotExist:
+            messages.error(request, 'Tenant not found')
+        
+        return redirect('violation_list')
+
+    tenants = TenantProfile.objects.select_related('user', 'room').filter(room__isnull=False).order_by('full_name')
+    return render(request, 'admin/violation_create.html', {'tenants': tenants})
+
+
+@login_required(login_url='/')
+def delete_violation(request, violation_id):
+    """Delete a violation"""
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    if request.method == 'POST':
+        try:
+            violation = Violation.objects.get(id=violation_id)
+            violation.delete()
+            messages.success(request, 'Violation deleted!')
+        except Violation.DoesNotExist:
+            messages.error(request, 'Violation not found')
+
+    return redirect('violation_list')
 
 
 # ─── LOGOUT ──────────────────────────────────────────

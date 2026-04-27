@@ -89,6 +89,8 @@ def get_activity_icon(action):
         'maintenance_created': 'bi-tools',
         'maintenance_updated': 'bi-gear',
         'maintenance_completed': 'bi-check-circle',
+        'reminder_created': 'bi-bell',
+        'reminder_sent': 'bi-send',
     }
     return icon_map.get(action, 'bi-activity')
 
@@ -122,5 +124,7 @@ def get_activity_color(action):
         'maintenance_created': 'text-warning',
         'maintenance_updated': 'text-info',
         'maintenance_completed': 'text-success',
+        'reminder_created': 'text-primary',
+        'reminder_sent': 'text-success',
     }
     return color_map.get(action, 'text-secondary')

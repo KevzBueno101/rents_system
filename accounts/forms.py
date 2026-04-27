@@ -1,6 +1,6 @@
 from django import forms
 from django.forms import formset_factory
-from .models import Bill, BillItem, Payment, TenantProfile
+from .models import Bill, BillItem, Payment, TenantProfile, TenantReminder
 from django.utils import timezone
 
 
@@ -52,3 +52,23 @@ class PaymentForm(forms.ModelForm):
 
 
 BillItemFormSet = formset_factory(BillItemForm, extra=1, can_delete=True)
+
+
+class TenantReminderForm(forms.ModelForm):
+    """Form for creating tenant reminders with optional scheduling"""
+    class Meta:
+        model = TenantReminder
+        fields = ['tenant', 'title', 'message', 'reminder_type', 'scheduled_at']
+        widgets = {
+            'tenant': forms.Select(attrs={'class': 'form-select'}),
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Reminder title'}),
+            'message': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Reminder message'}),
+            'reminder_type': forms.Select(attrs={'class': 'form-select'}),
+            'scheduled_at': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['tenant'].queryset = TenantProfile.objects.select_related('user', 'room').filter(room__isnull=False).order_by('full_name')
+        self.fields['scheduled_at'].required = False
+        self.fields['scheduled_at'].help_text = 'Leave empty to send immediately'

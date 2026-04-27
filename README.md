@@ -2,9 +2,21 @@
 
 A Django-based boarding house management system for managing tenants, rooms, billing, maintenance, and violations.
 
-## Current Status: **Production Ready** v2.4
+## Current Status: **Production Ready** v2.5
 
-**Latest Updates (April 27, 2026 - Late Night):**
+**Latest Updates (April 27, 2026 - Night):**
+- ✅ **Maintenance Management System** - Create, list, update status (Open → Ongoing → Completed), delete maintenance reports
+- ✅ **Violation Management System** - Record, list, and delete tenant violations with date tracking
+- ✅ **Tenant Reminders System** - Send reminders to tenants (cleanliness, rules, payment, general)
+- ✅ **Scheduled Reminders** - Schedule reminders for future delivery with datetime picker
+- ✅ **Notification System** - Generic notification model for tenant alerts and system messages
+- ✅ **Timer/Trigger Logic** - Django management command for sending scheduled reminders
+- ✅ **Activity Logging for Reminders** - Track reminder creation and sending in activity feed
+- ✅ **Dynamic Tenant Dropdowns** - Maintenance and violation modals now have dynamic tenant selection
+- ✅ **Sidebar Navigation** - Fixed Maintenance and Violations links to point to actual pages
+- ✅ **Non-Breaking Implementation** - All new features are modular and don't affect existing modules
+
+**Previous Updates (April 27, 2026 - Late Night):**
 - ✅ **Activity Logging System** - Added ActivityLog model for tracking user actions across the system
 - ✅ **Activity Helper Functions** - Created activity_utils.py with log_activity, get_recent_activities helpers
 - ✅ **Activity Template Tags** - Dynamic icons and colors for different activity types

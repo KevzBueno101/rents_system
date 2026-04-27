@@ -1,0 +1,71 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}Create Reminder{% endblock %}
+{% block page_title %}Create Reminder{% endblock %}
+
+{% block content %}
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-0 py-3">
+        <h6 class="mb-0 fw-bold">
+            <i class="bi bi-bell me-2"></i>Create Reminder
+        </h6>
+    </div>
+    <div class="card-body">
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+                <label class="form-label">Tenant <span class="text-danger">*</span></label>
+                {{ form.tenant }}
+                {% if form.tenant.errors %}
+                    <div class="text-danger small">{{ form.tenant.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Title <span class="text-danger">*</span></label>
+                {{ form.title }}
+                {% if form.title.errors %}
+                    <div class="text-danger small">{{ form.title.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Message <span class="text-danger">*</span></label>
+                {{ form.message }}
+                {% if form.message.errors %}
+                    <div class="text-danger small">{{ form.message.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Type</label>
+                {{ form.reminder_type }}
+                {% if form.reminder_type.errors %}
+                    <div class="text-danger small">{{ form.reminder_type.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Schedule (Optional)</label>
+                {{ form.scheduled_at }}
+                <small class="text-muted d-block mt-1">{{ form.scheduled_at.help_text }}</small>
+                {% if form.scheduled_at.errors %}
+                    <div class="text-danger small">{{ form.scheduled_at.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="d-flex gap-2">
+                <a href="{% url 'reminder_list' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-send"></i> Send Reminder
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

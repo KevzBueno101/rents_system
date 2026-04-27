@@ -72,13 +72,13 @@
 
             <div class="nav-section">Reports</div>
 
-            <a href="#"
-                class="nav-link {% if request.resolver_match.url_name == 'maintenance' %}active{% endif %}">
+            <a href="{% url 'maintenance_list' %}"
+                class="nav-link {% if request.resolver_match.url_name == 'maintenance_list' %}active{% endif %}">
                 <i class="bi bi-tools"></i> Maintenance
             </a>
 
-            <a href="#"
-                class="nav-link {% if request.resolver_match.url_name == 'violations' %}active{% endif %}">
+            <a href="{% url 'violation_list' %}"
+                class="nav-link {% if request.resolver_match.url_name == 'violation_list' %}active{% endif %}">
                 <i class="bi bi-exclamation-triangle"></i> Violations
             </a>
 
