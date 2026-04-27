@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib import messages
-from django.db.models import Q
+from django.db.models import Q, ProtectedError
 from django.http import JsonResponse
 from django.views.generic.edit import CreateView
 from django.urls import reverse_lazy
@@ -11,13 +11,23 @@ from django.contrib.auth.views import PasswordResetView, PasswordResetConfirmVie
 from django.contrib.auth.forms import PasswordResetForm
 from django.template import loader
 from django.utils.safestring import mark_safe
-from .models import Inclusion, Appliance, Room, TenantProfile, Room, Bill, MaintenanceReport, Violation, AdminProfile
+from .models import Inclusion, Appliance, Room, TenantProfile, Bill, Payment, MaintenanceReport, Violation, AdminProfile, ActivityLog
+from .activity_utils import log_activity, get_recent_activities
 import json
+import re
+
+# ─── HELPER: clean phone number to digits only ────────
+def parse_phone(raw):
+    if not raw:
+        return None
+    digits = re.sub(r"\D", "", str(raw))
+    return int(digits) if digits else None
+
 
 
 # ─── HELPERS ─────────────────────────────────────────
 def get_available_rooms():
-    rooms = [r for r in Room.objects.all().order_by('floor', 'room_number') if not r.is_full()]
+    rooms = [r for r in Room.objects.prefetch_related('dynamic_inclusions').order_by('floor', 'room_number') if not r.is_full()]
     # Add dynamic inclusions to each room
     for room in rooms:
         room.dynamic_inclusions_list = [{'id': inc.id, 'name': inc.name} for inc in room.dynamic_inclusions.all()]
@@ -28,6 +38,7 @@ def get_dashboard_context():
     total_tenants = TenantProfile.objects.count()
     total_beds    = sum(r.capacity for r in all_rooms)
     occupied_beds = sum(r.occupied_beds() for r in all_rooms)
+
     
 
     occupied_rooms = [r for r in all_rooms if r.occupied_beds() > 0]
@@ -38,7 +49,7 @@ def get_dashboard_context():
     return {
         'total_tenants' : total_tenants,
         'vacant_rooms'  : sum(1 for r in all_rooms if not r.is_full()),
-        'unpaid_bills'  : Bill.objects.filter(is_paid=False).count(),
+        'unpaid_bills'  : Bill.objects.exclude(status='paid').count(),
         'open_repairs'  : MaintenanceReport.objects.filter(status='open').count(),
         'recent_tenants': TenantProfile.objects.select_related('user', 'room').order_by('-created_at')[:5],
         'total_beds'    : total_beds,
@@ -97,7 +108,7 @@ def signup_view(request):
         password  = request.POST.get('password')
         email     = request.POST.get('email')
         full_name = request.POST.get('full_name')
-        phone     = request.POST.get('phone')
+        phone     = parse_phone(request.POST.get('phone'))
         room_id   = request.POST.get('room_id')
         photo     = request.FILES.get('photo')
 
@@ -110,6 +121,12 @@ def signup_view(request):
         if User.objects.filter(username=username).exists():
             return render(request, 'login.html', {
                 'signup_error'   : 'Username already taken. Please choose another.',
+                'available_rooms': get_available_rooms(),
+            })
+
+        if User.objects.filter(email__iexact=email).exists():
+            return render(request, 'login.html', {
+                'signup_error'   : 'This email is already registered. Please use a different email.',
                 'available_rooms': get_available_rooms(),
             })
 
@@ -145,7 +162,7 @@ def signup_view(request):
 
 
 # ─── REGISTER ADMIN (Superadmin only) ────────────────
-@login_required(login_url='/')
+
 def register_admin(request):
     if not request.user.is_superuser:
         return redirect('admin_dashboard')
@@ -155,13 +172,20 @@ def register_admin(request):
         password  = request.POST.get('password')
         email     = request.POST.get('email')
         full_name = request.POST.get('full_name')
-        phone     = request.POST.get('phone')
+        phone     = parse_phone(request.POST.get('phone'))
         photo     = request.FILES.get('photo')
 
         if User.objects.filter(username=username).exists():
-            return render(request, 'admin/dashboard.html', {
-                **get_dashboard_context(),
-                'register_error'     : 'Username already taken.',
+            return render(request, 'admin/admin_list.html', {
+                'admins'              : AdminProfile.objects.select_related('user', 'created_by').order_by('-created_at'),
+                'register_error'      : 'Username already taken.',
+                'show_register_modal': True,
+            })
+
+        if User.objects.filter(email__iexact=email).exists():
+            return render(request, 'admin/admin_list.html', {
+                'admins'              : AdminProfile.objects.select_related('user', 'created_by').order_by('-created_at'),
+                'register_error'      : 'This email is already registered. Please use a different email.',
                 'show_register_modal': True,
             })
 
@@ -190,7 +214,7 @@ def register_admin(request):
 
 
 # ─── ADMIN DASHBOARD ─────────────────────────────────
-@login_required(login_url='/')
+
 def admin_dashboard(request):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
@@ -198,7 +222,7 @@ def admin_dashboard(request):
 
 
 # ─── ADMIN LIST (Superadmin only) ────────────────────
-@login_required(login_url='/')
+
 def admin_list(request):
     if not request.user.is_superuser:
         return redirect('admin_dashboard')
@@ -208,7 +232,7 @@ def admin_list(request):
 
 
 # ─── TOGGLE ADMIN STATUS (Superadmin only) ────────────
-@login_required(login_url='/')
+
 def toggle_admin_status(request, user_id):
     if not request.user.is_superuser:
         return redirect('admin_dashboard')
@@ -220,7 +244,7 @@ def toggle_admin_status(request, user_id):
 
 
 # ─── DELETE ADMIN (Superadmin only) ──────────────────
-@login_required(login_url='/')
+
 def delete_admin(request, user_id):
     if not request.user.is_superuser:
         return redirect('admin_dashboard')
@@ -233,6 +257,7 @@ def delete_admin(request, user_id):
 
 
 # ─── TENANT DASHBOARD ────────────────────────────────
+
 @login_required(login_url='/')
 def tenant_dashboard(request):
     if request.user.is_staff:
@@ -242,7 +267,7 @@ def tenant_dashboard(request):
 
 
 # ─── TENANT LIST ─────────────────────────────────────
-@login_required(login_url='/')
+
 def tenant_list(request):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
@@ -253,7 +278,7 @@ def tenant_list(request):
     if search:
         tenants = tenants.filter(
             models.Q(full_name__icontains=search)   |
-            models.Q(phone__icontains=search)       |
+            models.Q(phone__exact=search) if search.isdigit() else models.Q() |
             models.Q(room_number__icontains=search) |
             models.Q(user__email__icontains=search) |
             models.Q(user__username__icontains=search)
@@ -267,7 +292,7 @@ def tenant_list(request):
 
 
 # ─── ADD TENANT ───────────────────────────────────────
-@login_required(login_url='/')
+
 def add_tenant(request):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
@@ -277,7 +302,7 @@ def add_tenant(request):
         password  = request.POST.get('password')
         email     = request.POST.get('email')
         full_name = request.POST.get('full_name')
-        phone     = request.POST.get('phone')
+        phone     = parse_phone(request.POST.get('phone'))
         room_id   = request.POST.get('room_id')
         photo     = request.FILES.get('photo')
 
@@ -285,6 +310,14 @@ def add_tenant(request):
             return render(request, 'admin/tenant_list.html', {
                 'tenants'        : TenantProfile.objects.select_related('user', 'room').order_by('-created_at'),
                 'add_error'      : 'Username already taken.',
+                'show_add_modal' : True,
+                'available_rooms': get_available_rooms(),
+            })
+
+        if User.objects.filter(email__iexact=email).exists():
+            return render(request, 'admin/tenant_list.html', {
+                'tenants'        : TenantProfile.objects.select_related('user', 'room').order_by('-created_at'),
+                'add_error'      : 'This email is already registered. Please use a different email.',
                 'show_add_modal' : True,
                 'available_rooms': get_available_rooms(),
             })
@@ -313,7 +346,7 @@ def add_tenant(request):
 
 
 # ─── EDIT TENANT ──────────────────────────────────────
-@login_required(login_url='/')
+
 def edit_tenant(request, tenant_id):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
@@ -321,16 +354,27 @@ def edit_tenant(request, tenant_id):
     tenant = TenantProfile.objects.get(id=tenant_id)
 
     if request.method == 'POST':
+        new_email = request.POST.get('email')
+        
+        # Check if email is already used by another user (excluding current user)
+        if User.objects.filter(email__iexact=new_email).exclude(id=tenant.user.id).exists():
+            return render(request, 'admin/tenant_list.html', {
+                'tenants'        : TenantProfile.objects.select_related('user', 'room').order_by('-created_at'),
+                'edit_error'     : 'This email is already registered. Please use a different email.',
+                'show_edit_modal': True,
+                'available_rooms': get_available_rooms(),
+            })
+        
         tenant.full_name  = request.POST.get('full_name')
-        tenant.phone      = request.POST.get('phone')
-        tenant.user.email = request.POST.get('email')
+        tenant.phone      = parse_phone(request.POST.get('phone'))
+        tenant.user.email = new_email
 
-        # Fixed: update room FK properly
+        # Fixed: update room FK properly using room_id
         room_id = request.POST.get('room_id')
         if room_id:
             try:
-                selected_room      = Room.objects.get(id=room_id)
-                tenant.room        = selected_room
+                selected_room = Room.objects.get(id=room_id)
+                tenant.room = selected_room
                 tenant.room_number = selected_room.room_number
             except Room.DoesNotExist:
                 pass
@@ -347,7 +391,7 @@ def edit_tenant(request, tenant_id):
 
 
 # ─── DELETE TENANT ────────────────────────────────────
-@login_required(login_url='/')
+
 def delete_tenant(request, tenant_id):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
@@ -360,7 +404,7 @@ def delete_tenant(request, tenant_id):
 
 
 # ─── ROOM LIST ───────────────────────────────────────
-@login_required(login_url='/')
+
 def room_list(request):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
@@ -378,24 +422,32 @@ def room_list(request):
     sort_field = valid_sorts.get(sort_by, 'floor')
 
     if order == 'desc':
-        rooms = Room.objects.all().order_by(f'-{sort_field}', 'room_number')
+        rooms = Room.objects.prefetch_related('dynamic_inclusions').order_by(f'-{sort_field}', 'room_number')
     else:
-        rooms = Room.objects.all().order_by(sort_field, 'room_number')
+        rooms = Room.objects.prefetch_related('dynamic_inclusions').order_by(sort_field, 'room_number')
 
+    # ── calculate BEFORE the loop ──────────────────────
+    all_rooms     = Room.objects.all()
+    total_beds    = sum(r.capacity for r in all_rooms)
+    occupied_beds = sum(r.occupied_beds() for r in all_rooms)
+    
     # Add dynamic inclusions list to each room for template display
     for room in rooms:
         inclusions_list = [{'id': inc.id, 'name': inc.name} for inc in room.dynamic_inclusions.all()]
-        room.dynamic_inclusions_list = mark_safe(json.dumps(inclusions_list))
+        room.dynamic_inclusions_list = inclusions_list
 
     return render(request, 'admin/room_list.html', {
         'rooms'        : rooms,
         'current_sort' : sort_by,
         'current_order': order,
+        'total_beds'   : total_beds,
+        'occupied_beds': occupied_beds,
+        'vacant_beds'  : total_beds - occupied_beds,
     })
 
 
 # ─── ADD ROOM ────────────────────────────────────────
-@login_required(login_url='/')
+
 def add_room(request):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
@@ -443,9 +495,12 @@ def add_room(request):
 
 
 # ─── EDIT ROOM ───────────────────────────────────────
+
 @login_required(login_url='/')
 def edit_room(request, room_id):
     if not request.user.is_staff:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'error': 'Unauthorized'}, status=403)
         return redirect('tenant_dashboard')
 
     room = Room.objects.get(id=room_id)
@@ -519,14 +574,27 @@ def edit_room(request, room_id):
 
 
 # ─── DELETE ROOM ─────────────────────────────────────
-@login_required(login_url='/')
+from django.db.models import ProtectedError
+from django.contrib import messages
+
+
 def delete_room(request, room_id):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
 
     if request.method == 'POST':
         room = Room.objects.get(id=room_id)
-        room.delete()
+
+        # Check if room has tenants before attempting deletion
+        if room.occupied_beds() > 0:
+            messages.error(request, f'Cannot delete {room.room_code} because it still has tenants assigned.')
+            return redirect('room_list')
+
+        try:
+            room.delete()
+            messages.success(request, f'{room.room_code} has been deleted successfully.')
+        except ProtectedError:
+            messages.error(request, f'Cannot delete {room.room_code} because it still has tenants assigned.')
 
     return redirect('room_list')
 
@@ -570,13 +638,13 @@ def get_room_data_api(request, room_id):
 
 
 # ─── EDIT PROFILE ────────────────────────────────────
-@login_required(login_url='/')
+
 def edit_profile(request):
     if request.method == 'POST':
         username         = request.POST.get('username')
         full_name        = request.POST.get('full_name')
         email            = request.POST.get('email')
-        phone            = request.POST.get('phone')
+        phone            = parse_phone(request.POST.get('phone'))
         current_password = request.POST.get('current_password')
         new_password     = request.POST.get('password')
         confirm_password = request.POST.get('confirm_password')
@@ -710,7 +778,9 @@ def add_appliance(request):
 @login_required(login_url='/')
 def get_all_inclusions(request):
     if not request.user.is_staff:
-        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'error': 'Unauthorized'}, status=403)
+        return redirect('admin_dashboard')
     
     inclusions = list(Inclusion.objects.values('id', 'name'))
     return JsonResponse(inclusions, safe=False)
@@ -720,7 +790,9 @@ def get_all_inclusions(request):
 @login_required(login_url='/')
 def get_all_appliances(request):
     if not request.user.is_staff:
-        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'error': 'Unauthorized'}, status=403)
+        return redirect('admin_dashboard')
     
     appliances = list(Appliance.objects.values('id', 'name'))
     return JsonResponse(appliances, safe=False)
@@ -730,7 +802,9 @@ def get_all_appliances(request):
 @login_required(login_url='/')
 def get_room_features(request):
     if not request.user.is_staff:
-        return JsonResponse({'error': 'Unauthorized'}, status=403)
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'error': 'Unauthorized'}, status=403)
+        return redirect('admin_dashboard')
     
     room_id = request.GET.get('room_id')
     if room_id:
@@ -748,7 +822,7 @@ def get_room_features(request):
 
 
 # ─── MANAGE INCLUSIONS AND APPLIANCES ───────────────────
-@login_required(login_url='/')
+
 def manage_features(request):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
@@ -903,6 +977,289 @@ def delete_appliance(request, appliance_id):
         return JsonResponse({'success': True})
     except Appliance.DoesNotExist:
         return JsonResponse({'error': 'Appliance not found'}, status=404)
+
+
+# ─── BILLING SYSTEM ─────────────────────────────────────
+
+@login_required(login_url='/')
+def billing_list(request):
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    search = request.GET.get('search', '')
+    status_filter = request.GET.get('status', '')
+    sort_by = request.GET.get('sort', '-created_at')
+
+    bills = Bill.objects.select_related('tenant', 'tenant__user', 'room').prefetch_related('payments')
+
+    if search:
+        bills = bills.filter(
+            models.Q(bill_number__icontains=search) |
+            models.Q(tenant__full_name__icontains=search) |
+            models.Q(tenant__user__username__icontains=search)
+        )
+
+    if status_filter:
+        bills = bills.filter(status=status_filter)
+
+    bills = bills.order_by(sort_by)
+
+    # Get all tenants for the generate bill modal
+    all_tenants = TenantProfile.objects.select_related('user', 'room').filter(room__isnull=False).order_by('full_name')
+
+    # Statistics
+    from django.db.models import Sum, Count
+    stats = {
+        'total_bills': bills.count(),
+        'outstanding': bills.filter(status__in=['sent', 'overdue']).aggregate(
+            total=Sum('total_amount')
+        )['total'] or 0,
+        'overdue': bills.filter(status='overdue').aggregate(
+            total=Sum('total_amount')
+        )['total'] or 0,
+        'paid': bills.filter(status='paid').aggregate(
+            total=Sum('total_amount')
+        )['total'] or 0,
+        'partial': bills.filter(status='partial').count(),
+        'draft': bills.filter(status='draft').count(),
+    }
+
+    return render(request, 'admin/billing_list.html', {
+        'bills': bills,
+        'stats': stats,
+        'search': search,
+        'status_filter': status_filter,
+        'sort_by': sort_by,
+        'all_tenants': all_tenants,
+        'activities': get_recent_activities(limit=10),
+    })
+
+
+@login_required(login_url='/')
+def generate_bill(request):
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    if request.method == 'POST':
+        tenant_id = request.POST.get('tenant')
+        period_start = request.POST.get('period_start')
+        period_end = request.POST.get('period_end')
+        due_date = request.POST.get('due_date')
+        total_amount = request.POST.get('total_amount')
+        notes = request.POST.get('notes', '')
+        save_as_draft = request.POST.get('save_as_draft') == 'on'
+
+        try:
+            tenant = TenantProfile.objects.get(id=tenant_id)
+        except TenantProfile.DoesNotExist:
+            messages.error(request, 'Tenant not found')
+            return redirect('billing_list')
+
+        from datetime import datetime
+
+        bill = Bill(
+            tenant=tenant,
+            period_start=datetime.strptime(period_start, '%Y-%m-%d').date() if period_start else None,
+            period_end=datetime.strptime(period_end, '%Y-%m-%d').date() if period_end else None,
+            due_date=datetime.strptime(due_date, '%Y-%m-%d').date() if due_date else None,
+            total_amount=total_amount,
+            notes=notes,
+            status='draft' if save_as_draft else 'sent'
+        )
+        bill.save()
+
+        log_activity(
+            user=request.user,
+            action='bill_generated',
+            description=f'Generated bill {bill.bill_number} for {tenant.full_name} (₱{total_amount})',
+            content_type='Bill',
+            object_id=bill.id
+        )
+
+        messages.success(request, f'Bill {bill.bill_number} generated successfully!')
+    return redirect('billing_list')
+
+
+@login_required(login_url='/')
+def edit_bill(request, bill_id):
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    try:
+        bill = Bill.objects.get(id=bill_id)
+    except Bill.DoesNotExist:
+        messages.error(request, 'Bill not found')
+        return redirect('billing_list')
+
+    if request.method == 'POST':
+        if bill.status == 'paid':
+            messages.error(request, 'Cannot edit paid bills')
+            return redirect('billing_list')
+
+        from datetime import datetime
+
+        period_start = request.POST.get('period_start')
+        period_end = request.POST.get('period_end')
+        due_date = request.POST.get('due_date')
+
+        bill.period_start = datetime.strptime(period_start, '%Y-%m-%d').date() if period_start else None
+        bill.period_end = datetime.strptime(period_end, '%Y-%m-%d').date() if period_end else None
+        bill.due_date = datetime.strptime(due_date, '%Y-%m-%d').date() if due_date else None
+        bill.total_amount = request.POST.get('total_amount')
+        bill.notes = request.POST.get('notes', '')
+        bill.status = request.POST.get('status', bill.status)
+        bill.save()
+
+        log_activity(
+            user=request.user,
+            action='bill_updated',
+            description=f'Updated bill {bill.bill_number} for {bill.tenant.full_name}',
+            content_type='Bill',
+            object_id=bill.id
+        )
+
+        messages.success(request, f'Bill {bill.bill_number} updated successfully!')
+        return redirect('view_bill', bill_id=bill.id)
+
+    return redirect('billing_list')
+
+
+@login_required(login_url='/')
+def view_bill(request, bill_id):
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    try:
+        bill = Bill.objects.select_related('tenant', 'tenant__user', 'room').prefetch_related('payments', 'items').get(id=bill_id)
+    except Bill.DoesNotExist:
+        return redirect('billing_list')
+
+    return render(request, 'admin/billing_view.html', {'bill': bill})
+
+
+@login_required(login_url='/')
+def delete_bill(request, bill_id):
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    if request.method == 'POST':
+        try:
+            bill = Bill.objects.get(id=bill_id)
+            bill_number = bill.bill_number
+            tenant_name = bill.tenant.full_name
+            bill.delete()
+            
+            log_activity(
+                user=request.user,
+                action='bill_deleted',
+                description=f'Deleted bill {bill_number} for {tenant_name}',
+                content_type='Bill',
+                object_id=bill_id
+            )
+            
+            messages.success(request, f'Bill {bill_number} deleted successfully!')
+        except Bill.DoesNotExist:
+            messages.error(request, 'Bill not found')
+
+    return redirect('billing_list')
+
+
+@login_required(login_url='/')
+def record_payment(request, bill_id):
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    try:
+        bill = Bill.objects.get(id=bill_id)
+    except Bill.DoesNotExist:
+        messages.error(request, 'Bill not found')
+        return redirect('billing_list')
+
+    if request.method == 'POST':
+        amount = request.POST.get('amount')
+        payment_date = request.POST.get('payment_date')
+        payment_method = request.POST.get('payment_method')
+        reference_number = request.POST.get('reference_number', '')
+        notes = request.POST.get('notes', '')
+        proof = request.FILES.get('proof')
+
+        from datetime import datetime
+
+        payment = Payment.objects.create(
+            bill=bill,
+            amount=amount,
+            payment_date=datetime.strptime(payment_date, '%Y-%m-%d').date() if payment_date else None,
+            payment_method=payment_method,
+            reference_number=reference_number,
+            notes=notes,
+            proof=proof
+        )
+
+        bill.update_status()
+
+        log_activity(
+            user=request.user,
+            action='payment_recorded',
+            description=f'Recorded payment of ₱{amount} for bill {bill.bill_number}',
+            content_type='Payment',
+            object_id=payment.id
+        )
+
+        messages.success(request, f'Payment of ₱{amount} recorded successfully!')
+        return redirect('billing_list')
+
+    return redirect('billing_list')
+
+
+@login_required(login_url='/')
+def delete_payment(request, payment_id):
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    try:
+        payment = Payment.objects.get(id=payment_id)
+        bill = payment.bill
+        amount = payment.amount
+        payment.delete()
+        bill.update_status()
+        
+        log_activity(
+            user=request.user,
+            action='payment_deleted',
+            description=f'Deleted payment of ₱{amount} for bill {bill.bill_number}',
+            content_type='Payment',
+            object_id=payment_id
+        )
+        
+        return redirect('view_bill', bill_id=bill.id)
+    except Payment.DoesNotExist:
+        messages.error(request, 'Payment not found')
+        return redirect('billing_list')
+
+
+@login_required(login_url='/')
+def mark_as_sent(request, bill_id):
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    try:
+        bill = Bill.objects.get(id=bill_id)
+        bill.status = 'sent'
+        bill.save(update_fields=['status'])
+        
+        log_activity(
+            user=request.user,
+            action='bill_sent',
+            description=f'Marked bill {bill.bill_number} as sent to {bill.tenant.full_name}',
+            content_type='Bill',
+            object_id=bill.id
+        )
+        
+        messages.success(request, f'Bill {bill.bill_number} marked as sent!')
+    except Bill.DoesNotExist:
+        messages.error(request, 'Bill not found')
+
+    return redirect('billing_list')
 
 
 # ─── LOGOUT ──────────────────────────────────────────

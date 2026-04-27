@@ -1,0 +1,280 @@
+{% extends 'base_dashboard.html' %}
+{% load avatar_tags %}
+
+{% block title %}View Bill{% endblock %}
+{% block page_title %}View Bill{% endblock %}
+
+{% block content %}
+
+<!-- BREADCRUMBS -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'billing_list' %}">Billing Management</a></li>
+        <li class="breadcrumb-item active" aria-current="page">View Bill</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- BILL DETAILS -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="bi bi-receipt"></i> {{ bill.bill_number|default:"—" }}
+                    </h6>
+                    <span class="badge bg-{{ bill.status|default:'secondary' }}">
+                        {{ bill.get_status_display|default:"—" }}
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="text-muted small">Tenant</label>
+                        <div class="d-flex align-items-center gap-2 mt-1">
+                            {% show_avatar bill.tenant 40 16 %}
+                            <div>
+                                <div class="fw-semibold">{{ bill.tenant.full_name }}</div>
+                                <div class="text-muted small">@{{ bill.tenant.user.username }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted small">Room</label>
+                        <div class="fw-semibold mt-1">{{ bill.room.room_code|default:"—" }}</div>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="text-muted small">Period Start</label>
+                        <div class="fw-semibold mt-1">{{ bill.period_start|date:"F d, Y"|default:"—" }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="text-muted small">Period End</label>
+                        <div class="fw-semibold mt-1">{{ bill.period_end|date:"F d, Y"|default:"—" }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="text-muted small">Due Date</label>
+                        <div class="fw-semibold mt-1">{{ bill.due_date|date:"F d, Y"|default:"—" }}</div>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="text-muted small">Total Amount</label>
+                        <div class="fw-bold fs-5 mt-1">₱{{ bill.total_amount|floatformat:2|default:"—" }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted small">Paid Amount</label>
+                        <div class="fw-bold fs-5 text-success mt-1">₱{{ bill.paid_amount|floatformat:2 }}</div>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="text-muted small">Balance</label>
+                        <div class="fw-bold fs-5 {% if bill.balance > 0 %}text-danger{% endif %} mt-1">
+                            ₱{{ bill.balance|floatformat:2 }}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted small">Created</label>
+                        <div class="fw-semibold mt-1">{{ bill.created_at|date:"F d, Y g:i A" }}</div>
+                    </div>
+                </div>
+                {% if bill.notes %}
+                <div class="mb-3">
+                    <label class="text-muted small">Notes</label>
+                    <div class="mt-1">{{ bill.notes }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- PAYMENT HISTORY -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold">
+                    <i class="bi bi-clock-history"></i> Payment History
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if bill.payments.exists %}
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Method</th>
+                                <th>Amount</th>
+                                <th>Reference</th>
+                                <th>Receipt</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in bill.payments.all %}
+                            <tr>
+                                <td>{{ payment.payment_date|date:"M d, Y" }}</td>
+                                <td>{{ payment.get_payment_method_display }}</td>
+                                <td class="fw-semibold">₱{{ payment.amount|floatformat:2 }}</td>
+                                <td>{{ payment.reference_number|default:"—" }}</td>
+                                <td>
+                                    {% if payment.proof %}
+                                    <a href="{{ payment.proof.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-image"></i> View
+                                    </a>
+                                    {% else %}
+                                    <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <form method="POST" action="{% url 'delete_payment' payment.id %}"
+                                          onsubmit="return confirm('Delete this payment? This cannot be undone!')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-3">No payments recorded yet.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- ACTIONS -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold">Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if bill.status != 'paid' %}
+                    <a href="#" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#paymentModal"
+                       data-id="{{ bill.id }}" data-bill-number="{{ bill.bill_number }}" data-balance="{{ bill.balance }}">
+                        <i class="bi bi-cash"></i> Record Payment
+                    </a>
+                    {% endif %}
+                    {% if bill.status == 'draft' %}
+                    <a href="{% url 'mark_as_sent' bill.id %}" class="btn btn-info">
+                        <i class="bi bi-send"></i> Mark as Sent
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'billing_list' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to List
+                    </a>
+                    <button class="btn btn-outline-dark" onclick="window.print()">
+                        <i class="bi bi-printer"></i> Print
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- BILL ITEMS -->
+        {% if bill.items.exists %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 fw-bold">Bill Items</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        {% for item in bill.items.all %}
+                        <tr>
+                            <td>{{ item.description }}</td>
+                            <td class="text-end">₱{{ item.amount|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- PAYMENT MODAL -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-cash"></i> Record Payment
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="" id="paymentForm" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="bill_id" id="paymentBillId">
+                    <div class="alert alert-info py-2">
+                        <small>Bill: <strong id="paymentBillNumber"></strong> | Balance: <strong id="paymentBalance"></strong></small>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Payment Amount</label>
+                            <input type="number" name="amount" class="form-control" step="0.01" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Payment Date</label>
+                            <input type="date" name="payment_date" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Payment Method</label>
+                        <select name="payment_method" class="form-select" required>
+                            <option value="cash">Cash</option>
+                            <option value="bank">Bank Transfer</option>
+                            <option value="gcash">GCash</option>
+                            <option value="maya">Maya</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Reference Number</label>
+                        <input type="text" name="reference_number" class="form-control" placeholder="Optional">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Receipt Proof</label>
+                        <input type="file" name="proof" class="form-control" accept="image/*">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" class="form-control" rows="2" placeholder="Optional"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="paymentForm" class="btn btn-success">Record Payment</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const paymentModal = document.getElementById('paymentModal');
+    if (paymentModal) {
+        paymentModal.addEventListener('show.bs.modal', function (event) {
+            const btn = event.relatedTarget;
+            if (!btn) return;
+
+            document.getElementById('paymentBillId').value = btn.dataset.id;
+            document.getElementById('paymentBillNumber').textContent = btn.dataset.billNumber;
+            document.getElementById('paymentBalance').textContent = '₱' + parseFloat(btn.dataset.balance).toFixed(2);
+            document.getElementById('paymentForm').action = `/billing/pay/${btn.dataset.id}/`;
+        });
+    }
+});
+</script>
+
+{% endblock %}

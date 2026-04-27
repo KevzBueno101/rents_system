@@ -36,12 +36,12 @@ window.selectRole = function(role) {
   const signupSection = document.getElementById("signupSection");
 
   if (role === "admin") {
-    btnAdmin.classList.add("active");
-    btnTenant.classList.remove("active");
+    btnAdmin.className = "btn btn-dark role-btn";
+    btnTenant.className = "btn btn-outline-dark role-btn";
     signupSection.classList.add("d-none");
   } else {
-    btnTenant.classList.add("active");
-    btnAdmin.classList.remove("active");
+    btnTenant.className = "btn btn-dark role-btn";
+    btnAdmin.className = "btn btn-outline-dark role-btn";
     signupSection.classList.remove("d-none");
   }
 }
@@ -52,60 +52,46 @@ document.addEventListener('DOMContentLoaded', function() {
   const signupRoomDetails = document.getElementById('signupRoomDetails');
 
   if (signupRoomSelect) {
-    // Room details elements
     const signupRoomRate = document.getElementById('signupRoomRate');
     const signupRoomCapacity = document.getElementById('signupRoomCapacity');
     const signupRoomFloor = document.getElementById('signupRoomFloor');
     const signupRoomAvailable = document.getElementById('signupRoomAvailable');
     const signupRoomBedType = document.getElementById('signupRoomBedType');
-    
-    // Section containers
     const signupInclusionsSection = document.getElementById('signupInclusionsSection');
     const signupInclusionsList = document.getElementById('signupInclusionsList');
-    
+
     signupRoomSelect.addEventListener('change', function() {
       const selectedOption = this.options[this.selectedIndex];
-      
+
       if (this.value === '') {
         signupRoomDetails.classList.add('d-none');
         return;
       }
-      
-      // Update room details
+
       signupRoomRate.textContent = `PHP ${parseFloat(selectedOption.dataset.rate).toFixed(0)}/month`;
       signupRoomCapacity.textContent = selectedOption.dataset.capacity;
       signupRoomFloor.textContent = selectedOption.dataset.floor;
       const available = parseInt(selectedOption.dataset.capacity) - parseInt(selectedOption.dataset.occupied);
       signupRoomAvailable.textContent = `${available} bed${available !== 1 ? 's' : ''}`;
-      
-      // Update bed type
+
       const bedType = selectedOption.dataset.bedType;
       let bedTypeText = bedType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
       signupRoomBedType.textContent = bedTypeText;
-      
-      // Clear existing badges
+
       signupInclusionsList.innerHTML = '';
-      
-      // Collect inclusions that are checked
+
       const inclusions = [];
-      if (selectedOption.dataset.water === 'Yes') {
-        inclusions.push('Water');
-      }
-      if (selectedOption.dataset.electricity === 'Yes') {
-        inclusions.push('Electricity');
-      }
-      
-      // Parse dynamic inclusions from data attribute
+      if (selectedOption.dataset.water === 'Yes') inclusions.push('Water');
+      if (selectedOption.dataset.electricity === 'Yes') inclusions.push('Electricity');
+      if (selectedOption.dataset.wifi === 'Yes') inclusions.push('WiFi');
+
       try {
         const dynamicInclusions = JSON.parse(selectedOption.dataset.dynamicInclusions || '[]');
-        dynamicInclusions.forEach(inc => {
-          inclusions.push(inc.name);
-        });
+        dynamicInclusions.forEach(inc => inclusions.push(inc.name));
       } catch (e) {
         console.log('Error parsing dynamic inclusions:', e);
       }
-      
-      // Show inclusions section only if there are inclusions
+
       if (inclusions.length > 0) {
         signupInclusionsSection.style.display = 'block';
         inclusions.forEach(inclusion => {
@@ -117,13 +103,13 @@ document.addEventListener('DOMContentLoaded', function() {
       } else {
         signupInclusionsSection.style.display = 'none';
       }
-      
+
       signupRoomDetails.classList.remove('d-none');
     });
   }
 });
 
-// Profile modal functions for login page
+// Profile modal functions
 window.openProfileModal = function () {
   new bootstrap.Modal(document.getElementById('profileModal')).show();
 };
@@ -133,7 +119,7 @@ window.toggleProfilePassword = function () {
   const newPass = document.getElementById('newPassword');
   const confirmPass = document.getElementById('confirmPassword');
   const icon = document.getElementById('profileEyeIcon');
-  
+
   if (currentPass.type === 'password') {
     currentPass.type = 'text';
     newPass.type = 'text';

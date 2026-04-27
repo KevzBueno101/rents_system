@@ -1,0 +1,77 @@
+{% load activity_tags %}
+
+<!-- RECENT ACTIVITY FEED -->
+<div class="card border-0 shadow-sm h-100">
+    <div class="card-header bg-white border-0 py-3">
+        <h6 class="mb-0 fw-bold">
+            <i class="bi bi-clock-history me-2"></i>Recent Activity
+        </h6>
+    </div>
+    <div class="card-body p-0">
+        {% if activities %}
+        <div class="activity-feed" style="max-height: 400px; overflow-y: auto;">
+            {% for activity in activities %}
+            <div class="activity-item p-3 border-bottom">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="activity-icon flex-shrink-0">
+                        <div class="rounded-circle bg-light p-2">
+                            <i class="bi {{ activity.action|activity_icon }} {{ activity.action|activity_color }} fs-5"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <p class="mb-1 small text-dark fw-medium text-truncate">
+                                    {{ activity.description|default:activity.get_action_display }}
+                                </p>
+                                <p class="mb-0 small text-muted">
+                                    {% if activity.user %}
+                                    <span class="fw-medium">{{ activity.user.username }}</span>
+                                    {% else %}
+                                    <span class="fw-medium">System</span>
+                                    {% endif %}
+                                    • {{ activity.get_time_ago }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-inbox fs-1 mb-2 d-block"></i>
+            <small>No recent activity</small>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.activity-feed {
+    scrollbar-width: thin;
+    scrollbar-color: #dee2e6 transparent;
+}
+
+.activity-feed::-webkit-scrollbar {
+    width: 6px;
+}
+
+.activity-feed::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.activity-feed::-webkit-scrollbar-thumb {
+    background-color: #dee2e6;
+    border-radius: 3px;
+}
+
+.activity-item:last-child {
+    border-bottom: none !important;
+}
+
+.activity-item:hover {
+    background-color: #f8f9fa;
+}
+</style>

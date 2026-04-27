@@ -2,9 +2,44 @@
 
 A Django-based boarding house management system for managing tenants, rooms, billing, maintenance, and violations.
 
-## Current Status: **Production Ready** v2.0
+## Current Status: **Production Ready** v2.4
 
-**Latest Updates (April 24, 2026):**
+**Latest Updates (April 27, 2026 - Late Night):**
+- ✅ **Activity Logging System** - Added ActivityLog model for tracking user actions across the system
+- ✅ **Activity Helper Functions** - Created activity_utils.py with log_activity, get_recent_activities helpers
+- ✅ **Activity Template Tags** - Dynamic icons and colors for different activity types
+- ✅ **Reusable Activity Feed** - Created activity_feed.html partial template for dashboards
+- ✅ **Billing Activity Integration** - Activity logging for bill generation, edits, deletions, payments
+- ✅ **Mobile Responsive Stats** - Stats cards display 3 per row on mobile with smaller fonts
+- ✅ **Dashboard Mobile Fix** - Improved stat card layout for mobile devices
+- ✅ **Billing View Template** - Added billing_view.html for detailed bill viewing
+- ✅ **Forms Module** - Created forms.py for centralized form definitions
+- ✅ **Fixed view_bill Function** - Restored missing view_bill view function
+
+**Previous Updates (April 27, 2026 - Evening):**
+- ✅ **Modal Stacking Fixes** - Fixed stuck backdrops and modal overlap issues
+- ✅ **Global Backdrop Cleanup** - Automatic cleanup when no modals are open
+- ✅ **Modal Instance Reuse** - Reuse Bootstrap instances instead of creating new ones
+- ✅ **Profile Confirmation Lifecycle** - Improved modal management for profile edits
+- ✅ **CSS Safety Net** - Added body overflow fix for orphaned modal states
+- ✅ **Tenant Modal JavaScript** - Created dedicated tenant-modal.js for better organization
+- ✅ **Room List Improvements** - Added bed count calculations and better formatting
+- ✅ **Tenant Room Selection** - Simplified room details display (removed appliances section)
+- ✅ **Code Formatting** - Improved consistency across JS and CSS files
+- ✅ **Template Cleanup** - Better formatting in room_list.html and tenant_list.html
+
+**Previous Updates (April 27, 2026 - Morning):**
+- ✅ **AJAX Authentication Fixes** - Added @login_required to all API endpoints
+- ✅ **Proper AJAX Headers** - X-Requested-With header for all fetch calls
+- ✅ **JSON Error Responses** - Return JSON instead of HTML redirects for unauthorized requests
+- ✅ **Phone Number Flexibility** - Changed phone field from BigIntegerField to CharField
+- ✅ **Phone Number Parser** - Added parse_phone helper to clean phone numbers to digits
+- ✅ **UI Consistency** - Improved role button styling (removed .active class dependency)
+- ✅ **Code Cleanup** - Removed debug console.log statements from production code
+- ✅ **Template Formatting** - Improved login.html readability and structure
+- ✅ **Tenant Dashboard Security** - Fixed AnonymousUser error with proper authentication
+
+**Previous Updates (April 24, 2026):**
 - ✅ **Enhanced Navigation System** - Added breadcrumbs with active page highlighting (blue/bold)
 - ✅ **Improved Room Layout** - Fixed 3 cards per row with proper Bootstrap g-4 spacing
 - ✅ **Relocated Inclusions Button** - Moved from sidebar to room list header for better accessibility
@@ -176,6 +211,17 @@ rents_system/
 | dynamic_inclusions | M2M | → accounts_inclusion |
 | dynamic_appliances | M2M | → accounts_appliance |
 
+### `accounts_activitylog`
+| Field | Type | Description |
+|---|---|---|
+| id | INT | Primary key |
+| user_id | FK | → auth_user (nullable) |
+| action | VARCHAR | Action type (bill_generated, payment_recorded, etc.) |
+| description | TEXT | Human-readable description |
+| content_type | VARCHAR | Related model name (e.g., Bill, TenantProfile) |
+| object_id | INT | ID of related object |
+| timestamp | DATETIME | When the action occurred |
+
 ### `accounts_bill`
 | Field | Type | Description |
 |---|---|---|
@@ -266,6 +312,16 @@ rents_system/
 - Delete admin accounts
 - Profile photos
 - Admin activity tracking
+
+### Billing System
+- **Bill Generation**: Create bills for tenants with period tracking
+- **Bill Management**: Edit, delete, and mark bills as sent
+- **Payment Recording**: Record payments with proof of payment
+- **Payment Tracking**: View payment history and status
+- **Activity Logging**: Track all billing-related actions
+- **Recent Activity Feed**: Dynamic activity feed with icons and timestamps
+- **Status Management**: Draft, sent, partial, paid, overdue statuses
+- **Statistics Dashboard**: Real-time billing statistics
 
 ### Dashboard
 - **Enhanced Stats**: Total tenants, vacant rooms, occupancy rate

@@ -1,0 +1,539 @@
+{% extends 'base_dashboard.html' %}
+{% load avatar_tags %}
+
+{% block title %}Billing{% endblock %}
+{% block page_title %}Billing Management{% endblock %}
+
+{% block content %}
+
+<style>
+/* Mobile responsive stat cards */
+@media (max-width: 767px) {
+    .stat-card-mobile {
+        padding: 6px !important;
+    }
+    
+    .stat-card-body-mobile {
+        padding: 8px !important;
+        gap: 8px !important;
+    }
+    
+    .stat-icon-mobile {
+        padding: 6px !important;
+        width: 32px !important;
+        height: 32px !important;
+    }
+    
+    .stat-icon-text-mobile {
+        font-size: 14px !important;
+    }
+    
+    .stat-label-mobile {
+        font-size: 8px !important;
+        line-height: 1 !important;
+    }
+    
+    .stat-value-mobile {
+        font-size: 12px !important;
+        font-weight: 600 !important;
+    }
+}
+</style>
+
+<!-- BREADCRUMBS -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Billing Management</li>
+    </ol>
+</nav>
+
+<!-- STATISTICS CARDS & RECENT ACTIONS -->
+<div class="row g-3 mb-4">
+    <!-- STATS - 3 CARDS PER ROW -->
+    <div class="col-lg-8">
+        <div class="row g-3">
+            <div class="col-4 col-md-4">
+                <div class="card border-0 shadow-sm h-100 stat-card-mobile">
+                    <div class="card-body d-flex align-items-center stat-card-body-mobile">
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3 stat-icon-mobile">
+                            <i class="bi bi-file-earmark-text fs-4 text-primary stat-icon-text-mobile"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small mb-1 stat-label-mobile">Total Bills</div>
+                            <div class="fw-bold fs-5 stat-value-mobile">{{ stats.total_bills }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4 col-md-4">
+                <div class="card border-0 shadow-sm h-100 stat-card-mobile">
+                    <div class="card-body d-flex align-items-center stat-card-body-mobile">
+                        <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3 stat-icon-mobile">
+                            <i class="bi bi-exclamation-circle fs-4 text-warning stat-icon-text-mobile"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small mb-1 stat-label-mobile">Outstanding</div>
+                            <div class="fw-bold fs-5 stat-value-mobile">₱{{ stats.outstanding|floatformat:0 }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4 col-md-4">
+                <div class="card border-0 shadow-sm h-100 stat-card-mobile">
+                    <div class="card-body d-flex align-items-center stat-card-body-mobile">
+                        <div class="rounded-circle bg-danger bg-opacity-10 p-3 me-3 stat-icon-mobile">
+                            <i class="bi bi-x-circle fs-4 text-danger stat-icon-text-mobile"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small mb-1 stat-label-mobile">Overdue</div>
+                            <div class="fw-bold fs-5 stat-value-mobile">₱{{ stats.overdue|floatformat:0 }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4 col-md-4">
+                <div class="card border-0 shadow-sm h-100 stat-card-mobile">
+                    <div class="card-body d-flex align-items-center stat-card-body-mobile">
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3 stat-icon-mobile">
+                            <i class="bi bi-check-circle fs-4 text-success stat-icon-text-mobile"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small mb-1 stat-label-mobile">Paid</div>
+                            <div class="fw-bold fs-5 stat-value-mobile">₱{{ stats.paid|floatformat:0 }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4 col-md-4">
+                <div class="card border-0 shadow-sm h-100 stat-card-mobile">
+                    <div class="card-body d-flex align-items-center stat-card-body-mobile">
+                        <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3 stat-icon-mobile">
+                            <i class="bi bi-clock fs-4 text-info stat-icon-text-mobile"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small mb-1 stat-label-mobile">Partial</div>
+                            <div class="fw-bold fs-5 stat-value-mobile">{{ stats.partial }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4 col-md-4">
+                <div class="card border-0 shadow-sm h-100 stat-card-mobile">
+                    <div class="card-body d-flex align-items-center stat-card-body-mobile">
+                        <div class="rounded-circle bg-secondary bg-opacity-10 p-3 me-3 stat-icon-mobile">
+                            <i class="bi bi-file-earmark fs-4 text-secondary stat-icon-text-mobile"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small mb-1 stat-label-mobile">Draft</div>
+                            <div class="fw-bold fs-5 stat-value-mobile">{{ stats.draft }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RECENT ACTIONS -->
+    <div class="col-lg-4">
+        {% load activity_tags %}
+        {% include 'includes/activity_feed.html' %}
+    </div>
+</div>
+
+<!-- BILLS TABLE -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white py-3">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
+            <h6 class="mb-0 fw-bold">
+                <i class="bi bi-receipt"></i> All Bills
+            </h6>
+            <div class="d-flex gap-2 w-100 w-md-auto">
+                <!-- SEARCH -->
+                <form method="GET" action="{% url 'billing_list' %}" class="d-flex gap-2 flex-grow-1">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text"
+                               name="search"
+                               class="form-control"
+                               placeholder="Search bill #, tenant..."
+                               value="{{ search }}">
+                        {% if search %}
+                        <a href="{% url 'billing_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </form>
+                <!-- FILTER -->
+                <form method="GET" action="{% url 'billing_list' %}">
+                    <select name="status" class="form-select" onchange="this.form.submit()">
+                        <option value="">All Status</option>
+                        <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Draft</option>
+                        <option value="sent" {% if status_filter == 'sent' %}selected{% endif %}>Sent</option>
+                        <option value="partial" {% if status_filter == 'partial' %}selected{% endif %}>Partial</option>
+                        <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
+                        <option value="overdue" {% if status_filter == 'overdue' %}selected{% endif %}>Overdue</option>
+                    </select>
+                </form>
+                <!-- GENERATE BILL -->
+                <button class="btn btn-sm btn-dark flex-shrink-0"
+                    data-bs-toggle="modal"
+                    data-bs-target="#generateBillModal">
+                    <i class="bi bi-plus-circle"></i>
+                    <span class="d-none d-md-inline">Generate Bill</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Bill #</th>
+                        <th>Tenant</th>
+                        <th>Room</th>
+                        <th>Period</th>
+                        <th>Due Date</th>
+                        <th>Total</th>
+                        <th>Paid</th>
+                        <th>Balance</th>
+                        <th>Status</th>
+                        <th>Receipt</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bill in bills %}
+                    <tr>
+                        <td class="ps-4">
+                            <span class="fw-semibold">{{ bill.bill_number|default:"—" }}</span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                {% show_avatar bill.tenant 30 12 %}
+                                <div>
+                                    <div style="font-size:14px; font-weight:600;">{{ bill.tenant.full_name }}</div>
+                                    <div style="font-size:11px; color:#888;">@{{ bill.tenant.user.username }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ bill.room.room_code|default:"—" }}</td>
+                        <td>
+                            <small>
+                                {{ bill.period_start|date:"M d" }} - {{ bill.period_end|date:"M d" }}
+                            </small>
+                        </td>
+                        <td>{{ bill.due_date|date:"M d, Y" }}</td>
+                        <td>₱{{ bill.total_amount|floatformat:0 }}</td>
+                        <td>₱{{ bill.paid_amount|floatformat:0 }}</td>
+                        <td class="fw-semibold {% if bill.balance > 0 %}text-danger{% endif %}">
+                            ₱{{ bill.balance|floatformat:0 }}
+                        </td>
+                        <td>
+                            {% if bill.status == 'draft' %}
+                                <span class="badge bg-secondary">Draft</span>
+                            {% elif bill.status == 'sent' %}
+                                <span class="badge bg-primary">Sent</span>
+                            {% elif bill.status == 'partial' %}
+                                <span class="badge bg-info">Partial</span>
+                            {% elif bill.status == 'paid' %}
+                                <span class="badge bg-success">Paid</span>
+                            {% elif bill.status == 'overdue' %}
+                                <span class="badge bg-danger">Overdue</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if bill.payments.last.proof %}
+                                <i class="bi bi-image text-success"></i>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <!-- VIEW -->
+                                <a href="{% url 'view_bill' bill.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <!-- EDIT -->
+                                <button class="btn btn-sm btn-outline-secondary edit-btn"
+                                    data-id="{{ bill.id }}"
+                                    data-tenant="{{ bill.tenant.id }}"
+                                    data-period-start="{{ bill.period_start|date:'Y-m-d' }}"
+                                    data-period-end="{{ bill.period_end|date:'Y-m-d' }}"
+                                    data-due-date="{{ bill.due_date|date:'Y-m-d' }}"
+                                    data-total="{{ bill.total_amount }}"
+                                    data-notes="{{ bill.notes }}"
+                                    data-status="{{ bill.status }}"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#editBillModal">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <!-- MARK PAID / ADD PAYMENT -->
+                                <button class="btn btn-sm btn-outline-success pay-btn"
+                                    data-id="{{ bill.id }}"
+                                    data-bill-number="{{ bill.bill_number }}"
+                                    data-balance="{{ bill.balance }}"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#paymentModal">
+                                    <i class="bi bi-cash"></i>
+                                </button>
+                                <!-- MARK SENT -->
+                                {% if bill.status == 'draft' %}
+                                <a href="{% url 'mark_as_sent' bill.id %}" class="btn btn-sm btn-outline-info">
+                                    <i class="bi bi-send"></i>
+                                </a>
+                                {% endif %}
+                                <!-- DELETE -->
+                                <form method="POST" action="{% url 'delete_bill' bill.id %}"
+                                      onsubmit="return confirm('Delete this bill? This will also delete all associated payments. This cannot be undone!')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="11" class="text-center text-muted py-4">No bills yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- GENERATE BILL MODAL -->
+<div class="modal fade" id="generateBillModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle"></i> Generate Bill
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{% url 'generate_bill' %}" id="generateBillForm">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tenant</label>
+                            <select name="tenant" class="form-select" required id="tenantSelect">
+                                <option value="">Select Tenant</option>
+                                {% for tenant in all_tenants %}
+                                <option value="{{ tenant.id }}">{{ tenant.full_name }} - {{ tenant.room.room_code|default:"—" }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Room</label>
+                            <input type="text" class="form-control" id="roomDisplay" readonly>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Period Start</label>
+                            <input type="date" name="period_start" class="form-control" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Period End</label>
+                            <input type="date" name="period_end" class="form-control" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Due Date</label>
+                            <input type="date" name="due_date" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Total Amount</label>
+                        <input type="number" name="total_amount" class="form-control" step="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="save_as_draft" id="saveAsDraft">
+                        <label class="form-check-label" for="saveAsDraft">Save as Draft</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="generateBillForm" class="btn btn-dark">Generate Bill</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT BILL MODAL -->
+<div class="modal fade" id="editBillModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil"></i> Edit Bill
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="" id="editBillForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="bill_id" id="editBillId">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Period Start</label>
+                            <input type="date" name="period_start" class="form-control" id="editPeriodStart" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Period End</label>
+                            <input type="date" name="period_end" class="form-control" id="editPeriodEnd" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Due Date</label>
+                            <input type="date" name="due_date" class="form-control" id="editDueDate" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Total Amount</label>
+                        <input type="number" name="total_amount" class="form-control" step="0.01" id="editTotalAmount" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select" id="editStatus">
+                            <option value="draft">Draft</option>
+                            <option value="sent">Sent</option>
+                            <option value="partial">Partial</option>
+                            <option value="paid">Paid</option>
+                            <option value="overdue">Overdue</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" class="form-control" rows="2" id="editNotes"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="editBillForm" class="btn btn-dark">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PAYMENT MODAL -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-cash"></i> Record Payment
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="" id="paymentForm" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="bill_id" id="paymentBillId">
+                    <div class="alert alert-info py-2">
+                        <small>Bill: <strong id="paymentBillNumber"></strong> | Balance: <strong id="paymentBalance"></strong></small>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Payment Amount</label>
+                            <input type="number" name="amount" class="form-control" step="0.01" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Payment Date</label>
+                            <input type="date" name="payment_date" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Payment Method</label>
+                        <select name="payment_method" class="form-select" required>
+                            <option value="cash">Cash</option>
+                            <option value="bank">Bank Transfer</option>
+                            <option value="gcash">GCash</option>
+                            <option value="maya">Maya</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Reference Number</label>
+                        <input type="text" name="reference_number" class="form-control" placeholder="Optional">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Receipt Proof</label>
+                        <input type="file" name="proof" class="form-control" accept="image/*">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" class="form-control" rows="2" placeholder="Optional"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="paymentForm" class="btn btn-success">Record Payment</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Tenant select change - auto-fill room
+    const tenantSelect = document.getElementById('tenantSelect');
+    if (tenantSelect) {
+        tenantSelect.addEventListener('change', function () {
+            const selectedOption = this.options[this.selectedIndex];
+            const roomText = selectedOption.text.split(' - ')[1] || '';
+            document.getElementById('roomDisplay').value = roomText;
+        });
+    }
+
+    // Edit bill modal
+    const editBillModal = document.getElementById('editBillModal');
+    if (editBillModal) {
+        editBillModal.addEventListener('show.bs.modal', function (event) {
+            const btn = event.relatedTarget;
+            if (!btn) return;
+
+            document.getElementById('editBillId').value = btn.dataset.id;
+            document.getElementById('editPeriodStart').value = btn.dataset.periodStart;
+            document.getElementById('editPeriodEnd').value = btn.dataset.periodEnd;
+            document.getElementById('editDueDate').value = btn.dataset.dueDate;
+            document.getElementById('editTotalAmount').value = btn.dataset.total;
+            document.getElementById('editNotes').value = btn.dataset.notes;
+            document.getElementById('editStatus').value = btn.dataset.status;
+            document.getElementById('editBillForm').action = `/billing/edit/${btn.dataset.id}/`;
+        });
+    }
+
+    // Payment modal
+    const paymentModal = document.getElementById('paymentModal');
+    if (paymentModal) {
+        paymentModal.addEventListener('show.bs.modal', function (event) {
+            const btn = event.relatedTarget;
+            if (!btn) return;
+
+            document.getElementById('paymentBillId').value = btn.dataset.id;
+            document.getElementById('paymentBillNumber').textContent = btn.dataset.billNumber;
+            document.getElementById('paymentBalance').textContent = '₱' + parseFloat(btn.dataset.balance).toFixed(2);
+            document.getElementById('paymentForm').action = `/billing/pay/${btn.dataset.id}/`;
+        });
+    }
+});
+</script>
+
+{% endblock %}
