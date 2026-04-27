@@ -97,69 +97,95 @@
 <!-- STAT CARDS -->
 <div class="row g-3 mb-4">
 
-    <div class="col-6 col-xl" style="cursor:pointer;" onclick="window.location='{% url 'tenant_list' %}'">
-        <div class="stat-card">
-            <div class="icon-box" style="background:#e8f4fd; color:#1a73e8;">
+    <div class="col-4 col-md-4 col-xl" style="cursor:pointer;" onclick="window.location='{% url 'tenant_list' %}'">
+        <div class="stat-card stat-card-mobile">
+            <div class="icon-box icon-box-mobile" style="background:#e8f4fd; color:#1a73e8;">
                 <i class="bi bi-people"></i>
             </div>
             <div>
-                <div class="stat-value">{{ total_tenants }}</div>
-                <div class="stat-label">Total Tenants</div>
+                <div class="stat-value stat-value-mobile">{{ total_tenants }}</div>
+                <div class="stat-label stat-label-mobile">Total Tenants</div>
             </div>
         </div>
     </div>
 
-    <div class="col-6 col-xl" style="cursor:pointer;" onclick="window.location='{% url 'room_list' %}'">
-    <div class="stat-card">
-        <div class="icon-box" style="background:#e6f9f0; color:#1db954;">
+    <div class="col-4 col-md-4 col-xl" style="cursor:pointer;" onclick="window.location='{% url 'room_list' %}'">
+    <div class="stat-card stat-card-mobile">
+        <div class="icon-box icon-box-mobile" style="background:#e6f9f0; color:#1db954;">
             <i class="bi bi-door-open"></i>
         </div>
         <div>
-            <div class="stat-value">{{ vacant_rooms }}</div>
-            <div class="stat-label">Vacant Rooms</div>
-            <small class="text-muted">{{ total_rooms }} Total</small>
+            <div class="stat-value stat-value-mobile">{{ vacant_rooms }}</div>
+            <div class="stat-label stat-label-mobile">Vacant Rooms</div>
+            <small class="text-muted stat-label-mobile">{{ total_rooms }} Total</small>
         </div>
     </div>
 </div>
 <!-- OCCUPANCY -->
-<div class="col-6 col-xl" style="cursor:pointer;" onclick="window.location='{% url 'room_list' %}'">
-    <div class="stat-card">
-        <div class="icon-box" style="background:#f0e8fd; color:#7c3aed;">
+<div class="col-4 col-md-4 col-xl" style="cursor:pointer;" onclick="window.location='{% url 'room_list' %}'">
+    <div class="stat-card stat-card-mobile">
+        <div class="icon-box icon-box-mobile" style="background:#f0e8fd; color:#7c3aed;">
             <i class="bi bi-percent"></i>
         </div>
         <div>
-            <div class="stat-value">{{ occupancy_rate|floatformat:1 }}%</div>
-            <div class="stat-label">Occupancy</div>
-            <small class="text-muted">{{ occupied_beds }}/{{ total_beds }} beds</small>
+            <div class="stat-value stat-value-mobile">{{ occupancy_rate|floatformat:1 }}%</div>
+            <div class="stat-label stat-label-mobile">Occupancy</div>
+            <small class="text-muted stat-label-mobile">{{ occupied_beds }}/{{ total_beds }} beds</small>
         </div>
     </div>
 </div>
 
-    <div class="col-6 col-xl">
-        <div class="stat-card">
-            <div class="icon-box" style="background:#fff4e5; color:#f4a100;">
+    <div class="col-4 col-md-4 col-xl" style="cursor:pointer;" onclick="window.location='{% url 'billing_list' %}'">
+        <div class="stat-card stat-card-mobile">
+            <div class="icon-box icon-box-mobile" style="background:#fff4e5; color:#f4a100;">
                 <i class="bi bi-cash-stack"></i>
             </div>
             <div>
-                <div class="stat-value">{{ unpaid_bills }}</div>
-                <div class="stat-label">Unpaid Bills</div>
+                <div class="stat-value stat-value-mobile">{{ unpaid_bills }}</div>
+                <div class="stat-label stat-label-mobile">Unpaid Bills</div>
             </div>
         </div>
     </div>
 
-    <div class="col-6 col-xl">
-        <div class="stat-card">
-            <div class="icon-box" style="background:#fdecea; color:#e53935;">
+    <div class="col-4 col-md-4 col-xl">
+        <div class="stat-card stat-card-mobile">
+            <div class="icon-box icon-box-mobile" style="background:#fdecea; color:#e53935;">
                 <i class="bi bi-tools"></i>
             </div>
             <div>
-                <div class="stat-value">{{ open_repairs }}</div>
-                <div class="stat-label">Open Repairs</div>
+                <div class="stat-value stat-value-mobile">{{ open_repairs }}</div>
+                <div class="stat-label stat-label-mobile">Open Repairs</div>
             </div>
         </div>
     </div>
 
 </div>
+
+<style>
+/* Mobile responsive stat cards */
+@media (max-width: 767px) {
+    .stat-card-mobile {
+        padding: 8px !important;
+        gap: 6px !important;
+    }
+    
+    .icon-box-mobile {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 14px !important;
+    }
+    
+    .stat-value-mobile {
+        font-size: 14px !important;
+        font-weight: 600 !important;
+    }
+    
+    .stat-label-mobile {
+        font-size: 9px !important;
+        line-height: 1.1 !important;
+    }
+}
+</style>
 
 <!-- RECENT TENANTS TABLE -->
 <div class="card border-0 shadow-sm">

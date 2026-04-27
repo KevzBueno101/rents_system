@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 
 # ─── TENANT PROFILE ───────────────────────────────────
@@ -39,19 +40,6 @@ class AdminProfile(models.Model):
         return f"{self.full_name} (Admin)"
 
 
-# ─── BILL ─────────────────────────────────────────────
-class Bill(models.Model):
-    tenant     = models.ForeignKey(TenantProfile, on_delete=models.CASCADE)
-    amount     = models.DecimalField(max_digits=8, decimal_places=2)
-    due_date   = models.DateField()
-    is_paid    = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        status = "Paid" if self.is_paid else "Unpaid"
-        return f"{self.tenant.full_name} - P{self.amount} ({status})"
-
-
 # ─── MAINTENANCE REPORT ───────────────────────────────
 class MaintenanceReport(models.Model):
     STATUS_CHOICES = [
@@ -86,11 +74,6 @@ class Inclusion(models.Model):
     
     def __str__(self):
         return self.name
-
-
-
-
-
 
 
 # ─── APPLIANCE ───────────────────────────────────────
@@ -150,3 +133,164 @@ class Room(models.Model):
         return f"Room {self.floor}-{self.room_number}"
     def __str__(self):
         return self.room_code
+
+
+# ─── BILLING SYSTEM ─────────────────────────────────────
+
+class Bill(models.Model):
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('sent', 'Sent'),
+        ('partial', 'Partial'),
+        ('paid', 'Paid'),
+        ('overdue', 'Overdue'),
+    ]
+
+    tenant = models.ForeignKey(TenantProfile, on_delete=models.CASCADE, related_name='bills')
+    room = models.ForeignKey('Room', on_delete=models.SET_NULL, null=True, blank=True, related_name='bills')
+    bill_number = models.CharField(max_length=30, unique=True, null=True, blank=True)
+
+    period_start = models.DateField(null=True, blank=True)
+    period_end = models.DateField(null=True, blank=True)
+    due_date = models.DateField(null=True, blank=True)
+
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    notes = models.TextField(blank=True)
+
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.bill_number} - {self.tenant.full_name}"
+
+    def save(self, *args, **kwargs):
+        if not self.bill_number:
+            self.bill_number = self.generate_bill_number()
+        if self.room is None and self.tenant.room:
+            self.room = self.tenant.room
+        super().save(*args, **kwargs)
+
+    def generate_bill_number(self):
+        from django.db.models import Max
+        year = self.period_start.year
+        prefix = f"BILL-{year}"
+        last_bill = Bill.objects.filter(bill_number__startswith=prefix).aggregate(
+            max_num=Max('bill_number')
+        )['max_num']
+        if last_bill:
+            last_num = int(last_bill.split('-')[-1])
+            new_num = last_num + 1
+        else:
+            new_num = 1
+        return f"{prefix}-{new_num:05d}"
+
+    @property
+    def paid_amount(self):
+        return self.payments.aggregate(total=models.Sum('amount'))['total'] or 0
+
+    @property
+    def balance(self):
+        return self.total_amount - self.paid_amount
+
+    def update_status(self):
+        from django.utils import timezone
+        today = timezone.now().date()
+
+        if self.balance <= 0:
+            self.status = 'paid'
+        elif self.paid_amount > 0:
+            self.status = 'partial'
+        elif self.due_date < today and self.balance > 0:
+            self.status = 'overdue'
+        elif self.status == 'draft':
+            pass  # Keep draft status
+        else:
+            self.status = 'sent'
+        self.save(update_fields=['status'])
+
+
+class BillItem(models.Model):
+    bill = models.ForeignKey(Bill, related_name='items', on_delete=models.CASCADE)
+    description = models.CharField(max_length=100)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.description} - P{self.amount}"
+
+
+class Payment(models.Model):
+    PAYMENT_METHODS = [
+        ('cash', 'Cash'),
+        ('bank', 'Bank Transfer'),
+        ('gcash', 'GCash'),
+        ('maya', 'Maya'),
+        ('other', 'Other'),
+    ]
+
+    bill = models.ForeignKey(Bill, related_name='payments', on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_date = models.DateField()
+    payment_method = models.CharField(max_length=30, choices=PAYMENT_METHODS)
+    reference_number = models.CharField(max_length=50, blank=True)
+    proof = models.ImageField(upload_to='payments/', blank=True, null=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-payment_date']
+
+    def __str__(self):
+        return f"P{self.amount} - {self.bill.bill_number}"
+
+
+# ─── ACTIVITY LOG ─────────────────────────────────────
+class ActivityLog(models.Model):
+    ACTION_CHOICES = [
+        ('tenant_created', 'Tenant Created'),
+        ('tenant_updated', 'Tenant Updated'),
+        ('tenant_deleted', 'Tenant Deleted'),
+        ('room_created', 'Room Created'),
+        ('room_updated', 'Room Updated'),
+        ('room_deleted', 'Room Deleted'),
+        ('bill_generated', 'Bill Generated'),
+        ('bill_updated', 'Bill Updated'),
+        ('bill_deleted', 'Bill Deleted'),
+        ('bill_sent', 'Bill Sent'),
+        ('payment_recorded', 'Payment Recorded'),
+        ('payment_deleted', 'Payment Deleted'),
+        ('admin_created', 'Admin Created'),
+        ('admin_updated', 'Admin Updated'),
+        ('admin_deleted', 'Admin Deleted'),
+        ('maintenance_created', 'Maintenance Created'),
+        ('maintenance_updated', 'Maintenance Updated'),
+        ('maintenance_completed', 'Maintenance Completed'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='activities')
+    action = models.CharField(max_length=50, choices=ACTION_CHOICES)
+    description = models.TextField(blank=True)
+    
+    # Flexible references for related objects
+    content_type = models.CharField(max_length=100, blank=True, help_text='Model name (e.g., Bill, TenantProfile)')
+    object_id = models.IntegerField(null=True, blank=True, help_text='ID of the related object')
+    
+    timestamp = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-timestamp']
+        verbose_name = 'Activity Log'
+        verbose_name_plural = 'Activity Logs'
+    
+    def __str__(self):
+        user_str = self.user.username if self.user else 'System'
+        return f"{user_str} - {self.get_action_display()} - {self.timestamp.strftime('%Y-%m-%d %H:%M')}"
+    
+    def get_time_ago(self):
+        """Return human-readable time ago string"""
+        from django.utils.timesince import timesince
+        return timesince(self.timestamp) + ' ago'

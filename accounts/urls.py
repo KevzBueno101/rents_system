@@ -72,4 +72,14 @@ urlpatterns = [
     path('add-appliance-management/', views.add_appliance_management, name='add_appliance_management'),
     path('edit-appliance/<int:appliance_id>/', views.edit_appliance, name='edit_appliance'),
     path('delete-appliance/<int:appliance_id>/', views.delete_appliance, name='delete_appliance'),
+
+    # ─── BILLING ─────────────────────────────────────
+    path('billing/', views.billing_list, name='billing_list'),
+    path('billing/generate/', views.generate_bill, name='generate_bill'),
+    path('billing/edit/<int:bill_id>/', views.edit_bill, name='edit_bill'),
+    path('billing/view/<int:bill_id>/', views.view_bill, name='view_bill'),
+    path('billing/delete/<int:bill_id>/', views.delete_bill, name='delete_bill'),
+    path('billing/pay/<int:bill_id>/', views.record_payment, name='record_payment'),
+    path('billing/delete-payment/<int:payment_id>/', views.delete_payment, name='delete_payment'),
+    path('billing/mark-sent/<int:bill_id>/', views.mark_as_sent, name='mark_as_sent'),
 ]
