@@ -37,6 +37,7 @@ def get_dashboard_context():
     total_tenants = TenantProfile.objects.count()
     total_beds    = sum(r.capacity for r in all_rooms)
     occupied_beds = sum(r.occupied_beds() for r in all_rooms)
+
     
 
     occupied_rooms = [r for r in all_rooms if r.occupied_beds() > 0]
@@ -392,6 +393,11 @@ def room_list(request):
     else:
         rooms = Room.objects.prefetch_related('dynamic_inclusions').order_by(sort_field, 'room_number')
 
+    # ── calculate BEFORE the loop ──────────────────────
+    all_rooms     = Room.objects.all()
+    total_beds    = sum(r.capacity for r in all_rooms)
+    occupied_beds = sum(r.occupied_beds() for r in all_rooms)
+    
     # Add dynamic inclusions list to each room for template display
     for room in rooms:
         inclusions_list = [{'id': inc.id, 'name': inc.name} for inc in room.dynamic_inclusions.all()]
@@ -401,6 +407,9 @@ def room_list(request):
         'rooms'        : rooms,
         'current_sort' : sort_by,
         'current_order': order,
+        'total_beds'   : total_beds,
+        'occupied_beds': occupied_beds,
+        'vacant_beds'  : total_beds - occupied_beds,
     })
 
 

@@ -373,7 +373,10 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h5 class="fw-bold mb-0">Rooms Availability</h5>
-        <small class="text-muted">{{ rooms.count }} room{{ rooms.count|pluralize }} total</small>
+        <small class="text-muted">
+           <em> {{ rooms.count }} room{{ rooms.count|pluralize }} total |
+           {{ total_beds }} beds, | {{ occupied_beds }} occupied, |{{ vacant_beds }} vacant</em>
+        </small>
     </div>
     <div class="d-flex gap-2">
         <button class="btn btn-dark btn-sm" data-bs-toggle="modal" data-bs-target="#addRoomModal">

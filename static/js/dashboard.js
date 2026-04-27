@@ -1,4 +1,5 @@
-//dashboard.js - Handles interactivity for the admin dashboard, including modals, sidebar, and dynamic room features display
+// dashboard.js - Handles interactivity for the admin dashboard,
+// including modals, sidebar, and dynamic room features display
 
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -27,28 +28,27 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ── EDIT TENANT MODAL ─────────────────────────────
-    document.querySelectorAll('.edit-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            document.getElementById('editFullName').value    = this.dataset.fullname;
-            document.getElementById('editEmail').value       = this.dataset.email;
-            document.getElementById('editPhone').value       = this.dataset.phone;
-            document.getElementById('editRoomNumber').value  = this.dataset.room;
-            document.getElementById('editTenantForm').action = '/edit-tenant/' + this.dataset.id + '/';
-            new bootstrap.Modal(document.getElementById('editTenantModal')).show();
-        });
+    // ── GLOBAL BACKDROP CLEANUP ───────────────────────
+    // Fires after any modal closes — only cleans up when NO modal is open
+    document.addEventListener('hidden.bs.modal', function () {
+        const anyStillOpen = document.querySelector('.modal.show');
+        if (!anyStillOpen) {
+            document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+            document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('overflow');
+            document.body.style.removeProperty('padding-right');
+        }
     });
 
     // ── HANDLE EDIT ROOM FORM SUBMISSION ─────────────────
     const editRoomForm = document.getElementById('editRoomForm');
     if (editRoomForm) {
-        editRoomForm.addEventListener('submit', function(e) {
+        editRoomForm.addEventListener('submit', function (e) {
             e.preventDefault();
 
             const formData = new FormData(this);
             const action   = this.action;
 
-            // Extract room ID from action URL, fallback to currentRoomId
             let roomId = null;
             const match = action.match(/\/edit-room\/(\d+)/);
             if (match) {
@@ -72,11 +72,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     return;
                 }
 
-                // Close modal
-                const editModal = bootstrap.Modal.getInstance(document.getElementById('editRoomModal'));
+                // ✅ Close using existing instance only
+                const editRoomModalEl = document.getElementById('editRoomModal');
+                const editModal = bootstrap.Modal.getInstance(editRoomModalEl);
                 if (editModal) editModal.hide();
 
-                // Update inclusion icons on the card using data directly from response
+                // Update inclusion icons on the card
                 const container = document.getElementById(`room-inclusions-${roomId}`);
                 if (container) {
                     const dynList = (data.dynamic_inclusions || []).map((name, i) => ({ id: i, name }));
@@ -88,7 +89,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     renderRoomInclusions(container);
                 }
 
-                // Update info modal if it's open
+                // Update info modal if open
                 const infoModal = document.getElementById('roomInfoModal');
                 if (infoModal && infoModal.classList.contains('show')) {
                     updateRoomInfoModal(data);
@@ -102,66 +103,71 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ── ROOM INFO MODAL ───────────────────────────────
-    document.querySelectorAll('.info-room-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-        const roomId = this.dataset.id;
+    document.querySelectorAll('.info-room-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const roomId = this.dataset.id;
 
-        fetch(`/api/room-data/${roomId}/`)
-            .then(r => {
-                if (!r.ok) {
-                    console.error('Room info modal: Response not OK', r.status);
-                    throw new Error('Failed to load room data');
-                }
-                const contentType = r.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    console.error('Room info modal: Expected JSON, got', contentType);
-                    throw new Error('Invalid response format');
-                }
-                return r.json();
-            })
-            .then(data => {
-                document.getElementById('infoRoomCode').textContent = data.code;
+            fetch(`/api/room-data/${roomId}/`)
+                .then(r => {
+                    if (!r.ok) throw new Error('Failed to load room data');
+                    const ct = r.headers.get('content-type');
+                    if (!ct || !ct.includes('application/json')) throw new Error('Invalid response format');
+                    return r.json();
+                })
+                .then(data => {
+                    document.getElementById('infoRoomCode').textContent = data.code;
 
-                const photoEl = document.getElementById('infoRoomPhoto');
-                photoEl.innerHTML = data.photo
-                    ? `<img src="${data.photo}" style="width:100%;height:200px;object-fit:cover;">`
-                    : `<div style="width:100%;height:120px;background:#f4f6f9;display:flex;align-items:center;justify-content:center;"><i class="bi bi-door-open" style="font-size:40px;color:#ccc;"></i></div>`;
+                    const photoEl = document.getElementById('infoRoomPhoto');
+                    photoEl.innerHTML = data.photo
+                        ? `<img src="${data.photo}" style="width:100%;height:200px;object-fit:cover;">`
+                        : `<div style="width:100%;height:120px;background:#f4f6f9;display:flex;align-items:center;justify-content:center;">
+                               <i class="bi bi-door-open" style="font-size:40px;color:#ccc;"></i>
+                           </div>`;
 
-                const statusEl = document.getElementById('infoStatus');
-                statusEl.textContent = data.status;
-                statusEl.style.background = data.status === 'Occupied' ? '#e53935' : '#1db954';
+                    const statusEl        = document.getElementById('infoStatus');
+                    statusEl.textContent  = data.status;
+                    statusEl.style.background = data.status === 'Occupied' ? '#e53935' : '#1db954';
 
-                const suffix = n => n==1?'st':n==2?'nd':n==3?'rd':'th';
-                document.getElementById('infoFloor').textContent     = `${data.floor}${suffix(data.floor)} Floor`;
-                document.getElementById('infoOccupancy').textContent = `${data.occupied} / ${data.capacity} beds`;
-                document.getElementById('infoRate').textContent      = `₱${parseFloat(data.rate).toLocaleString()}`;
-                document.getElementById('infoArea').textContent      = data.area ? `${data.area} sqm` : '—';
-                document.getElementById('infoCR').textContent        = data.cr + ' CR';
-                document.getElementById('infoBedType').textContent   = data.bedtype;
+                    const suffix = n => n==1?'st':n==2?'nd':n==3?'rd':'th';
+                    document.getElementById('infoFloor').textContent     = `${data.floor}${suffix(data.floor)} Floor`;
+                    document.getElementById('infoOccupancy').textContent = `${data.occupied} / ${data.capacity} beds`;
+                    document.getElementById('infoRate').textContent      = `₱${parseFloat(data.rate).toLocaleString()}`;
+                    document.getElementById('infoArea').textContent      = data.area ? `${data.area} sqm` : '—';
+                    document.getElementById('infoCR').textContent        = data.cr + ' CR';
+                    document.getElementById('infoBedType').textContent   = data.bedtype;
 
-                const inclusions = [];
-                if (data.sink)  inclusions.push('Sink');
-                if (data.water) inclusions.push('Water');
-                if (data.elec)  inclusions.push('Electricity');
-                if (data.wifi)  inclusions.push('WiFi');
-                (data.dynamic_inclusions || []).forEach(name => inclusions.push(name));
+                    const inclusions = [];
+                    if (data.sink)  inclusions.push('Sink');
+                    if (data.water) inclusions.push('Water');
+                    if (data.elec)  inclusions.push('Electricity');
+                    if (data.wifi)  inclusions.push('WiFi');
+                    (data.dynamic_inclusions || []).forEach(name => inclusions.push(name));
 
-                document.getElementById('infoInclusions').innerHTML = inclusions.length
-                    ? inclusions.map(i => `<span class="badge bg-light text-dark border me-1 mb-1" style="font-size:12px;"><i class="bi bi-check2"></i> ${i}</span>`).join('')
-                    : '<span class="text-muted" style="font-size:13px;">None</span>';
+                    document.getElementById('infoInclusions').innerHTML = inclusions.length
+                        ? inclusions.map(i =>
+                            `<span class="badge bg-light text-dark border me-1 mb-1" style="font-size:12px;">
+                                <i class="bi bi-check2"></i> ${i}
+                             </span>`).join('')
+                        : '<span class="text-muted" style="font-size:13px;">None</span>';
 
-                document.getElementById('infoTenants').innerHTML = data.tenants && data.tenants.length
-                    ? data.tenants.map(t => `<span class="badge bg-light text-dark border me-1 mb-1" style="font-size:12px;"><i class="bi bi-person"></i> ${t}</span>`).join('')
-                    : '<span class="text-muted" style="font-size:13px;">No tenants yet</span>';
+                    document.getElementById('infoTenants').innerHTML = data.tenants && data.tenants.length
+                        ? data.tenants.map(t =>
+                            `<span class="badge bg-light text-dark border me-1 mb-1" style="font-size:12px;">
+                                <i class="bi bi-person"></i> ${t}
+                             </span>`).join('')
+                        : '<span class="text-muted" style="font-size:13px;">No tenants yet</span>';
 
-                new bootstrap.Modal(document.getElementById('roomInfoModal')).show();
-            })
-            .catch(err => {
-                console.error('Error loading room info:', err);
-                alert('Failed to load room information. Please try again.');
-            });
+                    // ✅ Always reuse existing instance
+                    const roomInfoEl    = document.getElementById('roomInfoModal');
+                    const roomInfoModal = bootstrap.Modal.getInstance(roomInfoEl) || new bootstrap.Modal(roomInfoEl);
+                    roomInfoModal.show();
+                })
+                .catch(err => {
+                    console.error('Error loading room info:', err);
+                    alert('Failed to load room information. Please try again.');
+                });
+        });
     });
-});
 
     // ── ADMIN PASSWORD TOGGLE ─────────────────────────
     window.toggleAdminPassword = function () {
@@ -176,25 +182,28 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
-    // ── PROFILE MODAL FUNCTIONS ─────────────────────────
+    // ── PROFILE MODAL ─────────────────────────────────
     window.openProfileModal = function () {
-        new bootstrap.Modal(document.getElementById('profileModal')).show();
+        // ✅ Always reuse existing instance
+        const el    = document.getElementById('profileModal');
+        const modal = bootstrap.Modal.getInstance(el) || new bootstrap.Modal(el);
+        modal.show();
     };
 
     window.toggleProfilePassword = function () {
         const currentPass = document.getElementById('currentPassword');
-        const newPass = document.getElementById('newPassword');
+        const newPass     = document.getElementById('newPassword');
         const confirmPass = document.getElementById('confirmPassword');
-        const icon = document.getElementById('profileEyeIcon');
-        
+        const icon        = document.getElementById('profileEyeIcon');
+
         if (currentPass.type === 'password') {
             currentPass.type = 'text';
-            newPass.type = 'text';
+            newPass.type     = 'text';
             confirmPass.type = 'text';
             icon.classList.replace('bi-eye', 'bi-eye-slash');
         } else {
             currentPass.type = 'password';
-            newPass.type = 'password';
+            newPass.type     = 'password';
             confirmPass.type = 'password';
             icon.classList.replace('bi-eye-slash', 'bi-eye');
         }
@@ -205,15 +214,13 @@ document.addEventListener('DOMContentLoaded', function () {
         if (file) {
             const reader = new FileReader();
             reader.onload = function (e) {
-                const preview = document.getElementById('profilePreview');
-                preview.src = e.target.result;
+                document.getElementById('profilePreview').src = e.target.result;
             };
             reader.readAsDataURL(file);
         }
     };
 
     // ── INITIALIZE ROOM INCLUSION ICONS ──────────────────
-    // Display room inclusions as icons
     document.querySelectorAll('[id^="room-inclusions-"]').forEach(containerEl => {
         renderRoomInclusions(containerEl);
     });
@@ -221,56 +228,43 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 
-
-// ── UPDATE ROOM INCLUSIONS DISPLAY (called after editing) ──
-window.updateRoomInclusionsDisplay = function(roomId) {
+// ── UPDATE ROOM INCLUSIONS DISPLAY ───────────────────
+window.updateRoomInclusionsDisplay = function (roomId) {
     const container = document.getElementById(`room-inclusions-${roomId}`);
-    if (container) {
-        renderRoomInclusions(container);
-    }
-}
+    if (container) renderRoomInclusions(container);
+};
 
-// ── UPDATE ROOM INFO MODAL WITH NEW DATA ────────────────
-window.updateRoomInfoModal = function(roomData) {
+// ── UPDATE ROOM INFO MODAL WITH NEW DATA ─────────────
+window.updateRoomInfoModal = function (roomData) {
     if (!roomData) return;
-    
-    // Update basic details
+
     document.getElementById('infoFloor').textContent     = `${roomData.floor}${getSuffix(roomData.floor)} Floor`;
     document.getElementById('infoOccupancy').textContent = `${roomData.occupied} / ${roomData.capacity} beds`;
     document.getElementById('infoRate').textContent      = `₱${parseFloat(roomData.rate).toLocaleString()}`;
     document.getElementById('infoArea').textContent      = roomData.area ? `${roomData.area} sqm` : '—';
     document.getElementById('infoCR').textContent        = roomData.cr + ' CR';
     document.getElementById('infoBedType').textContent   = roomData.bedtype;
-    
-    // Update inclusions badges
+
     const inclusions = [];
-    if (roomData.sink === true || roomData.sink === 'True') inclusions.push('Sink');
+    if (roomData.sink  === true || roomData.sink  === 'True') inclusions.push('Sink');
     if (roomData.water === true || roomData.water === 'True') inclusions.push('Water');
-    if (roomData.elec === true || roomData.elec === 'True') inclusions.push('Electricity');
-    if (roomData.wifi === true || roomData.wifi === 'True') inclusions.push('WiFi');
-    
-    // Add dynamic inclusions if available
-    if (roomData.dynamic_inclusions && Array.isArray(roomData.dynamic_inclusions)) {
-        roomData.dynamic_inclusions.forEach(inc => inclusions.push(inc));
-    }
-    
-    const inclusionsEl = document.getElementById('infoInclusions');
-    if (inclusions.length > 0) {
-        inclusionsEl.innerHTML = inclusions.map(i =>
+    if (roomData.elec  === true || roomData.elec  === 'True') inclusions.push('Electricity');
+    if (roomData.wifi  === true || roomData.wifi  === 'True') inclusions.push('WiFi');
+    (roomData.dynamic_inclusions || []).forEach(inc => inclusions.push(inc));
+
+    document.getElementById('infoInclusions').innerHTML = inclusions.length
+        ? inclusions.map(i =>
             `<span class="badge bg-light text-dark border me-1 mb-1" style="font-size:12px;">
                 <i class="bi bi-check2"></i> ${i}
-            </span>`
-        ).join('');
-    } else {
-        inclusionsEl.innerHTML = '<span class="text-muted" style="font-size:13px;">None</span>';
-    }
-}
+             </span>`).join('')
+        : '<span class="text-muted" style="font-size:13px;">None</span>';
+};
 
-// ── HELPER: Get ordinal suffix ────────────────────────
+// ── HELPER: ordinal suffix ────────────────────────────
 function getSuffix(num) {
-    const floorNum = parseInt(num);
-    if (floorNum === 1) return 'st';
-    if (floorNum === 2) return 'nd';
-    if (floorNum === 3) return 'rd';
+    const n = parseInt(num);
+    if (n === 1) return 'st';
+    if (n === 2) return 'nd';
+    if (n === 3) return 'rd';
     return 'th';
 }

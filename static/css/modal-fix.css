@@ -1,4 +1,12 @@
-/* Modal Z-Index Fix - MINIMAL */
+/* modal-fix.css */
+
+/* Confirmation modal sits above profile modal */
 #confirmProfileChangeModal {
-    z-index: 1055 !important;
+    z-index: 1060 !important;
+}
+
+/* Safety net — unlock body if no modal is actually open */
+body.modal-open:not(:has(.modal.show)) {
+    overflow: auto !important;
+    padding-right: 0 !important;
 }

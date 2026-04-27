@@ -321,3 +321,8 @@ tbody tr[onclick]:hover {
 .card {
     border-radius: 12px;
 }
+
+/* safety — remove stuck backdrops */
+.modal:not(.show) ~ .modal-backdrop {
+    display: none !important;
+}
