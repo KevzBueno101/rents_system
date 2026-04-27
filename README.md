@@ -2,18 +2,19 @@
 
 A Django-based boarding house management system for managing tenants, rooms, billing, maintenance, and violations.
 
-## Current Status: **Production Ready** v2.3
+## Current Status: **Production Ready** v2.4
 
-**Latest Updates (April 27, 2026 - Late Evening):**
-- ✅ **Email Uniqueness Validation** - Added email duplicate checking across all user registration points
-- ✅ **Case-Insensitive Email Check** - Prevents duplicate emails regardless of case
-- ✅ **Admin Registration Email Check** - Fixed admin registration to show email errors correctly
-- ✅ **Tenant Signup Email Check** - Email validation in tenant signup form
-- ✅ **Add Tenant Email Check** - Email validation when admin adds tenant
-- ✅ **Edit Tenant Email Check** - Email validation when editing tenant (excludes current user)
-- ✅ **User-Friendly Error Messages** - Clear "This email is already registered" alerts
-- ✅ **Modal Auto-Reopen** - Forms stay open on validation errors for easy correction
-- ✅ **Database Cleanup** - Resolved existing duplicate emails before implementing validation
+**Latest Updates (April 27, 2026 - Late Night):**
+- ✅ **Activity Logging System** - Added ActivityLog model for tracking user actions across the system
+- ✅ **Activity Helper Functions** - Created activity_utils.py with log_activity, get_recent_activities helpers
+- ✅ **Activity Template Tags** - Dynamic icons and colors for different activity types
+- ✅ **Reusable Activity Feed** - Created activity_feed.html partial template for dashboards
+- ✅ **Billing Activity Integration** - Activity logging for bill generation, edits, deletions, payments
+- ✅ **Mobile Responsive Stats** - Stats cards display 3 per row on mobile with smaller fonts
+- ✅ **Dashboard Mobile Fix** - Improved stat card layout for mobile devices
+- ✅ **Billing View Template** - Added billing_view.html for detailed bill viewing
+- ✅ **Forms Module** - Created forms.py for centralized form definitions
+- ✅ **Fixed view_bill Function** - Restored missing view_bill view function
 
 **Previous Updates (April 27, 2026 - Evening):**
 - ✅ **Modal Stacking Fixes** - Fixed stuck backdrops and modal overlap issues
@@ -210,6 +211,17 @@ rents_system/
 | dynamic_inclusions | M2M | → accounts_inclusion |
 | dynamic_appliances | M2M | → accounts_appliance |
 
+### `accounts_activitylog`
+| Field | Type | Description |
+|---|---|---|
+| id | INT | Primary key |
+| user_id | FK | → auth_user (nullable) |
+| action | VARCHAR | Action type (bill_generated, payment_recorded, etc.) |
+| description | TEXT | Human-readable description |
+| content_type | VARCHAR | Related model name (e.g., Bill, TenantProfile) |
+| object_id | INT | ID of related object |
+| timestamp | DATETIME | When the action occurred |
+
 ### `accounts_bill`
 | Field | Type | Description |
 |---|---|---|
@@ -300,6 +312,16 @@ rents_system/
 - Delete admin accounts
 - Profile photos
 - Admin activity tracking
+
+### Billing System
+- **Bill Generation**: Create bills for tenants with period tracking
+- **Bill Management**: Edit, delete, and mark bills as sent
+- **Payment Recording**: Record payments with proof of payment
+- **Payment Tracking**: View payment history and status
+- **Activity Logging**: Track all billing-related actions
+- **Recent Activity Feed**: Dynamic activity feed with icons and timestamps
+- **Status Management**: Draft, sent, partial, paid, overdue statuses
+- **Statistics Dashboard**: Real-time billing statistics
 
 ### Dashboard
 - **Enhanced Stats**: Total tenants, vacant rooms, occupancy rate
