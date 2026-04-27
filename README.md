@@ -2,9 +2,32 @@
 
 A Django-based boarding house management system for managing tenants, rooms, billing, maintenance, and violations.
 
-## Current Status: **Production Ready** v2.0
+## Current Status: **Production Ready** v2.2
 
-**Latest Updates (April 24, 2026):**
+**Latest Updates (April 27, 2026 - Evening):**
+- ✅ **Modal Stacking Fixes** - Fixed stuck backdrops and modal overlap issues
+- ✅ **Global Backdrop Cleanup** - Automatic cleanup when no modals are open
+- ✅ **Modal Instance Reuse** - Reuse Bootstrap instances instead of creating new ones
+- ✅ **Profile Confirmation Lifecycle** - Improved modal management for profile edits
+- ✅ **CSS Safety Net** - Added body overflow fix for orphaned modal states
+- ✅ **Tenant Modal JavaScript** - Created dedicated tenant-modal.js for better organization
+- ✅ **Room List Improvements** - Added bed count calculations and better formatting
+- ✅ **Tenant Room Selection** - Simplified room details display (removed appliances section)
+- ✅ **Code Formatting** - Improved consistency across JS and CSS files
+- ✅ **Template Cleanup** - Better formatting in room_list.html and tenant_list.html
+
+**Previous Updates (April 27, 2026 - Morning):**
+- ✅ **AJAX Authentication Fixes** - Added @login_required to all API endpoints
+- ✅ **Proper AJAX Headers** - X-Requested-With header for all fetch calls
+- ✅ **JSON Error Responses** - Return JSON instead of HTML redirects for unauthorized requests
+- ✅ **Phone Number Flexibility** - Changed phone field from BigIntegerField to CharField
+- ✅ **Phone Number Parser** - Added parse_phone helper to clean phone numbers to digits
+- ✅ **UI Consistency** - Improved role button styling (removed .active class dependency)
+- ✅ **Code Cleanup** - Removed debug console.log statements from production code
+- ✅ **Template Formatting** - Improved login.html readability and structure
+- ✅ **Tenant Dashboard Security** - Fixed AnonymousUser error with proper authentication
+
+**Previous Updates (April 24, 2026):**
 - ✅ **Enhanced Navigation System** - Added breadcrumbs with active page highlighting (blue/bold)
 - ✅ **Improved Room Layout** - Fixed 3 cards per row with proper Bootstrap g-4 spacing
 - ✅ **Relocated Inclusions Button** - Moved from sidebar to room list header for better accessibility
