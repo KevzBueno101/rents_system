@@ -129,6 +129,9 @@
             </div>
 
             <div class="modal-body">
+                {% if register_error %}
+                <div class="alert alert-danger py-2 text-center">{{ register_error }}</div>
+                {% endif %}
                 <form method="POST" action="{% url 'register_admin' %}" enctype="multipart/form-data">
                     {% csrf_token %}
 
@@ -178,5 +181,14 @@
         </div>
     </div>
 </div>
+
+{% if show_register_modal %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const registerBtn = document.querySelector('[data-bs-target="#registerAdminModal"]');
+        if (registerBtn) registerBtn.click();
+    });
+</script>
+{% endif %}
 
 {% endblock %}

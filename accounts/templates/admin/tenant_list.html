@@ -127,6 +127,9 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
+                {% if edit_error %}
+                <div class="alert alert-danger py-2 text-center">{{ edit_error }}</div>
+                {% endif %}
                 <form method="POST" action="" id="editTenantForm" enctype="multipart/form-data">
                     {% csrf_token %}
 
@@ -292,6 +295,15 @@
         </div>
     </div>
 </div>
+
+{% if show_edit_modal %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const editBtn = document.querySelector('[data-bs-target="#editTenantModal"]');
+        if (editBtn) editBtn.click();
+    });
+</script>
+{% endif %}
 
 {% if show_add_modal %}
 <script>

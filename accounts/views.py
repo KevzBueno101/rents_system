@@ -123,6 +123,12 @@ def signup_view(request):
                 'available_rooms': get_available_rooms(),
             })
 
+        if User.objects.filter(email__iexact=email).exists():
+            return render(request, 'login.html', {
+                'signup_error'   : 'This email is already registered. Please use a different email.',
+                'available_rooms': get_available_rooms(),
+            })
+
         try:
             selected_room = Room.objects.get(id=room_id)
         except Room.DoesNotExist:
@@ -169,9 +175,16 @@ def register_admin(request):
         photo     = request.FILES.get('photo')
 
         if User.objects.filter(username=username).exists():
-            return render(request, 'admin/dashboard.html', {
-                **get_dashboard_context(),
-                'register_error'     : 'Username already taken.',
+            return render(request, 'admin/admin_list.html', {
+                'admins'              : AdminProfile.objects.select_related('user', 'created_by').order_by('-created_at'),
+                'register_error'      : 'Username already taken.',
+                'show_register_modal': True,
+            })
+
+        if User.objects.filter(email__iexact=email).exists():
+            return render(request, 'admin/admin_list.html', {
+                'admins'              : AdminProfile.objects.select_related('user', 'created_by').order_by('-created_at'),
+                'register_error'      : 'This email is already registered. Please use a different email.',
                 'show_register_modal': True,
             })
 
@@ -300,6 +313,14 @@ def add_tenant(request):
                 'available_rooms': get_available_rooms(),
             })
 
+        if User.objects.filter(email__iexact=email).exists():
+            return render(request, 'admin/tenant_list.html', {
+                'tenants'        : TenantProfile.objects.select_related('user', 'room').order_by('-created_at'),
+                'add_error'      : 'This email is already registered. Please use a different email.',
+                'show_add_modal' : True,
+                'available_rooms': get_available_rooms(),
+            })
+
         user = User.objects.create_user(
             username=username,
             password=password,
@@ -332,9 +353,20 @@ def edit_tenant(request, tenant_id):
     tenant = TenantProfile.objects.get(id=tenant_id)
 
     if request.method == 'POST':
+        new_email = request.POST.get('email')
+        
+        # Check if email is already used by another user (excluding current user)
+        if User.objects.filter(email__iexact=new_email).exclude(id=tenant.user.id).exists():
+            return render(request, 'admin/tenant_list.html', {
+                'tenants'        : TenantProfile.objects.select_related('user', 'room').order_by('-created_at'),
+                'edit_error'     : 'This email is already registered. Please use a different email.',
+                'show_edit_modal': True,
+                'available_rooms': get_available_rooms(),
+            })
+        
         tenant.full_name  = request.POST.get('full_name')
         tenant.phone      = parse_phone(request.POST.get('phone'))
-        tenant.user.email = request.POST.get('email')
+        tenant.user.email = new_email
 
         # Fixed: update room FK properly using room_id
         room_id = request.POST.get('room_id')

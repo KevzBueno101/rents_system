@@ -2,9 +2,20 @@
 
 A Django-based boarding house management system for managing tenants, rooms, billing, maintenance, and violations.
 
-## Current Status: **Production Ready** v2.2
+## Current Status: **Production Ready** v2.3
 
-**Latest Updates (April 27, 2026 - Evening):**
+**Latest Updates (April 27, 2026 - Late Evening):**
+- ✅ **Email Uniqueness Validation** - Added email duplicate checking across all user registration points
+- ✅ **Case-Insensitive Email Check** - Prevents duplicate emails regardless of case
+- ✅ **Admin Registration Email Check** - Fixed admin registration to show email errors correctly
+- ✅ **Tenant Signup Email Check** - Email validation in tenant signup form
+- ✅ **Add Tenant Email Check** - Email validation when admin adds tenant
+- ✅ **Edit Tenant Email Check** - Email validation when editing tenant (excludes current user)
+- ✅ **User-Friendly Error Messages** - Clear "This email is already registered" alerts
+- ✅ **Modal Auto-Reopen** - Forms stay open on validation errors for easy correction
+- ✅ **Database Cleanup** - Resolved existing duplicate emails before implementing validation
+
+**Previous Updates (April 27, 2026 - Evening):**
 - ✅ **Modal Stacking Fixes** - Fixed stuck backdrops and modal overlap issues
 - ✅ **Global Backdrop Cleanup** - Automatic cleanup when no modals are open
 - ✅ **Modal Instance Reuse** - Reuse Bootstrap instances instead of creating new ones
