@@ -2,9 +2,18 @@
 
 A Django-based boarding house management system for managing tenants, rooms, billing, maintenance, and violations.
 
-## Current Status: **Production Ready** v2.5
+## Current Status: **Production Ready** v2.6
 
-**Latest Updates (April 27, 2026 - Night):**
+**Latest Updates (April 28, 2026 - Morning):**
+- ✅ **Comprehensive Activity Logging** - Added activity logging to all major system actions
+- ✅ **Tenant Activity Tracking** - Log tenant creation, updates, and deletions
+- ✅ **Room Activity Tracking** - Log room creation, updates, and deletions
+- ✅ **Admin Activity Tracking** - Log admin registration, status changes, and deletions
+- ✅ **Recent Activity Feed** - Now displays all system-wide actions with icons and colors
+- ✅ **Recent Tenants Limit** - Reduced display from 8 to 7 tenants for better layout
+- ✅ **Non-Breaking Changes** - All activity logging additions are modular and don't affect existing features
+
+**Previous Updates (April 27, 2026 - Night):**
 - ✅ **Maintenance Management System** - Create, list, update status (Open → Ongoing → Completed), delete maintenance reports
 - ✅ **Violation Management System** - Record, list, and delete tenant violations with date tracking
 - ✅ **Tenant Reminders System** - Send reminders to tenants (cleanliness, rules, payment, general)

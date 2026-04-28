@@ -54,7 +54,7 @@ def get_dashboard_context():
         'vacant_rooms'  : sum(1 for r in all_rooms if not r.is_full()),
         'unpaid_bills'  : Bill.objects.exclude(status='paid').count(),
         'open_repairs'  : MaintenanceReport.objects.filter(status='open').count(),
-        'recent_tenants': TenantProfile.objects.select_related('user', 'room').order_by('-created_at')[:8],
+        'recent_tenants': TenantProfile.objects.select_related('user', 'room').order_by('-created_at')[:7],
         'total_beds'    : total_beds,
         'occupied_beds' : occupied_beds,
         'vacant_beds'   : total_beds - occupied_beds,
@@ -201,12 +201,20 @@ def register_admin(request):
             is_superuser=False,
         )
 
-        AdminProfile.objects.create(
+        admin_profile = AdminProfile.objects.create(
             user=new_admin,
             full_name=full_name,
             phone=phone,
             photo=photo,
             created_by=request.user
+        )
+
+        log_activity(
+            user=request.user,
+            action='admin_created',
+            description=f'Registered admin {full_name}',
+            content_type='AdminProfile',
+            object_id=admin_profile.id
         )
 
         return render(request, 'admin/dashboard.html', {
@@ -255,6 +263,16 @@ def toggle_admin_status(request, user_id):
 
     admin_user = User.objects.get(id=user_id)
     admin_user.is_active = not admin_user.is_active
+    status = 'activated' if admin_user.is_active else 'deactivated'
+    
+    log_activity(
+        user=request.user,
+        action='admin_updated',
+        description=f'{status} admin {admin_user.username}',
+        content_type='AdminProfile',
+        object_id=admin_user.adminprofile.id
+    )
+    
     admin_user.save()
     return redirect('admin_list')
 
@@ -267,6 +285,17 @@ def delete_admin(request, user_id):
 
     if request.method == 'POST':
         admin_user = User.objects.get(id=user_id)
+        admin_name = admin_user.adminprofile.full_name
+        admin_id_log = admin_user.adminprofile.id
+        
+        log_activity(
+            user=request.user,
+            action='admin_deleted',
+            description=f'Deleted admin {admin_name}',
+            content_type='AdminProfile',
+            object_id=admin_id_log
+        )
+        
         admin_user.delete()
 
     return redirect('admin_list')
@@ -347,13 +376,21 @@ def add_tenant(request):
 
         selected_room = Room.objects.get(id=room_id)
 
-        TenantProfile.objects.create(
+        tenant = TenantProfile.objects.create(
             user=user,
             full_name=full_name,
             phone=phone,
             room=selected_room,
             room_number=selected_room.room_number,
             photo=photo,
+        )
+
+        log_activity(
+            user=request.user,
+            action='tenant_created',
+            description=f'Added tenant {full_name} to {selected_room.room_number}',
+            content_type='TenantProfile',
+            object_id=tenant.id
         )
 
         return redirect('tenant_list')
@@ -401,6 +438,14 @@ def edit_tenant(request, tenant_id):
         tenant.save()
         tenant.user.save()
 
+        log_activity(
+            user=request.user,
+            action='tenant_updated',
+            description=f'Updated tenant {tenant.full_name}',
+            content_type='TenantProfile',
+            object_id=tenant.id
+        )
+
         return redirect('tenant_list')
 
     return redirect('tenant_list')
@@ -414,6 +459,17 @@ def delete_tenant(request, tenant_id):
 
     if request.method == 'POST':
         tenant = TenantProfile.objects.get(id=tenant_id)
+        tenant_name = tenant.full_name
+        tenant_id_log = tenant.id
+        
+        log_activity(
+            user=request.user,
+            action='tenant_deleted',
+            description=f'Deleted tenant {tenant_name}',
+            content_type='TenantProfile',
+            object_id=tenant_id_log
+        )
+        
         tenant.user.delete()
 
     return redirect('tenant_list')  # Fixed: was missing
@@ -500,7 +556,7 @@ def add_room(request):
                 'show_add_modal': True,
             })
 
-        Room.objects.create(
+        room = Room.objects.create(
             room_number=room_number,
             floor=floor,
             capacity=capacity,
@@ -513,6 +569,14 @@ def add_room(request):
             water_included=water_included,
             electricity_included=electricity_included,
             has_wifi=has_wifi,
+        )
+
+        log_activity(
+            user=request.user,
+            action='room_created',
+            description=f'Added room {floor}-{room_number}',
+            content_type='Room',
+            object_id=room.id
         )
 
         return redirect('room_list')
@@ -568,6 +632,14 @@ def edit_room(request, room_id):
             room.photo = request.FILES.get('photo')
 
         room.save()
+
+        log_activity(
+            user=request.user,
+            action='room_updated',
+            description=f'Updated room {room.floor}-{room.room_number}',
+            content_type='Room',
+            object_id=room.id
+        )
         
         # Check if this is an AJAX request — return full room data so JS can update the card
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -617,8 +689,19 @@ def delete_room(request, room_id):
             return redirect('room_list')
 
         try:
+            room_code = room.room_code
+            room_id_log = room.id
+            
+            log_activity(
+                user=request.user,
+                action='room_deleted',
+                description=f'Deleted room {room_code}',
+                content_type='Room',
+                object_id=room_id_log
+            )
+            
             room.delete()
-            messages.success(request, f'{room.room_code} has been deleted successfully.')
+            messages.success(request, f'{room_code} has been deleted successfully.')
         except ProtectedError:
             messages.error(request, f'Cannot delete {room.room_code} because it still has tenants assigned.')
 
