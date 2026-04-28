@@ -45,7 +45,12 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'accounts.context_processors.admin_profile',
+                'accounts.context_processors.admin_profile',  # Legacy - kept for compatibility
+                'accounts.context_processors.user_profile',  # Enhanced unified profile
+                'accounts.context_processors.system_stats',   # System statistics
+                'accounts.context_processors.recent_activity', # Recent activity feed
+                'accounts.context_processors.recent_payments', # Recent payments feed
+                'accounts.context_processors.app_settings',   # App metadata
             ],
         },
     },
