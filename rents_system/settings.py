@@ -58,18 +58,25 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'rents_system.wsgi.application'
 
+import dj_database_url
+
 USE_POSTGRES = os.getenv('USE_POSTGRES', 'false') == 'true'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql' if USE_POSTGRES else 'django.db.backends.mysql',
-        'NAME': os.getenv('PG_DB_NAME', 'rents_db_pg') if USE_POSTGRES else os.getenv('DB_NAME', 'rents_db'),
-        'USER': os.getenv('PG_USER', 'postgres') if USE_POSTGRES else os.getenv('DB_USER', 'root'),
-        'PASSWORD': os.getenv('PG_PASSWORD', '') if USE_POSTGRES else os.getenv('DB_PASSWORD', ''),
-        'HOST': os.getenv('PG_HOST', 'localhost') if USE_POSTGRES else os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('PG_PORT', '5432') if USE_POSTGRES else os.getenv('DB_PORT', '3306'),
+if USE_POSTGRES and os.getenv('DATABASE_URL'):
+    DATABASES = {
+        'default': dj_database_url.config(default=os.getenv('DATABASE_URL'))
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql' if USE_POSTGRES else 'django.db.backends.mysql',
+            'NAME': os.getenv('PG_DB_NAME', 'rents_db_pg') if USE_POSTGRES else os.getenv('DB_NAME', 'rents_db'),
+            'USER': os.getenv('PG_USER', 'postgres') if USE_POSTGRES else os.getenv('DB_USER', 'root'),
+            'PASSWORD': os.getenv('PG_PASSWORD', '') if USE_POSTGRES else os.getenv('DB_PASSWORD', ''),
+            'HOST': os.getenv('PG_HOST', 'localhost') if USE_POSTGRES else os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('PG_PORT', '5432') if USE_POSTGRES else os.getenv('DB_PORT', '3306'),
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
