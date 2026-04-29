@@ -287,6 +287,15 @@ class ActivityLog(models.Model):
         ordering = ['-timestamp']
         verbose_name = 'Activity Log'
         verbose_name_plural = 'Activity Logs'
+        indexes = [
+            models.Index(fields=['user'], name='idx_activity_user'),
+            models.Index(fields=['action'], name='idx_activity_action'),
+            models.Index(fields=['timestamp'], name='idx_activity_timestamp'),
+            models.Index(fields=['content_type'], name='idx_activity_content_type'),
+            models.Index(fields=['-timestamp'], name='idx_activity_timestamp_desc'),
+            models.Index(fields=['user', '-timestamp'], name='idx_activity_user_timestamp'),
+            models.Index(fields=['action', '-timestamp'], name='idx_activity_action_timestamp'),
+        ]
     
     def __str__(self):
         user_str = self.user.username if self.user else 'System'

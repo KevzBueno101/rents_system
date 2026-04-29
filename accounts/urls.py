@@ -4,6 +4,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 from . import views
+from .views import admin_views
 
 urlpatterns = [
     path('', views.login_view, name='login'),
@@ -34,6 +35,7 @@ urlpatterns = [
     
     # ─── ADMIN ───────────────────────────────────────
     path('admin-dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    path('audit-trail/', admin_views.audit_trail, name='audit_trail'),
     path('admin-list/', views.admin_list, name='admin_list'),
     path('register-admin/', views.register_admin, name='register_admin'),
     path('toggle-admin/<int:user_id>/', views.toggle_admin_status, name='toggle_admin_status'),

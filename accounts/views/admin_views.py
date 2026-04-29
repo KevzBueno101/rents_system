@@ -140,3 +140,88 @@ def delete_admin(request, user_id):
         admin_user.delete()
 
     return redirect('admin_list')
+
+
+def audit_trail(request):
+    """Display comprehensive audit trail with filtering and pagination (Admin only)."""
+    if not request.user.is_staff:
+        return redirect('tenant_dashboard')
+    
+    from django.core.paginator import Paginator
+    from ..models import ActivityLog
+    from django.contrib.auth.models import User
+    from datetime import datetime
+    
+    # Get filter parameters
+    user_filter = request.GET.get('user', '')
+    action_filter = request.GET.get('action', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    content_type_filter = request.GET.get('content_type', '')
+    search = request.GET.get('search', '')
+    
+    # Start with base queryset
+    activities = ActivityLog.objects.all().select_related('user').order_by('-timestamp')
+    
+    # Apply filters safely
+    if user_filter and user_filter.isdigit():
+        activities = activities.filter(user_id=int(user_filter))
+    
+    if action_filter:
+        activities = activities.filter(action=action_filter)
+    
+    if content_type_filter:
+        activities = activities.filter(content_type__icontains=content_type_filter)
+    
+    if search:
+        activities = activities.filter(description__icontains=search)
+    
+    # Date range filtering
+    if date_from:
+        try:
+            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
+            activities = activities.filter(timestamp__date__gte=date_from_obj)
+        except ValueError:
+            pass  # Invalid date format, ignore filter
+    
+    if date_to:
+        try:
+            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d').date()
+            activities = activities.filter(timestamp__date__lte=date_to_obj)
+        except ValueError:
+            pass  # Invalid date format, ignore filter
+    
+    # Pagination (50 records per page)
+    paginator = Paginator(activities, 50)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Get filter options for dropdowns
+    staff_users = User.objects.filter(is_staff=True).order_by('username')
+    action_choices = ActivityLog.ACTION_CHOICES
+    content_types = ActivityLog.objects.values_list('content_type', flat=True).distinct()
+    content_types = [ct for ct in content_types if ct]  # Remove empty values
+    
+    # Preserve filters in pagination
+    query_params = request.GET.copy()
+    if 'page' in query_params:
+        del query_params['page']
+    
+    context = {
+        'page_obj': page_obj,
+        'activities': page_obj,
+        'staff_users': staff_users,
+        'action_choices': action_choices,
+        'content_types': content_types,
+        'filters': {
+            'user': user_filter,
+            'action': action_filter,
+            'date_from': date_from,
+            'date_to': date_to,
+            'content_type': content_type_filter,
+            'search': search,
+        },
+        'query_params': query_params.urlencode(),
+    }
+    
+    return render(request, 'admin/audit_trail.html', context)

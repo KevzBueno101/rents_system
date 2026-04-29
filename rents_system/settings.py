@@ -58,17 +58,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'rents_system.wsgi.application'
 
+USE_POSTGRES = os.getenv('USE_POSTGRES', 'false') == 'true'
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME', 'rents_db'),
-        'USER': os.getenv('DB_USER', 'root'),
-        'PASSWORD': os.getenv('DB_PASSWORD', ''),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '3306'),
-        'OPTIONS': {
-            'ssl': {'ssl_disabled': False}
-        }
+        'ENGINE': 'django.db.backends.postgresql' if USE_POSTGRES else 'django.db.backends.mysql',
+        'NAME': os.getenv('PG_DB_NAME', 'rents_db_pg') if USE_POSTGRES else os.getenv('DB_NAME', 'rents_db'),
+        'USER': os.getenv('PG_USER', 'postgres') if USE_POSTGRES else os.getenv('DB_USER', 'root'),
+        'PASSWORD': os.getenv('PG_PASSWORD', '') if USE_POSTGRES else os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('PG_HOST', 'localhost') if USE_POSTGRES else os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('PG_PORT', '5432') if USE_POSTGRES else os.getenv('DB_PORT', '3306'),
     }
 }
 

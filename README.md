@@ -4,7 +4,17 @@ A Django-based boarding house management system for managing tenants, rooms, bil
 
 ## Current Status: **Production Ready** v2.6
 
-**Latest Updates (April 28, 2026 - Morning):**
+**Latest Updates (April 28, 2026 - Evening):**
+- ✅ **Centralized Context Processors** - Implemented unified context processors for global template access
+- ✅ **Modular Views Architecture** - Refactored monolithic views.py into feature-specific modules
+- ✅ **Enhanced UI Components** - Dynamic tenant payment status, scrollable feeds, improved layouts
+- ✅ **Database Query Optimization** - Added select_related/prefetch_related across all views
+- ✅ **Custom Template Tags** - Created reusable template tags for tenant status and utilities
+- ✅ **Dashboard Improvements** - Recent Tenants on right side, 3-per-row billing stats, compact feeds
+- ✅ **Payment Activity Enhancement** - Recent payments show tenant names instead of bill numbers
+- ✅ **Backward Compatibility** - All changes maintain existing functionality without breaking changes
+
+**Previous Updates (April 28, 2026 - Morning):**
 - ✅ **Comprehensive Activity Logging** - Added activity logging to all major system actions
 - ✅ **Tenant Activity Tracking** - Log tenant creation, updates, and deletions
 - ✅ **Room Activity Tracking** - Log room creation, updates, and deletions
@@ -136,7 +146,8 @@ rents_system/
     │   │   ├── dashboard.html
     │   │   ├── admin_list.html
     │   │   ├── tenant_list.html
-    │   │   └── room_list.html
+    │   │   ├── room_list.html
+    │   │   └── billing_list.html
     │   ├── tenant/
     │   │   └── dashboard.html
     │   ├── partials/
@@ -146,12 +157,28 @@ rents_system/
     │       ├── password_reset_form.html
     │       └── ...
     │
-    ├── templatetags/
-    │   ├── __init__.py
-    │   └── avatar_tags.py
+    ├── views/                     ← MODULARIZED view components
+    │   ├── __init__.py           ← backward compatibility
+    │   ├── auth_views.py         ← login, signup, logout, profile
+    │   ├── admin_views.py        ← admin CRUD operations
+    │   ├── tenant_views.py       ← tenant CRUD operations
+    │   ├── room_views.py         ← room CRUD, features
+    │   ├── billing_views.py      ← billing, payments
+    │   ├── maintenance_views.py  ← maintenance, violations
+    │   ├── reminder_views.py     ← reminders, notifications
+    │   └── helpers.py            ← shared helper functions
     │
+    ├── templatetags/              ← custom template tags
+    │   ├── __init__.py
+    │   ├── avatar_tags.py         ← avatar display utilities
+    │   ├── tenant_tags.py         ← tenant status tags
+    │   └── json_filters.py        ← JSON processing filters
+    │
+    ├── context_processors.py      ← global context providers
+    ├── activity_utils.py          ← activity logging utilities
+    ├── forms.py                   ← centralized form definitions
     ├── models.py
-    ├── views.py
+    ├── views.py.backup           ← legacy views (backup)
     ├── urls.py
     ├── admin.py
     └── apps.py
