@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import os
 
 # Load environment variables FIRST
-load_dotenv()
+load_dotenv(override=True)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
