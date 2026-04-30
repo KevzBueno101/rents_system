@@ -8,8 +8,6 @@ from django.db.models import Q
 from ..models import AdminProfile
 from ..activity_utils import log_activity
 from .helpers import parse_phone, get_dashboard_context
-from django.http import HttpResponse 
-from reportlab.platypus import SimpleDocTemplate, Table
 
 
 def admin_dashboard(request):
