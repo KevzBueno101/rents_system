@@ -2,9 +2,17 @@
 
 A Django-based boarding house management system for managing tenants, rooms, billing, maintenance, and violations.
 
-## Current Status: **Production Ready** v2.6
+## Current Status: **Production Ready** v2.7
 
-**Latest Updates (April 28, 2026 - Evening):**
+**Latest Updates (May 2, 2026):**
+- ✅ **Tenant System Revert** - Successfully reverted to original simple tenant dashboard structure
+- ✅ **Navigation Cleanup** - Removed modular navigation system components for cleaner interface
+- ✅ **Audit Trail Improvements** - Removed export functionality, moved filters to table top, fixed pagination
+- ✅ **Login Flow Fix** - Removed automatic redirect, login page now shows first
+- ✅ **Template Structure Cleanup** - Fixed UnboundLocalError, improved responsive layouts
+- ✅ **UI Component Enhancement** - Uniform filter heights and improved responsive design
+
+**Previous Updates (April 28, 2026 - Evening):**
 - ✅ **Centralized Context Processors** - Implemented unified context processors for global template access
 - ✅ **Modular Views Architecture** - Refactored monolithic views.py into feature-specific modules
 - ✅ **Enhanced UI Components** - Dynamic tenant payment status, scrollable feeds, improved layouts
@@ -119,7 +127,13 @@ rents_system/
 │   └── css/
 │       ├── dashboard.css
 │       ├── avatar.css
-│       └── modal-fix.css   
+│       └── modal-fix.css  
+|       |__ base.css
+|       |__ components.css
+|       |__ layout.css
+|       |___ pages
+|           |__tenant_mobile.css
+|
 │
 ├── staticfiles/                  ← AUTO-GENERATED (NOT in repo)
 │   ├── js/
@@ -336,10 +350,6 @@ rents_system/
 - **Centralized Management**: Dedicated "Features" page for managing inclusions and appliances
 - **Flexible System**: Add custom inclusions (Water, Internet, Parking, etc.) and appliances (Microwave, Water Heater, etc.)
 - **Room Integration**: Assign features to rooms via edit modal with checkboxes
-- **Real-time Updates**: Add/remove features directly from room edit modal
-- **Quick Add**: "Add" buttons in room edit modal for on-the-fly feature creation
-- **Remove Functionality**: 'x' buttons to remove features from rooms instantly
-- **CRUD Operations**: Complete create, read, update, delete for all features
 - **Data Persistence**: Features saved to database and available across all rooms
 - **Duplicate Prevention**: Smart handling of existing features
 
