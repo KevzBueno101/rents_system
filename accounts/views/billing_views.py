@@ -1,12 +1,49 @@
 """
 Billing and payment views: list, generate, edit, view, delete, record payment.
 """
-from django.shortcuts import render, redirect
+from pathlib import Path
+
+from django.conf import settings
+from django.http import FileResponse, Http404, JsonResponse
+from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q, Sum
-from ..models import Bill, Payment, TenantProfile
+from django.utils.http import url_has_allowed_host_and_scheme
+from ..models import Bill, Notification, Payment, TenantProfile
 from ..activity_utils import log_activity, get_recent_activities
+from ..services.notification_service import NotificationService
+from billing.services.receipt_generator import (
+    generate_receipt_for_payment,
+    send_receipt_to_tenant,
+)
+
+
+def _can_access_payment(user, payment):
+    if user.is_staff:
+        return True
+    return payment.bill.tenant.user_id == user.id
+
+
+def _get_accessible_payment_or_404(request, payment_id):
+    payment = get_object_or_404(
+        Payment.objects.select_related('bill', 'bill__tenant', 'bill__tenant__user', 'bill__room'),
+        id=payment_id,
+    )
+    if not _can_access_payment(request.user, payment):
+        raise Http404("Receipt not found")
+    return payment
+
+
+def _redirect_back(request, fallback='billing_list'):
+    next_url = request.META.get('HTTP_REFERER')
+    if next_url and url_has_allowed_host_and_scheme(
+        next_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return redirect(next_url)
+    return redirect(fallback)
 
 
 @login_required(login_url='/')
@@ -104,6 +141,19 @@ def generate_bill(request):
             content_type='Bill',
             object_id=bill.id
         )
+
+        # Create notification for tenant about new bill (only if not draft)
+        if not save_as_draft:
+            try:
+                NotificationService.create_billing_notification(
+                    tenant_user=tenant.user,
+                    bill_number=bill.bill_number
+                )
+            except Exception as e:
+                # Log error but don't fail the bill generation
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to create billing notification: {e}")
 
         messages.success(request, f'Bill {bill.bill_number} generated successfully!')
     return redirect('billing_list')
@@ -230,6 +280,11 @@ def record_payment(request, bill_id):
 
         bill.update_status()
 
+        try:
+            generate_receipt_for_payment(payment)
+        except Exception:
+            messages.warning(request, 'Payment was recorded, but the receipt image could not be generated.')
+
         log_activity(
             user=request.user,
             action='payment_recorded',
@@ -238,10 +293,98 @@ def record_payment(request, bill_id):
             object_id=payment.id
         )
 
+        # Create notification for tenant about payment
+        try:
+            NotificationService.create_payment_notification(
+                tenant_user=bill.tenant.user,
+                amount=float(amount)
+            )
+        except Exception as e:
+            # Log error but don't fail the payment process
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to create payment notification: {e}")
+
         messages.success(request, f'Payment of ₱{amount} recorded successfully!')
         return redirect('billing_list')
 
     return redirect('billing_list')
+
+
+@login_required(login_url='/')
+def generate_payment_receipt(request, payment_id):
+    """Generate or regenerate a PNG receipt for a payment."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    payment = _get_accessible_payment_or_404(request, payment_id)
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Only staff can generate receipts'}, status=403)
+
+    result = generate_receipt_for_payment(payment)
+    return JsonResponse({
+        'receipt_url': payment.receipt_image.url,
+        'receipt_id': result.receipt_id,
+        'download': True,
+    })
+
+
+@login_required(login_url='/')
+def download_payment_receipt(request, payment_id):
+    """Download a generated PNG receipt."""
+    payment = _get_accessible_payment_or_404(request, payment_id)
+    if not payment.receipt_image:
+        raise Http404("Receipt has not been generated")
+
+    receipt_path = Path(settings.MEDIA_ROOT) / payment.receipt_image.name
+    if not receipt_path.exists():
+        raise Http404("Receipt file not found")
+
+    filename = f"{payment.receipt_id or 'receipt'}.png"
+    return FileResponse(open(receipt_path, 'rb'), content_type='image/png', as_attachment=True, filename=filename)
+
+
+@login_required(login_url='/')
+def send_payment_receipt(request, payment_id):
+    """Send a generated receipt notification to the tenant dashboard."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    payment = _get_accessible_payment_or_404(request, payment_id)
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Only staff can send receipts'}, status=403)
+
+    if not payment.receipt_image:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'error': 'Receipt has not been generated'}, status=400)
+        messages.error(request, 'Receipt has not been generated yet.')
+        return _redirect_back(request)
+
+    result = send_receipt_to_tenant(payment.receipt_image.name, payment.bill.tenant)
+    Notification.objects.create(
+        user=payment.bill.tenant.user,
+        title='Payment receipt available',
+        message=(
+            f'Your receipt for bill {payment.bill.bill_number} is ready. '
+            f'Amount paid: ₱{payment.amount:,.2f}. '
+            'Open your bill payment history to view or download it.'
+        ),
+    )
+
+    log_activity(
+        user=request.user,
+        action='reminder_sent',
+        description=f'Sent receipt notification for {payment.bill.bill_number} to {payment.bill.tenant.full_name}',
+        content_type='Payment',
+        object_id=payment.id
+    )
+
+    result = {**result, 'queued': True, 'channel': 'in_app'}
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse(result)
+
+    messages.success(request, f'Receipt notification sent to {payment.bill.tenant.full_name}.')
+    return _redirect_back(request)
 
 
 @login_required(login_url='/')

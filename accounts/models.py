@@ -238,6 +238,8 @@ class Payment(models.Model):
     payment_method = models.CharField(max_length=30, choices=PAYMENT_METHODS)
     reference_number = models.CharField(max_length=50, blank=True)
     proof = models.ImageField(upload_to='payments/', blank=True, null=True)
+    receipt_id = models.CharField(max_length=80, unique=True, blank=True, null=True)
+    receipt_image = models.ImageField(upload_to='', blank=True, null=True)
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -309,10 +311,22 @@ class ActivityLog(models.Model):
 
 # ─── NOTIFICATION ─────────────────────────────────────
 class Notification(models.Model):
-    """Generic notification model for tenant reminders and system alerts"""
+    """Production-ready notification model for tenant-specific system alerts"""
+    
+    NOTIFICATION_TYPES = [
+        ('payment', 'Payment'),
+        ('billing', 'Billing'),
+        ('maintenance', 'Maintenance'),
+        ('announcement', 'Announcement'),
+        ('system', 'System'),
+        ('reminder', 'Reminder'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
     title = models.CharField(max_length=255)
     message = models.TextField()
+    link = models.CharField(max_length=255, blank=True, help_text='Internal URL path for redirection')
+    type = models.CharField(max_length=50, choices=NOTIFICATION_TYPES, null=True, blank=True)
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -320,9 +334,20 @@ class Notification(models.Model):
         ordering = ['-created_at']
         verbose_name = 'Notification'
         verbose_name_plural = 'Notifications'
+        indexes = [
+            models.Index(fields=['user', '-created_at'], name='idx_notification_user_created'),
+            models.Index(fields=['user', 'is_read'], name='idx_notification_user_read'),
+            models.Index(fields=['type'], name='idx_notification_type'),
+        ]
 
     def __str__(self):
         return f"{self.user.username} - {self.title}"
+
+    def get_absolute_url(self):
+        """Get the absolute URL for this notification"""
+        if self.link:
+            return self.link
+        return '/tenant/dashboard/'
 
 
 # ─── TENANT REMINDER ───────────────────────────────────

@@ -1,4 +1,5 @@
-from .models import AdminProfile, TenantProfile
+from .models import AdminProfile, TenantProfile, Notification
+from .services.notification_service import NotificationService
 
 
 def admin_profile(request):
@@ -15,7 +16,7 @@ def admin_profile(request):
 
 
 def user_profile(request):
-    """Enhanced user profile context processor supporting both admin and tenant users"""
+    """Enhanced user profile context processor supporting both admin and tenant users with completion tracking"""
     if not request.user.is_authenticated:
         return {
             'user_profile': None,
@@ -27,32 +28,63 @@ def user_profile(request):
     if request.user.is_staff:
         try:
             profile = AdminProfile.objects.select_related('user').get(user=request.user)
+            # Calculate admin profile completion
+            completion_fields = {
+                'full_name': bool(profile.full_name),
+                'email': bool(profile.user.email),
+                'phone': bool(profile.phone),
+                'photo': bool(profile.photo),
+            }
+            completion_percentage = (sum(completion_fields.values()) / len(completion_fields)) * 100
+            filled_fields_count = sum(completion_fields.values())
+            
             return {
                 'user_profile': profile,
                 'is_admin': True,
                 'is_tenant': False,
+                'profile_completion': completion_percentage,
+                'completion_fields': completion_fields,
+                'filled_fields_count': filled_fields_count,
             }
         except AdminProfile.DoesNotExist:
             return {
                 'user_profile': None,
                 'is_admin': True,
                 'is_tenant': False,
+                'profile_completion': 0,
+                'completion_fields': {},
             }
     
     # For tenant users
     else:
         try:
             profile = TenantProfile.objects.select_related('user', 'room').get(user=request.user)
+            # Calculate tenant profile completion
+            completion_fields = {
+                'full_name': bool(profile.full_name),
+                'email': bool(profile.user.email),
+                'phone': bool(profile.phone),
+                'photo': bool(profile.photo),
+                'room': bool(profile.room)
+            }
+            completion_percentage = (sum(completion_fields.values()) / len(completion_fields)) * 100
+            filled_fields_count = sum(completion_fields.values())
+            
             return {
                 'user_profile': profile,
                 'is_admin': False,
                 'is_tenant': True,
+                'profile_completion': completion_percentage,
+                'completion_fields': completion_fields,
+                'filled_fields_count': filled_fields_count,
             }
         except TenantProfile.DoesNotExist:
             return {
                 'user_profile': None,
                 'is_admin': False,
                 'is_tenant': True,
+                'profile_completion': 0,
+                'completion_fields': {},
             }
 
 
@@ -104,6 +136,26 @@ def recent_payments(request):
     payments = get_recent_payments(limit=3).select_related('user')
     
     return {'recent_payments': payments}
+
+
+def notifications(request):
+    """Enhanced notification context processor using NotificationService"""
+    if not request.user.is_authenticated:
+        return {
+            'notifications': [],
+            'unread_count': 0,
+        }
+    
+    # Use NotificationService for optimized notification retrieval
+    notifications, unread_count = NotificationService.get_user_notifications(
+        user=request.user,
+        limit=5
+    )
+    
+    return {
+        'notifications': notifications,
+        'unread_count': unread_count,
+    }
 
 
 def app_settings(request):
