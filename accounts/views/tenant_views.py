@@ -23,7 +23,7 @@ def tenant_dashboard(request):
         messages.error(request, 'Tenant profile not found.')
         return redirect('login')
     
-    return render(request, 'tenant/dashboard.html', {'profile': profile})
+    return render(request, 'tenant/tenant_dashboard.html', {'profile': profile})
 
 @login_required(login_url='/')
 def tenant_bills(request):

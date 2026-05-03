@@ -10,7 +10,7 @@ from .auth_views import (
     logout_view,
     edit_profile,
     CustomPasswordResetView,
-    CustomPasswordResetConfirmView,
+    custom_password_reset_confirm,
 )
 
 # Import from admin_views
@@ -108,7 +108,7 @@ __all__ = [
     'logout_view',
     'edit_profile',
     'CustomPasswordResetView',
-    'CustomPasswordResetConfirmView',
+    'custom_password_reset_confirm',
     # Admin views
     'admin_dashboard',
     'admin_list',

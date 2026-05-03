@@ -328,11 +328,19 @@
       fetch('{% url "password_reset" %}', {
         method: 'POST',
         body: formData,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        redirect: 'manual'  // Prevent automatic redirect handling
       })
       .then(response => {
-        if (!response.ok) throw new Error('Network response was not ok');
-        return response.text();
+        // Django returns 302 for successful password reset
+        if (response.status === 302 || response.status === 0) {
+          // Success - show success message
+          return '';
+        } else if (response.ok) {
+          return response.text();
+        } else {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
       })
       .then(html => {
         const modalBody = document.querySelector('#forgotPasswordModal .modal-body');
@@ -359,9 +367,18 @@
       .catch(error => {
         console.error('Error:', error);
         const modalBody = document.querySelector('#forgotPasswordModal .modal-body');
+        
+        // Remove existing error messages
+        modalBody.querySelectorAll('.alert-danger').forEach(alert => alert.remove());
+        
         const errorDiv = document.createElement('div');
-        errorDiv.className = 'alert alert-danger';
-        errorDiv.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>An error occurred. Please try again.';
+        errorDiv.className = 'alert alert-danger alert-dismissible fade show';
+        errorDiv.innerHTML = `
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          <strong>Error:</strong> ${error.message || 'An error occurred. Please try again.'}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
         const formElement = modalBody.querySelector('form');
         if (formElement) modalBody.insertBefore(errorDiv, formElement);
         else modalBody.appendChild(errorDiv);

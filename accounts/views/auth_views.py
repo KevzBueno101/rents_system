@@ -364,12 +364,50 @@ def mark_notification(request, notif_id):
         messages.error(request, 'An error occurred while processing the notification.')
         return redirect('admin_dashboard' if request.user.is_staff else 'tenant_dashboard')
 
-@login_required
-class CustomPasswordResetConfirmView(PasswordResetConfirmView):
-    """Custom password reset confirm view."""
-    template_name = 'registration/password_reset_confirm.html'
-    success_url = '/password-reset/complete/'
+def custom_password_reset_confirm(request, uidb64, token):
+    """
+    Simple password reset confirm view that bypasses Django's authentication middleware.
+    """
+    from django.contrib.auth import get_user_model
+    from django.contrib.auth.tokens import default_token_generator
+    from django.utils.http import urlsafe_base64_decode
+    from django.contrib.auth.forms import SetPasswordForm
+    from django.shortcuts import render, redirect
+    from django.contrib import messages
     
-    def form_valid(self, form):
-        messages.success(self.request, 'Your password has been reset successfully. You can now log in with your new password.')
-        return super().form_valid(form)
+    User = get_user_model()
+    
+    # Try to decode the user ID
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+    
+    # Check if the token is valid
+    validlink = user is not None and default_token_generator.check_token(user, token)
+    
+    if request.method == 'POST':
+        if validlink:
+            form = SetPasswordForm(user, request.POST)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Your password has been reset successfully. You can now log in with your new password.')
+                return redirect('password_reset_complete')
+        else:
+            # Invalid token - show error
+            return render(request, 'registration/password_reset_confirm.html', {
+                'validlink': False,
+                'form': None
+            })
+    else:
+        if validlink:
+            form = SetPasswordForm(user)
+        else:
+            form = None
+    
+    return render(request, 'registration/password_reset_confirm.html', {
+        'validlink': validlink,
+        'form': form,
+        'user': user
+    })
