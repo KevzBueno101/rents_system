@@ -99,19 +99,28 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Email Configuration for Password Reset
-# Use console backend and let custom send_mail handle SendGrid API
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = os.getenv('FROM_EMAIL', 'RENTS System <noreply@rents.com>')
-
-# SendGrid API configuration for custom email sending
-SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
-
-# Gmail SMTP fallback configuration
-EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
-EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+# Use Gmail SMTP as primary for immediate working solution
+if os.getenv('EMAIL_HOST_USER') and os.getenv('EMAIL_HOST_PASSWORD'):
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+    EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+    EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+    EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+    EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+    DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'RENTS System <noreply@rents.com>')
+elif os.getenv('SENDGRID_API_KEY'):
+    # SendGrid as fallback
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = 'smtp.sendgrid.net'
+    EMAIL_PORT = 587
+    EMAIL_USE_TLS = True
+    EMAIL_HOST_USER = 'apikey'
+    EMAIL_HOST_PASSWORD = os.getenv('SENDGRID_API_KEY')
+    DEFAULT_FROM_EMAIL = os.getenv('FROM_EMAIL', 'RENTS System <noreply@rents.com>')
+else:
+    # Console for testing
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    DEFAULT_FROM_EMAIL = 'RENTS System <noreply@rents.com>'
 
 # Password Reset Settings
 PASSWORD_RESET_TIMEOUT = 86400  # 24 hours in seconds

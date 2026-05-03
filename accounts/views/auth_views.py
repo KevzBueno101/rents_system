@@ -296,50 +296,8 @@ class CustomPasswordResetView(PasswordResetView):
             messages.info(self.request, 'If an account with that email exists, a password reset link has been sent.')
             return super().form_valid(form)
         
-        try:
-            # Get the user for email context
-            user = users.first()
-            
-            # Generate password reset token
-            from django.contrib.auth.tokens import default_token_generator
-            from django.utils.http import urlsafe_base64_encode
-            from django.utils.encoding import force_bytes
-            
-            token = default_token_generator.make_token(user)
-            uid = urlsafe_base64_encode(force_bytes(user.pk))
-            
-            # Create email context
-            context = {
-                'email': user.email,
-                'domain': self.request.get_host(),
-                'site_name': 'RENTS System',
-                'uid': uid,
-                'user': user,
-                'token': token,
-                'protocol': 'https' if self.request.is_secure() else 'http',
-            }
-            
-            # Call our custom send_mail method directly
-            self.send_mail(
-                subject_template_name=self.subject_template_name,
-                email_template_name=self.email_template_name,
-                context=context,
-                from_email=self.from_email,
-                to_email=user.email,
-                html_email_template_name=self.html_email_template_name
-            )
-            
-            return super().form_valid(form)
-            
-        except Exception as e:
-            # Log the error but don't expose it to user
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Error in password reset form_valid: {e}")
-            
-            # Show user-friendly message
-            messages.error(self.request, 'An error occurred while processing your request. Please try again later.')
-            return redirect('password_reset')
+        # Use Django's standard password reset which will work with Gmail SMTP
+        return super().form_valid(form)
     
     def send_mail(self, subject_template_name, email_template_name, context, from_email, to_email, html_email_template_name=None):
         """
