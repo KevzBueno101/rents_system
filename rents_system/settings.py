@@ -128,5 +128,13 @@ PASSWORD_RESET_TIMEOUT = 86400  # 24 hours in seconds
 # Site Configuration for Password Reset Links
 SITE_ID = 1
 
+# Domain configuration for password reset links
+if os.getenv('RENDER'):
+    # Production: Use Render domain
+    SITE_URL = os.getenv('RENDER_EXTERNAL_URL', 'https://rents-system.onrender.com')
+else:
+    # Development: Use localhost
+    SITE_URL = 'http://127.0.0.1:8000'
+
 MEDIA_URL  = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

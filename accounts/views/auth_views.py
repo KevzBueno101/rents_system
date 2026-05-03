@@ -299,6 +299,14 @@ class CustomPasswordResetView(PasswordResetView):
         # Use Django's standard password reset which will work with Gmail SMTP
         return super().form_valid(form)
     
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Override domain to use proper URL from settings
+        from django.conf import settings
+        context['domain'] = settings.SITE_URL.replace('http://', '').replace('https://', '')
+        context['protocol'] = 'https' if settings.SITE_URL.startswith('https://') else 'http'
+        return context
+    
     def send_mail(self, subject_template_name, email_template_name, context, from_email, to_email, html_email_template_name=None):
         """
         Override send_mail with robust error handling and SendGrid API fallback
