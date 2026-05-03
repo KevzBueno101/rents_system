@@ -327,11 +327,11 @@ class CustomPasswordResetView(PasswordResetView):
                 subject = ''.join(subject.splitlines())
                 
                 message = Mail(
-                    from_email=Email(from_email),
-                    to_emails=[Email(to_email)],
+                    from_email=from_email,
+                    to_emails=to_email,
                     subject=subject,
-                    html_content=Content('text/html', render_to_string(html_email_template_name, context)) if html_email_template_name else None,
-                    plain_text_content=Content('text/plain', render_to_string(email_template_name, context))
+                    html_content=render_to_string(html_email_template_name, context) if html_email_template_name else None,
+                    plain_text_content=render_to_string(email_template_name, context)
                 )
                 
                 sg = sendgrid.SendGridAPIClient(settings.SENDGRID_API_KEY)
