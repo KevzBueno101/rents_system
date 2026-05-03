@@ -300,69 +300,33 @@ class CustomPasswordResetView(PasswordResetView):
     
     def send_mail(self, subject_template_name, email_template_name, context, from_email, to_email, html_email_template_name=None):
         """
-        Override send_mail to properly handle HTML emails with plain text fallback
+        Override send_mail to work with SendGrid backend
         """
-        subject = render_to_string(subject_template_name, context)
-        subject = ''.join(subject.splitlines())
-        
-        # Render HTML email
-        html_email = render_to_string(email_template_name, context)
-        
-        # Create plain text version from HTML for email clients that don't support HTML
-        import re
-        plain_text = re.sub(r'<[^>]+>', '', html_email)
-        plain_text = re.sub(r'\s+', ' ', plain_text).strip()
-        
-        # Create email with plain text content and HTML alternative
-        email_message = EmailMultiAlternatives(subject, plain_text, from_email, [to_email])
-        email_message.attach_alternative(html_email, "text/html")
-        email_message.send()
-
-
-@login_required
-def mark_notification(request, notif_id):
-    """
-    Enhanced notification handler with security and logging.
-    
-    Security: Ensures users can only access their own notifications
-    Performance: Uses NotificationService for optimized operations
-    Logging: Tracks notification interactions for audit trail
-    """
-    try:
-        # Use NotificationService for secure notification access
-        success = NotificationService.mark_as_read(
-            notification_id=notif_id,
-            user=request.user
-        )
-        
-        if not success:
-            messages.error(request, 'Notification not found or access denied.')
-            return redirect('admin_dashboard' if request.user.is_staff else 'tenant_dashboard')
-        
-        # Get the notification for redirect (already verified as belonging to user)
-        notification = Notification.objects.get(id=notif_id, user=request.user)
-        
-        # Log the notification interaction for audit trail
-        log_activity(
-            user=request.user,
-            action='notification_read',
-            description=f'Read notification: {notification.title}',
-            content_type='Notification',
-            object_id=notification.id
-        )
-        
-        # Dynamic redirect based on notification link or fallback
-        redirect_url = notification.get_absolute_url()
-        return redirect(redirect_url)
+        try:
+            subject = render_to_string(subject_template_name, context)
+            subject = ''.join(subject.splitlines())
+            
+            # SendGrid handles both HTML and plain text automatically
+            # Use the HTML template if available, otherwise use text template
+            if html_email_template_name:
+                html_email = render_to_string(html_email_template_name, context)
+                email_message = EmailMultiAlternatives(subject, '', from_email, [to_email])
+                email_message.attach_alternative(html_email, "text/html")
+                email_message.send()
+            else:
+                # Fallback to plain text
+                plain_text = render_to_string(email_template_name, context)
+                from django.core.mail import send_mail
+                send_mail(subject, plain_text, from_email, [to_email])
                 
-    except Exception as e:
-        # Log unexpected errors but don't expose them to user
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error processing notification {notif_id}: {e}")
-        
-        messages.error(request, 'An error occurred while processing the notification.')
-        return redirect('admin_dashboard' if request.user.is_staff else 'tenant_dashboard')
+        except Exception as e:
+            # Log the error but don't expose it to user
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error sending password reset email: {e}")
+            
+            # Continue without email - user will see success message but no email sent
+            pass
 
 def custom_password_reset_confirm(request, uidb64, token):
     """

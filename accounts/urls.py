@@ -6,7 +6,7 @@ from django.contrib.auth import views as auth_views
 from . import views
 from .views import admin_views
 from .views import api_views
-from .views.auth_views import mark_notification
+from .views.reminder_views import mark_notification_read
 
 urlpatterns = [
     path('', views.login_view, name='login'),
@@ -104,8 +104,7 @@ urlpatterns = [
     path('notifications/', views.notification_list, name='notification_list'),
     path('notifications/<int:notification_id>/read/', views.mark_notification_read, name='mark_notification_read'),
     path('notifications/read-all/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
-    path('notification/<int:notif_id>/mark-read/', mark_notification, name='mark_notification'),
-    path('notification/<int:notif_id>/mark-read/', views.auth_views.mark_notification, name='mark_notification'),
+    path('notification/<int:notif_id>/mark-read/', views.mark_notification_read, name='mark_notification'),
     # ─── MAINTENANCE ─────────────────────────────────
     path('maintenance/', views.maintenance_list, name='maintenance_list'),
     path('maintenance/create/', views.create_maintenance, name='create_maintenance'),
