@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import os
 
 # Load environment variables FIRST
-load_dotenv()
+load_dotenv(override=True)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -45,7 +45,12 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'accounts.context_processors.admin_profile',
+                'accounts.context_processors.admin_profile',  # Legacy - kept for compatibility
+                'accounts.context_processors.user_profile',  # Enhanced unified profile
+                'accounts.context_processors.system_stats',   # System statistics
+                'accounts.context_processors.recent_activity', # Recent activity feed
+                'accounts.context_processors.recent_payments', # Recent payments feed
+                'accounts.context_processors.app_settings',   # App metadata
             ],
         },
     },
@@ -53,19 +58,25 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'rents_system.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME', 'rents_db'),
-        'USER': os.getenv('DB_USER', 'root'),
-        'PASSWORD': os.getenv('DB_PASSWORD', ''),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '3306'),
-        'OPTIONS': {
-            'ssl': {'ssl_disabled': False}
+import dj_database_url
+
+USE_POSTGRES = os.getenv('USE_POSTGRES', 'false') == 'true'
+
+if USE_POSTGRES and os.getenv('DATABASE_URL'):
+    DATABASES = {
+        'default': dj_database_url.config(default=os.getenv('DATABASE_URL'))
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql' if USE_POSTGRES else 'django.db.backends.mysql',
+            'NAME': os.getenv('PG_DB_NAME', 'rents_db_pg') if USE_POSTGRES else os.getenv('DB_NAME', 'rents_db'),
+            'USER': os.getenv('PG_USER', 'postgres') if USE_POSTGRES else os.getenv('DB_USER', 'root'),
+            'PASSWORD': os.getenv('PG_PASSWORD', '') if USE_POSTGRES else os.getenv('DB_PASSWORD', ''),
+            'HOST': os.getenv('PG_HOST', 'localhost') if USE_POSTGRES else os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('PG_PORT', '5432') if USE_POSTGRES else os.getenv('DB_PORT', '3306'),
         }
     }
-}
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

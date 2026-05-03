@@ -41,23 +41,40 @@ def log_activity(user, action, description='', content_type='', object_id=None):
     )
 
 
-def get_recent_activities(limit=10, user=None):
+def get_recent_activities(limit=10, user=None, action_filter=None):
     """
     Get recent activities with optimized queries.
     
     Args:
         limit: Maximum number of activities to return
-        user: Optional user filter (if provided, only returns activities for that user)
+        user: Optional user to filter activities by
+        action_filter: Optional action type to filter by (e.g., 'payment_recorded')
     
     Returns:
         QuerySet of ActivityLog instances
     """
-    queryset = ActivityLog.objects.select_related('user')
+    queryset = ActivityLog.objects.all()
     
     if user:
         queryset = queryset.filter(user=user)
     
-    return queryset[:limit]
+    if action_filter:
+        queryset = queryset.filter(action=action_filter)
+    
+    return queryset.order_by('-timestamp')[:limit]
+
+
+def get_recent_payments(limit=10):
+    """
+    Get recent payment activities only.
+    
+    Args:
+        limit: Maximum number of activities to return
+    
+    Returns:
+        QuerySet of ActivityLog instances with payment_recorded action
+    """
+    return get_recent_activities(limit=limit, action_filter='payment_recorded')
 
 
 def get_activity_icon(action):
@@ -89,6 +106,8 @@ def get_activity_icon(action):
         'maintenance_created': 'bi-tools',
         'maintenance_updated': 'bi-gear',
         'maintenance_completed': 'bi-check-circle',
+        'reminder_created': 'bi-bell',
+        'reminder_sent': 'bi-send',
     }
     return icon_map.get(action, 'bi-activity')
 
@@ -122,5 +141,7 @@ def get_activity_color(action):
         'maintenance_created': 'text-warning',
         'maintenance_updated': 'text-info',
         'maintenance_completed': 'text-success',
+        'reminder_created': 'text-primary',
+        'reminder_sent': 'text-success',
     }
     return color_map.get(action, 'text-secondary')

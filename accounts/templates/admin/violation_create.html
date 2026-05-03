@@ -1,0 +1,50 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}Create Violation{% endblock %}
+{% block page_title %}Record Violation{% endblock %}
+
+{% block content %}
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-0 py-3">
+        <h6 class="mb-0 fw-bold">
+            <i class="bi bi-exclamation-triangle me-2"></i>Record Violation
+        </h6>
+    </div>
+    <div class="card-body">
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+                <label class="form-label">Tenant <span class="text-danger">*</span></label>
+                <select name="tenant" class="form-select" required>
+                    <option value="">Select Tenant</option>
+                    {% for tenant in tenants %}
+                        <option value="{{ tenant.id }}">{{ tenant.full_name }} - {{ tenant.get_room_display }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Date <span class="text-danger">*</span></label>
+                <input type="date" name="date" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Description <span class="text-danger">*</span></label>
+                <textarea name="description" class="form-control" rows="5" placeholder="Describe the violation..." required></textarea>
+            </div>
+
+            <div class="d-flex gap-2">
+                <a href="{% url 'violation_list' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-plus"></i> Record Violation
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

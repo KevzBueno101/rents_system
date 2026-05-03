@@ -1,0 +1,106 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}View Reminder{% endblock %}
+{% block page_title %}View Reminder{% endblock %}
+
+{% block content %}
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-0 py-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 fw-bold">
+                <i class="bi bi-bell me-2"></i>Reminder Details
+            </h6>
+            <a href="{% url 'reminder_list' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="mb-4">
+                    <label class="text-muted small">Tenant</label>
+                    <div class="d-flex align-items-center gap-2 mt-1">
+                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" 
+                             style="width: 40px; height: 40px;">
+                            <i class="bi bi-person text-muted"></i>
+                        </div>
+                        <div>
+                            <div class="fw-semibold fs-5">{{ reminder.tenant.full_name }}</div>
+                            <small class="text-muted">{{ reminder.tenant.get_room_display }}</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="text-muted small">Title</label>
+                    <div class="fw-semibold fs-5 mt-1">{{ reminder.title }}</div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="text-muted small">Message</label>
+                    <div class="mt-1 p-3 bg-light rounded">{{ reminder.message }}</div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="text-muted small">Type</label>
+                        <div class="mt-1">
+                            <span class="badge bg-light text-dark">{{ reminder.get_reminder_type_display }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted small">Status</label>
+                        <div class="mt-1">
+                            {% if reminder.status == 'pending' %}
+                                <span class="badge bg-secondary">Pending</span>
+                            {% elif reminder.status == 'sent' %}
+                                <span class="badge bg-success">Sent</span>
+                            {% elif reminder.status == 'read' %}
+                                <span class="badge bg-primary">Read</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h6 class="fw-bold mb-3">Timeline</h6>
+                        
+                        <div class="mb-3">
+                            <label class="text-muted small">Created</label>
+                            <div>{{ reminder.created_at|date:"M d, Y H:i" }}</div>
+                        </div>
+
+                        {% if reminder.scheduled_at %}
+                        <div class="mb-3">
+                            <label class="text-muted small">Scheduled For</label>
+                            <div>{{ reminder.scheduled_at|date:"M d, Y H:i" }}</div>
+                        </div>
+                        {% endif %}
+
+                        {% if reminder.sent_at %}
+                        <div class="mb-3">
+                            <label class="text-muted small">Sent At</label>
+                            <div>{{ reminder.sent_at|date:"M d, Y H:i" }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if reminder.status == 'pending' %}
+                <div class="mt-3">
+                    <a href="{% url 'send_reminder_now' reminder.id %}" class="btn btn-success w-100">
+                        <i class="bi bi-send"></i> Send Now
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -53,80 +53,80 @@
     <!-- STATS - 3 CARDS PER ROW -->
     <div class="col-lg-8">
         <div class="row g-3">
-            <div class="col-4 col-md-4">
-                <div class="card border-0 shadow-sm h-100 stat-card-mobile">
-                    <div class="card-body d-flex align-items-center stat-card-body-mobile">
-                        <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3 stat-icon-mobile">
-                            <i class="bi bi-file-earmark-text fs-4 text-primary stat-icon-text-mobile"></i>
+            <div class="col-6 col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+                            <i class="bi bi-file-earmark-text fs-4 text-primary"></i>
                         </div>
                         <div>
-                            <div class="text-muted small mb-1 stat-label-mobile">Total Bills</div>
-                            <div class="fw-bold fs-5 stat-value-mobile">{{ stats.total_bills }}</div>
+                            <div class="text-muted small mb-1">Total Bills</div>
+                            <div class="fw-bold fs-5">{{ stats.total_bills }}</div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-4 col-md-4">
-                <div class="card border-0 shadow-sm h-100 stat-card-mobile">
-                    <div class="card-body d-flex align-items-center stat-card-body-mobile">
-                        <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3 stat-icon-mobile">
-                            <i class="bi bi-exclamation-circle fs-4 text-warning stat-icon-text-mobile"></i>
+            <div class="col-6 col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
+                            <i class="bi bi-exclamation-circle fs-4 text-warning"></i>
                         </div>
                         <div>
-                            <div class="text-muted small mb-1 stat-label-mobile">Outstanding</div>
-                            <div class="fw-bold fs-5 stat-value-mobile">₱{{ stats.outstanding|floatformat:0 }}</div>
+                            <div class="text-muted small mb-1">Outstanding</div>
+                            <div class="fw-bold fs-5">₱{{ stats.outstanding|floatformat:0 }}</div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-4 col-md-4">
-                <div class="card border-0 shadow-sm h-100 stat-card-mobile">
-                    <div class="card-body d-flex align-items-center stat-card-body-mobile">
-                        <div class="rounded-circle bg-danger bg-opacity-10 p-3 me-3 stat-icon-mobile">
-                            <i class="bi bi-x-circle fs-4 text-danger stat-icon-text-mobile"></i>
+            <div class="col-6 col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="rounded-circle bg-danger bg-opacity-10 p-3 me-3">
+                            <i class="bi bi-x-circle fs-4 text-danger"></i>
                         </div>
                         <div>
-                            <div class="text-muted small mb-1 stat-label-mobile">Overdue</div>
-                            <div class="fw-bold fs-5 stat-value-mobile">₱{{ stats.overdue|floatformat:0 }}</div>
+                            <div class="text-muted small mb-1">Overdue</div>
+                            <div class="fw-bold fs-5">₱{{ stats.overdue|floatformat:0 }}</div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-4 col-md-4">
-                <div class="card border-0 shadow-sm h-100 stat-card-mobile">
-                    <div class="card-body d-flex align-items-center stat-card-body-mobile">
-                        <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3 stat-icon-mobile">
-                            <i class="bi bi-check-circle fs-4 text-success stat-icon-text-mobile"></i>
+            <div class="col-6 col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
+                            <i class="bi bi-check-circle fs-4 text-success"></i>
                         </div>
                         <div>
-                            <div class="text-muted small mb-1 stat-label-mobile">Paid</div>
-                            <div class="fw-bold fs-5 stat-value-mobile">₱{{ stats.paid|floatformat:0 }}</div>
+                            <div class="text-muted small mb-1">Paid</div>
+                            <div class="fw-bold fs-5">₱{{ stats.paid|floatformat:0 }}</div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-4 col-md-4">
-                <div class="card border-0 shadow-sm h-100 stat-card-mobile">
-                    <div class="card-body d-flex align-items-center stat-card-body-mobile">
-                        <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3 stat-icon-mobile">
-                            <i class="bi bi-clock fs-4 text-info stat-icon-text-mobile"></i>
+            <div class="col-6 col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3">
+                            <i class="bi bi-clock fs-4 text-info"></i>
                         </div>
                         <div>
-                            <div class="text-muted small mb-1 stat-label-mobile">Partial</div>
-                            <div class="fw-bold fs-5 stat-value-mobile">{{ stats.partial }}</div>
+                            <div class="text-muted small mb-1">Partial</div>
+                            <div class="fw-bold fs-5">{{ stats.partial }}</div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-4 col-md-4">
-                <div class="card border-0 shadow-sm h-100 stat-card-mobile">
-                    <div class="card-body d-flex align-items-center stat-card-body-mobile">
-                        <div class="rounded-circle bg-secondary bg-opacity-10 p-3 me-3 stat-icon-mobile">
-                            <i class="bi bi-file-earmark fs-4 text-secondary stat-icon-text-mobile"></i>
+            <div class="col-6 col-md-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="rounded-circle bg-secondary bg-opacity-10 p-3 me-3">
+                            <i class="bi bi-file-earmark fs-4 text-secondary"></i>
                         </div>
                         <div>
-                            <div class="text-muted small mb-1 stat-label-mobile">Draft</div>
-                            <div class="fw-bold fs-5 stat-value-mobile">{{ stats.draft }}</div>
+                            <div class="text-muted small mb-1">Draft</div>
+                            <div class="fw-bold fs-5">{{ stats.draft }}</div>
                         </div>
                     </div>
                 </div>
@@ -134,10 +134,43 @@
         </div>
     </div>
 
-    <!-- RECENT ACTIONS -->
+    <!-- RECENT PAYMENTS -->
     <div class="col-lg-4">
-        {% load activity_tags %}
-        {% include 'includes/activity_feed.html' %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-cash-coin"></i> Recent Payments</h6>
+                <a href="#" class="btn btn-sm btn-outline-dark">View All</a>
+            </div>
+            <div class="card-body p-3">
+                <div class="recent-payments-scroll" style="max-height: 200px; overflow-y: scroll; padding-right: 8px; border: 1px solid #e9ecef; border-radius: 8px;">
+                    {% if recent_payments %}
+                        {% for payment in recent_payments %}
+                        <div class="payment-item d-flex align-items-start gap-2 mb-2 p-2 border rounded" 
+                             style="transition: all 0.3s;" 
+                             onmouseover="this.style.backgroundColor='#f8f9fa'"
+                             onmouseout="this.style.backgroundColor='transparent'">
+                            
+                            <!-- Payment Icon -->
+                            <div class="payment-icon flex-shrink-0">
+                                <i class="bi bi-cash-coin text-success" style="font-size: 14px;"></i>
+                            </div>
+                            
+                            <!-- Payment Content -->
+                            <div class="payment-content flex-grow-1">
+                                <div class="payment-description" style="font-size: 12px;">{{ payment.description }}</div>
+                                <div class="payment-time text-muted small" style="font-size: 10px;">{{ payment.timestamp|timesince }} ago</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted py-3">
+                            <i class="bi bi-cash-coin" style="font-size: 1.5rem;"></i>
+                            <div class="mt-1" style="font-size: 11px;">No recent payments yet.</div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -248,8 +281,10 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if bill.payments.last.proof %}
-                                <i class="bi bi-image text-success"></i>
+                            {% if bill.payments.last.receipt_image %}
+                                <a href="{{ bill.payments.last.receipt_image.url }}" target="_blank" class="btn btn-sm btn-outline-success">
+                                    <i class="bi bi-receipt"></i>
+                                </a>
                             {% else %}
                                 <span class="text-muted">—</span>
                             {% endif %}

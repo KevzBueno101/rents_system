@@ -1,0 +1,251 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RENTS — {% block title %}My Dashboard{% endblock %}</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap + Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="{% static 'css/pages/tenant_base.css' %}">
+    {% block extra_styles %}{% endblock %}
+</head>
+
+<body>
+
+<!-- OVERLAY -->
+<div id="t-overlay" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<div id="t-sidebar">
+    <div class="t-brand">
+        <div class="t-brand-logo">🏠 RENTS</div>
+        <div class="t-brand-sub">Resident Portal</div>
+    </div>
+
+    <nav class="t-nav">
+        <div class="t-nav-label">Main</div>
+
+        <a href="{% url 'tenant_dashboard' %}"
+           class="t-nav-link {% if request.resolver_match.url_name == 'tenant_dashboard' %}active{% endif %}">
+            <i class="bi bi-grid-1x2"></i> Dashboard
+        </a>
+
+        <a href="{% url 'tenant_show_rooms' %}"
+           class="t-nav-link {% if request.resolver_match.url_name == 'tenant_show_rooms' %}active{% endif %}">
+            <i class="bi bi-door-open"></i> Show Rooms
+        </a>
+
+        <a href="{% url 'tenant_bills' %}"
+           class="t-nav-link {% if request.resolver_match.url_name == 'tenant_bills' %}active{% endif %}">
+            <i class="bi bi-receipt"></i> My Bills
+        </a>
+
+        <div class="t-nav-label">More</div>
+
+        <a href="{% url 'tenant_reports' %}"
+           class="t-nav-link {% if request.resolver_match.url_name == 'tenant_reports' %}active{% endif %}">
+            <i class="bi bi-flag"></i> Reports
+        </a>
+
+        <a href="{% url 'edit_profile' %}"
+           class="t-nav-link {% if request.resolver_match.url_name == 'edit_profile' %}active{% endif %}">
+            <i class="bi bi-person-circle"></i> Profile
+        </a>
+    </nav>
+
+    <div class="t-sidebar-footer">
+        <div class="t-user-pill">
+            {% if user_profile and user_profile.photo %}
+                <img src="{{ user_profile.photo.url }}" class="t-avatar" alt="{{ user_profile.full_name }}">
+            {% else %}
+                <div class="t-avatar">{{ user_profile.full_name|first|upper|default:"T" }}</div>
+            {% endif %}
+            <div>
+                <div class="t-user-name">{{ user_profile.full_name|truncatechars:18|default:"Tenant" }}</div>
+                <div class="t-user-role">@{{ user_profile.user.username }} • {{ user_profile.get_room_display|default:"No Room" }}</div>
+            </div>
+        </div>
+        {% if profile_completion < 100 %}
+        <div style="margin-top:8px; padding:4px 8px; background:#fef3c7; border-radius:4px; font-size:10px; color:#92400e; text-align:center;">
+            <i class="bi bi-exclamation-circle" style="margin-right:2px;"></i>
+            Profile {{ profile_completion|floatformat:0 }}% complete
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="t-bottom-nav" aria-label="Tenant mobile navigation">
+    <a href="{% url 'tenant_dashboard' %}" class="t-bottom-link {% if request.resolver_match.url_name == 'tenant_dashboard' %}active{% endif %}">
+        <i class="bi bi-grid-1x2"></i>
+        <span>Dashboard</span>
+    </a>
+    <a href="{% url 'tenant_show_rooms' %}" class="t-bottom-link {% if request.resolver_match.url_name == 'tenant_show_rooms' %}active{% endif %}">
+        <i class="bi bi-door-open"></i>
+        <span>Rooms</span>
+    </a>
+    <a href="{% url 'tenant_bills' %}" class="t-bottom-link {% if request.resolver_match.url_name == 'tenant_bills' %}active{% endif %}">
+        <i class="bi bi-receipt"></i>
+        <span>Billing</span>
+    </a>
+    <a href="{% url 'edit_profile' %}" class="t-bottom-link {% if request.resolver_match.url_name == 'edit_profile' %}active{% endif %}">
+        <i class="bi bi-person-circle"></i>
+        <span>Profile</span>
+    </a>
+</nav>
+
+<!-- MAIN -->
+<div id="t-main">
+
+    <!-- TOPBAR -->
+    <div id="t-topbar">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <button class="t-btn t-btn-outline t-btn-sm d-md-none" onclick="openSidebar()" style="padding:6px 10px;">
+                <i class="bi bi-list"></i>
+            </button>
+            <span class="t-page-title">{% block page_title %}Dashboard{% endblock %}</span>
+        </div>
+        <div class="t-topbar-right">
+            <span class="t-date-chip d-none d-sm-block" id="t-date"></span>
+            
+            <!-- Notification Bell -->
+            <div class="position-relative me-2">
+                <button class="t-btn t-btn-light position-relative" id="notifBtn" style="background: #f8f9fa; border: 1px solid #dee2e6; min-width: 40px; padding: 6px 10px;">
+                    <i class="bi bi-bell-fill"></i>
+                    {% if unread_count and unread_count > 0 %}
+                    <span class="t-badge t-badge-danger position-absolute top-0 start-100 translate-middle rounded-pill" style="font-size: 10px; padding: 2px 5px; background: #dc2626; color: white; border-radius: 10px; min-width: 18px; text-align: center;">
+                        {{ unread_count }}
+                    </span>
+                    {% endif %}
+                </button>
+            </div>
+            
+            <button class="t-logout-btn" data-bs-toggle="modal" data-bs-target="#logoutModal">
+                <i class="bi bi-box-arrow-right"></i>
+                <span class="d-none d-sm-inline">Logout</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Notification Dropdown -->
+    <div id="notifDropdown" class="dropdown-menu dropdown-menu-end p-2 shadow" style="width:320px; display:none; position: absolute; right: 80px; top: 60px; z-index: 1050;">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0 fw-bold">Notifications</h6>
+            {% if unread_count > 0 %}
+            <small class="text-muted">{{ unread_count }} unread</small>
+            {% endif %}
+        </div>
+        <hr class="my-2">
+        
+        {% for notif in notifications %}
+            <a href="{% url 'mark_notification' notif.id %}" class="dropdown-item {% if not notif.is_read %}fw-bold text-primary{% endif %} text-decoration-none">
+                <div class="d-flex align-items-start">
+                    <i class="bi bi-bell-fill me-2 mt-1 {% if not notif.is_read %}text-primary{% else %}text-muted{% endif %}"></i>
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold">{{ notif.title }}</div>
+                        <div class="small text-muted">{{ notif.message|truncatechars:50 }}</div>
+                        <small class="text-muted">{{ notif.created_at|timesince }} ago</small>
+                    </div>
+                </div>
+            </a>
+            {% if not forloop.last %}<hr class="my-1">{% endif %}
+        {% empty %}
+            <div class="dropdown-item text-muted text-center py-3">
+                <i class="bi bi-bell-slash d-block fs-3 mb-2"></i>
+                No notifications yet
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- CONTENT -->
+    <div id="t-content">
+        {% if messages %}
+            {% for msg in messages %}
+            <div class="t-alert t-alert-{{ msg.tags }}" style="margin-bottom:16px; display:flex; align-items:center; gap:12px;">
+                <i class="bi bi-info-circle" style="flex-shrink:0; margin-top:1px;"></i>
+                <span style="flex-grow:1;">{{ msg }}</span>
+                <button type="button" class="t-alert-close" onclick="this.parentElement.remove()" style="background:none; border:none; cursor:pointer; color:inherit; opacity:0.6; font-size:20px; padding:0; height:24px; width:24px; display:flex; align-items:center; justify-content:center;">
+                    <i class="bi bi-x" style="font-size:16px;"></i>
+                </button>
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </div>
+</div>
+
+<!-- LOGOUT MODAL -->
+<div class="modal fade" id="logoutModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content" style="border-radius:14px; border:none; box-shadow:0 20px 60px rgba(0,0,0,.15);">
+            <div class="modal-body text-center p-4">
+                <div style="width:52px; height:52px; background:#fee2e2; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
+                    <i class="bi bi-box-arrow-right" style="font-size:22px; color:#dc2626;"></i>
+                </div>
+                <h6 style="font-weight:700; margin-bottom:6px;">Sign out?</h6>
+                <p style="font-size:13px; color:#888; margin-bottom:24px;">You'll need to sign in again to access your account.</p>
+                <div style="display:flex; gap:8px;">
+                    <button class="t-btn t-btn-outline" style="flex:1; justify-content:center;" data-bs-dismiss="modal">Cancel</button>
+                    <form method="POST" action="{% url 'logout' %}" style="flex:1;">
+                        {% csrf_token %}
+                        <button type="submit" class="t-btn t-btn-danger" style="width:100%; justify-content:center;">Logout</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Date display
+    const d = new Date();
+    document.getElementById('t-date').textContent = d.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric', year:'numeric'});
+
+    function openSidebar() {
+        document.getElementById('t-sidebar').classList.add('open');
+        document.getElementById('t-overlay').classList.add('show');
+    }
+    function closeSidebar() {
+        document.getElementById('t-sidebar').classList.remove('open');
+        document.getElementById('t-overlay').classList.remove('show');
+    }
+
+    // Add hover effects to alert close buttons
+    document.querySelectorAll('.t-alert-close').forEach(btn => {
+        btn.addEventListener('mouseenter', () => btn.style.opacity = '1');
+        btn.addEventListener('mouseleave', () => btn.style.opacity = '0.6');
+    });
+
+    // Notification Toggle Script
+    const notifBtn = document.getElementById('notifBtn');
+    const notifDropdown = document.getElementById('notifDropdown');
+
+    if (notifBtn && notifDropdown) {
+        notifBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            notifDropdown.style.display = notifDropdown.style.display === 'block' ? 'none' : 'block';
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) {
+                notifDropdown.style.display = 'none';
+            }
+        });
+
+        notifDropdown.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    }
+</script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

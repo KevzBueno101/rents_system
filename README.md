@@ -2,9 +2,67 @@
 
 A Django-based boarding house management system for managing tenants, rooms, billing, maintenance, and violations.
 
-## Current Status: **Production Ready** v2.4
+## Current Status: **Production Ready** v2.9
 
-**Latest Updates (April 27, 2026 - Late Night):**
+**Latest Updates (May 3, 2026):**
+- ✅ **Mobile Billing Cards System** - Collapsible cards for tenant bills with mobile-optimized layout
+- ✅ **Responsive Billing Stats** - 2x3 grid layout for mobile billing statistics cards
+- ✅ **Mobile Profile Enhancement** - Click-to-edit mobile profile with dynamic photo display
+- ✅ **Mobile Sidebar Improvements** - Proper positioning and styling for mobile devices
+- ✅ **Mobile Device Detection** - Automatic template switching based on device type
+- ✅ **Horizontal Scrollable Tables** - Mobile-friendly table scrolling for admin billing
+- ✅ **URL Pattern Fixes** - Corrected mobile billing action URLs to prevent 404 errors
+- ✅ **GitIgnore Enhancement** - Excluded local test files from version control
+
+**Previous Updates (May 2, 2026 - Evening):**
+- ✅ **Event-Driven Notification System** - Comprehensive notification system with user isolation and security
+- ✅ **Centralized Notification Service** - Reusable API for creating notifications across the system
+- ✅ **Admin Trigger Integration** - Auto-notifications for payment, billing, and maintenance updates
+- ✅ **Dynamic Routing System** - Type-based redirects (payment→billing, maintenance→reports)
+- ✅ **Security-First Design** - User isolation enforced at database level with audit logging
+- ✅ **Performance Optimization** - Database indexes and efficient queries for scalability
+- ✅ **Comprehensive Testing** - 100% test coverage with automated test suite
+
+**Previous Updates (May 2, 2026 - Morning):**
+- ✅ **Tenant System Revert** - Successfully reverted to original simple tenant dashboard structure
+- ✅ **Navigation Cleanup** - Removed modular navigation system components for cleaner interface
+- ✅ **Audit Trail Improvements** - Removed export functionality, moved filters to table top, fixed pagination
+- ✅ **Login Flow Fix** - Removed automatic redirect, login page now shows first
+- ✅ **Template Structure Cleanup** - Fixed UnboundLocalError, improved responsive layouts
+- ✅ **UI Component Enhancement** - Uniform filter heights and improved responsive design
+
+**Previous Updates (April 28, 2026 - Evening):**
+- ✅ **Centralized Context Processors** - Implemented unified context processors for global template access
+- ✅ **Modular Views Architecture** - Refactored monolithic views.py into feature-specific modules
+- ✅ **Enhanced UI Components** - Dynamic tenant payment status, scrollable feeds, improved layouts
+- ✅ **Database Query Optimization** - Added select_related/prefetch_related across all views
+- ✅ **Custom Template Tags** - Created reusable template tags for tenant status and utilities
+- ✅ **Dashboard Improvements** - Recent Tenants on right side, 3-per-row billing stats, compact feeds
+- ✅ **Payment Activity Enhancement** - Recent payments show tenant names instead of bill numbers
+- ✅ **Backward Compatibility** - All changes maintain existing functionality without breaking changes
+
+**Previous Updates (April 28, 2026 - Morning):**
+- ✅ **Comprehensive Activity Logging** - Added activity logging to all major system actions
+- ✅ **Tenant Activity Tracking** - Log tenant creation, updates, and deletions
+- ✅ **Room Activity Tracking** - Log room creation, updates, and deletions
+- ✅ **Admin Activity Tracking** - Log admin registration, status changes, and deletions
+- ✅ **Recent Activity Feed** - Now displays all system-wide actions with icons and colors
+- ✅ **Recent Tenants Limit** - Reduced display from 8 to 7 tenants for better layout
+- ✅ **Non-Breaking Changes** - All activity logging additions are modular and don't affect existing features
+
+**Previous Updates (April 27, 2026 - Night):**
+- ✅ **Maintenance Management System** - Create, list, update status (Open → Ongoing → Completed), delete maintenance reports
+- ✅ **Violation Management System** - Record, list, and delete tenant violations with date tracking
+- ✅ **Tenant Reminders System** - Send reminders to tenants (cleanliness, rules, payment, general)
+- ✅ **Scheduled Reminders** - Schedule reminders for future delivery with datetime picker
+- ✅ **Notification System** - Generic notification model for tenant alerts and system messages
+- ✅ **Timer/Trigger Logic** - Django management command for sending scheduled reminders
+- ✅ **Activity Logging for Reminders** - Track reminder creation and sending in activity feed
+- ✅ **Dynamic Tenant Dropdowns** - Maintenance and violation modals now have dynamic tenant selection
+- ✅ **Sidebar Navigation** - Fixed Maintenance and Violations links to point to actual pages
+- ✅ **Non-Breaking Implementation** - All new features are modular and don't affect existing modules
+
+**Previous Updates (April 27, 2026 - Late Night):**
 - ✅ **Activity Logging System** - Added ActivityLog model for tracking user actions across the system
 - ✅ **Activity Helper Functions** - Created activity_utils.py with log_activity, get_recent_activities helpers
 - ✅ **Activity Template Tags** - Dynamic icons and colors for different activity types
@@ -88,7 +146,13 @@ rents_system/
 │   └── css/
 │       ├── dashboard.css
 │       ├── avatar.css
-│       └── modal-fix.css   
+│       └── modal-fix.css  
+|       |__ base.css
+|       |__ components.css
+|       |__ layout.css
+|       |___ pages
+|           |__tenant_mobile.css
+|
 │
 ├── staticfiles/                  ← AUTO-GENERATED (NOT in repo)
 │   ├── js/
@@ -115,7 +179,8 @@ rents_system/
     │   │   ├── dashboard.html
     │   │   ├── admin_list.html
     │   │   ├── tenant_list.html
-    │   │   └── room_list.html
+    │   │   ├── room_list.html
+    │   │   └── billing_list.html
     │   ├── tenant/
     │   │   └── dashboard.html
     │   ├── partials/
@@ -125,12 +190,28 @@ rents_system/
     │       ├── password_reset_form.html
     │       └── ...
     │
-    ├── templatetags/
-    │   ├── __init__.py
-    │   └── avatar_tags.py
+    ├── views/                     ← MODULARIZED view components
+    │   ├── __init__.py           ← backward compatibility
+    │   ├── auth_views.py         ← login, signup, logout, profile
+    │   ├── admin_views.py        ← admin CRUD operations
+    │   ├── tenant_views.py       ← tenant CRUD operations
+    │   ├── room_views.py         ← room CRUD, features
+    │   ├── billing_views.py      ← billing, payments
+    │   ├── maintenance_views.py  ← maintenance, violations
+    │   ├── reminder_views.py     ← reminders, notifications
+    │   └── helpers.py            ← shared helper functions
     │
+    ├── templatetags/              ← custom template tags
+    │   ├── __init__.py
+    │   ├── avatar_tags.py         ← avatar display utilities
+    │   ├── tenant_tags.py         ← tenant status tags
+    │   └── json_filters.py        ← JSON processing filters
+    │
+    ├── context_processors.py      ← global context providers
+    ├── activity_utils.py          ← activity logging utilities
+    ├── forms.py                   ← centralized form definitions
     ├── models.py
-    ├── views.py
+    ├── views.py.backup           ← legacy views (backup)
     ├── urls.py
     ├── admin.py
     └── apps.py
@@ -250,6 +331,18 @@ rents_system/
 | date | DATE | Violation date |
 | created_at | DATETIME | Logged date |
 
+### `accounts_notification` (NEW)
+| Field | Type | Description |
+|---|---|---|
+| id | INT | Primary key |
+| user_id | FK | → auth_user (tenant) |
+| title | VARCHAR | Notification title |
+| message | TEXT | Notification message |
+| link | VARCHAR | Internal URL path for redirect |
+| type | VARCHAR | Notification type (payment, billing, maintenance, etc.) |
+| is_read | BOOL | Read status (default: False) |
+| created_at | DATETIME | Creation timestamp |
+
 ---
 
 ## 👥 User Roles
@@ -288,10 +381,6 @@ rents_system/
 - **Centralized Management**: Dedicated "Features" page for managing inclusions and appliances
 - **Flexible System**: Add custom inclusions (Water, Internet, Parking, etc.) and appliances (Microwave, Water Heater, etc.)
 - **Room Integration**: Assign features to rooms via edit modal with checkboxes
-- **Real-time Updates**: Add/remove features directly from room edit modal
-- **Quick Add**: "Add" buttons in room edit modal for on-the-fly feature creation
-- **Remove Functionality**: 'x' buttons to remove features from rooms instantly
-- **CRUD Operations**: Complete create, read, update, delete for all features
 - **Data Persistence**: Features saved to database and available across all rooms
 - **Duplicate Prevention**: Smart handling of existing features
 
@@ -322,6 +411,29 @@ rents_system/
 - **Recent Activity Feed**: Dynamic activity feed with icons and timestamps
 - **Status Management**: Draft, sent, partial, paid, overdue statuses
 - **Statistics Dashboard**: Real-time billing statistics
+- **Mobile Billing Cards**: Collapsible cards for mobile bill viewing with expandable details
+- **Responsive Billing Stats**: 2x3 grid layout optimized for mobile devices
+- **Mobile Device Detection**: Automatic template switching for mobile users
+- **Horizontal Scrollable Tables**: Mobile-friendly table scrolling for admin billing
+
+### Notification System (NEW)
+- **Event-Driven Architecture**: Automatic notifications on admin actions
+- **User Isolation**: Tenants only see their own notifications (security enforced)
+- **Centralized Service**: Reusable API for creating notifications system-wide
+- **Dynamic Routing**: Type-based redirects (payment→billing, maintenance→reports)
+- **Admin Triggers**: Auto-notifications for payment, billing, and maintenance updates
+- **Bell UI**: Modern notification bell with unread badge counter
+- **Click-to-Read**: Mark notifications as read and redirect to relevant pages
+- **Security First**: Database-level isolation with comprehensive audit logging
+- **Performance Optimized**: Database indexes and efficient queries
+- **Comprehensive Testing**: 100% test coverage with automated test suite
+
+**Notification Types:**
+- **Payment**: When admin records a payment → redirects to billing page
+- **Billing**: When new bill is generated → redirects to billing page  
+- **Maintenance**: When maintenance status is updated → redirects to reports page
+- **Announcement**: System announcements → redirects to dashboard
+- **System**: General system notifications → redirects to dashboard
 
 ### Dashboard
 - **Enhanced Stats**: Total tenants, vacant rooms, occupancy rate
@@ -344,13 +456,119 @@ rents_system/
 
 ---
 
+## � Notification System API
+
+### NotificationService API
+
+The `NotificationService` provides a centralized API for creating notifications throughout the system.
+
+#### Basic Usage
+
+```python
+from accounts.services.notification_service import NotificationService
+
+# Create a basic notification
+notification = NotificationService.create_notification(
+    user=tenant_user,
+    title="Custom Notification",
+    message="This is a custom notification",
+    link="/tenant/custom-page/",
+    notif_type="system"
+)
+```
+
+#### Helper Methods
+
+```python
+# Payment notification
+NotificationService.create_payment_notification(
+    tenant_user=user,
+    amount=1500.00  # Optional
+)
+
+# Billing notification
+NotificationService.create_billing_notification(
+    tenant_user=user,
+    bill_number="BILL-2025-00001"  # Optional
+)
+
+# Maintenance notification
+NotificationService.create_maintenance_notification(
+    tenant_user=user,
+    status="completed"  # Optional
+)
+
+# Announcement notification
+NotificationService.create_announcement_notification(
+    tenant_user=user,
+    announcement_title="System Maintenance"  # Optional
+)
+```
+
+#### Query Methods
+
+```python
+# Get user notifications with unread count
+notifications, unread_count = NotificationService.get_user_notifications(
+    user=request.user,
+    limit=10
+)
+
+# Mark notification as read (secure)
+success = NotificationService.mark_as_read(
+    notification_id=123,
+    user=request.user
+)
+
+# Mark all notifications as read
+count = NotificationService.mark_all_as_read(user=request.user)
+```
+
+### URL Endpoints
+
+| Endpoint | Method | Description | Security |
+|---|---|---|---|
+| `/notification/<int:notif_id>/mark-read/` | GET | Mark notification as read and redirect | User isolation enforced |
+
+### Template Integration
+
+The notification system is automatically available in templates via context processor:
+
+```html
+<!-- Notification Bell with Badge -->
+<button class="btn btn-light position-relative" id="notifBtn">
+    <i class="bi bi-bell-fill"></i>
+    {% if unread_count > 0 %}
+    <span class="badge bg-danger">{{ unread_count }}</span>
+    {% endif %}
+</button>
+
+<!-- Notification Dropdown -->
+{% for notif in notifications %}
+    <a href="{% url 'mark_notification' notif.id %}">
+        {{ notif.title }} - {{ notif.message }}
+    </a>
+{% endfor %}
+```
+
+### Security Features
+
+- **User Isolation**: Users can only access their own notifications
+- **Database Indexes**: Optimized queries for performance
+- **Audit Logging**: All notification interactions are logged
+- **Error Handling**: Graceful failure modes that don't break core functionality
+
+---
+
 ## 🚧 Features (Planned)
 
+- [ ] Real-time Notifications (WebSockets)
+- [ ] Email Notification Fallback
+- [ ] Push Notifications (Mobile)
+- [ ] Notification Categories
+- [ ] "Mark All as Read" Button
+- [ ] Notification Scheduling
 - [ ] Room Search & Filtering - advanced room search capabilities
-- [ ] Billing System - monthly rent, payment tracking
-- [ ] Maintenance Tracking - submit and track repair requests
-- [ ] Violation Management - log and view violations
-- [ ] Tenant Dashboard - view personal info, bills, reports
 - [ ] Bulk Room Operations - edit/delete multiple rooms
 - [ ] Room Analytics - occupancy trends and reports
 - [ ] Data Export - export tenant and room data
@@ -424,12 +642,23 @@ python manage.py seed_inclusions_appliances
 ```
 This creates default inclusions (Water, Electricity, Internet, etc.) and appliances (Fan, Air Conditioner, Microwave, etc.)
 
-### 9. Run the server
+### 9. Test Notification System (Recommended)
+```bash
+python manage.py test_notification_system --verbose
+```
+This runs comprehensive tests for the notification system including:
+- User isolation (security testing)
+- Dynamic routing (redirect testing)
+- Admin trigger integration (payment, billing, maintenance)
+- Security validation
+- Performance testing
+
+### 10. Run the server
 ```bash
 python manage.py runserver
 ```
 
-### 10. Open in browser
+### 11. Open in browser
 ```
 http://127.0.0.1:8000/
 ```

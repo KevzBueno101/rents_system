@@ -238,6 +238,8 @@ class Payment(models.Model):
     payment_method = models.CharField(max_length=30, choices=PAYMENT_METHODS)
     reference_number = models.CharField(max_length=50, blank=True)
     proof = models.ImageField(upload_to='payments/', blank=True, null=True)
+    receipt_id = models.CharField(max_length=80, unique=True, blank=True, null=True)
+    receipt_image = models.ImageField(upload_to='', blank=True, null=True)
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -269,6 +271,8 @@ class ActivityLog(models.Model):
         ('maintenance_created', 'Maintenance Created'),
         ('maintenance_updated', 'Maintenance Updated'),
         ('maintenance_completed', 'Maintenance Completed'),
+        ('reminder_created', 'Reminder Created'),
+        ('reminder_sent', 'Reminder Sent'),
     ]
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='activities')
@@ -285,6 +289,15 @@ class ActivityLog(models.Model):
         ordering = ['-timestamp']
         verbose_name = 'Activity Log'
         verbose_name_plural = 'Activity Logs'
+        indexes = [
+            models.Index(fields=['user'], name='idx_activity_user'),
+            models.Index(fields=['action'], name='idx_activity_action'),
+            models.Index(fields=['timestamp'], name='idx_activity_timestamp'),
+            models.Index(fields=['content_type'], name='idx_activity_content_type'),
+            models.Index(fields=['-timestamp'], name='idx_activity_timestamp_desc'),
+            models.Index(fields=['user', '-timestamp'], name='idx_activity_user_timestamp'),
+            models.Index(fields=['action', '-timestamp'], name='idx_activity_action_timestamp'),
+        ]
     
     def __str__(self):
         user_str = self.user.username if self.user else 'System'
@@ -294,3 +307,98 @@ class ActivityLog(models.Model):
         """Return human-readable time ago string"""
         from django.utils.timesince import timesince
         return timesince(self.timestamp) + ' ago'
+
+
+# ─── NOTIFICATION ─────────────────────────────────────
+class Notification(models.Model):
+    """Production-ready notification model for tenant-specific system alerts"""
+    
+    NOTIFICATION_TYPES = [
+        ('payment', 'Payment'),
+        ('billing', 'Billing'),
+        ('maintenance', 'Maintenance'),
+        ('announcement', 'Announcement'),
+        ('system', 'System'),
+        ('reminder', 'Reminder'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    link = models.CharField(max_length=255, blank=True, help_text='Internal URL path for redirection')
+    type = models.CharField(max_length=50, choices=NOTIFICATION_TYPES, null=True, blank=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Notification'
+        verbose_name_plural = 'Notifications'
+        indexes = [
+            models.Index(fields=['user', '-created_at'], name='idx_notification_user_created'),
+            models.Index(fields=['user', 'is_read'], name='idx_notification_user_read'),
+            models.Index(fields=['type'], name='idx_notification_type'),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.title}"
+
+    def get_absolute_url(self):
+        """Get the absolute URL for this notification"""
+        if self.link:
+            return self.link
+        return '/tenant/dashboard/'
+
+
+# ─── TENANT REMINDER ───────────────────────────────────
+class TenantReminder(models.Model):
+    """Reminders sent to tenants (cleanliness, rules, etc.) with scheduling support"""
+    REMINDER_TYPES = [
+        ('cleanliness', 'Cleanliness'),
+        ('rules', 'House Rules'),
+        ('payment', 'Payment Reminder'),
+        ('general', 'General'),
+    ]
+
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('sent', 'Sent'),
+        ('read', 'Read'),
+    ]
+
+    tenant = models.ForeignKey(TenantProfile, on_delete=models.CASCADE, related_name='reminders')
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    reminder_type = models.CharField(max_length=20, choices=REMINDER_TYPES, default='general')
+    
+    # Scheduling fields
+    scheduled_at = models.DateTimeField(null=True, blank=True, help_text='Optional: Schedule for future delivery')
+    is_sent = models.BooleanField(default=False)
+    
+    # Tracking
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Tenant Reminder'
+        verbose_name_plural = 'Tenant Reminders'
+
+    def __str__(self):
+        return f"{self.tenant.full_name} - {self.title}"
+
+    def mark_as_sent(self):
+        """Mark reminder as sent and create notification"""
+        from django.utils import timezone
+        self.is_sent = True
+        self.status = 'sent'
+        self.sent_at = timezone.now()
+        self.save(update_fields=['is_sent', 'status', 'sent_at'])
+        
+        # Create notification for tenant
+        Notification.objects.create(
+            user=self.tenant.user,
+            title=self.title,
+            message=self.message
+        )
