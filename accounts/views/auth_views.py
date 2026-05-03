@@ -311,47 +311,69 @@ class CustomPasswordResetView(PasswordResetView):
     
     def send_mail(self, subject_template_name, email_template_name, context, from_email, to_email, html_email_template_name=None):
         """
-        Override send_mail with robust error handling and fallback mechanism
+        Override send_mail with robust error handling and SendGrid API fallback
         """
+        from django.conf import settings
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # Try SendGrid API first (most reliable for production)
         try:
-            # Use Django's standard email sending
+            if hasattr(settings, 'SENDGRID_API_KEY') and settings.SENDGRID_API_KEY:
+                import sendgrid
+                from sendgrid.helpers.mail import Mail, Email, Content
+                
+                subject = render_to_string(subject_template_name, context)
+                subject = ''.join(subject.splitlines())
+                
+                message = Mail(
+                    from_email=Email(from_email),
+                    to_emails=[Email(to_email)],
+                    subject=subject,
+                    html_content=Content('text/html', render_to_string(html_email_template_name, context)) if html_email_template_name else None,
+                    plain_text_content=Content('text/plain', render_to_string(email_template_name, context))
+                )
+                
+                sg = sendgrid.SendGridAPIClient(settings.SENDGRID_API_KEY)
+                response = sg.send(message)
+                
+                logger.info(f"SendGrid API email sent: {response.status_code} to {to_email}")
+                return
+                
+        except Exception as api_error:
+            logger.error(f"SendGrid API failed: {api_error}")
+        
+        # Fallback to Django SMTP (Gmail or SendGrid SMTP)
+        try:
             return super().send_mail(subject_template_name, email_template_name, context, from_email, to_email, html_email_template_name)
                 
-        except Exception as e:
-            # Log the error but don't expose it to user
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Error sending password reset email: {e}")
+        except Exception as smtp_error:
+            logger.error(f"SMTP failed: {smtp_error}")
             
-            # Try fallback to SendGrid API directly if SMTP fails
+            # Final fallback: try console backend for debugging
             try:
-                from django.conf import settings
-                if hasattr(settings, 'SENDGRID_API_KEY') and settings.SENDGRID_API_KEY:
-                    import sendgrid
-                    from sendgrid.helpers.mail import Mail, Email, Content
-                    
-                    subject = render_to_string(subject_template_name, context)
-                    subject = ''.join(subject.splitlines())
-                    
-                    message = Mail(
-                        from_email=Email(from_email),
-                        to_emails=[Email(to_email)],
-                        subject=subject,
-                        html_content=Content('text/html', render_to_string(html_email_template_name, context)) if html_email_template_name else None,
-                        plain_text_content=Content('text/plain', render_to_string(email_template_name, context))
-                    )
-                    
-                    sg = sendgrid.SendGridAPIClient(settings.SENDGRID_API_KEY)
-                    response = sg.send(message)
-                    
-                    logger.info(f"Fallback SendGrid email sent: {response.status_code}")
-                    return
-                    
-            except Exception as fallback_error:
-                logger.error(f"Fallback SendGrid also failed: {fallback_error}")
+                from django.core.mail import get_connection
+                connection = get_connection('django.core.mail.backends.console.EmailBackend')
+                subject = render_to_string(subject_template_name, context)
+                subject = ''.join(subject.splitlines())
+                
+                if html_email_template_name:
+                    html_email = render_to_string(html_email_template_name, context)
+                    email_message = EmailMultiAlternatives(subject, '', from_email, [to_email], connection=connection)
+                    email_message.attach_alternative(html_email, "text/html")
+                    email_message.send()
+                else:
+                    plain_text = render_to_string(email_template_name, context)
+                    from django.core.mail import send_mail
+                    send_mail(subject, plain_text, from_email, [to_email], connection=connection)
+                
+                logger.info(f"Console fallback email sent to {to_email}")
+                
+            except Exception as console_error:
+                logger.error(f"Console fallback failed: {console_error}")
+                logger.warning(f"All email methods failed for {to_email}")
             
-            # If all methods fail, continue without email - user will see success message but no email sent
-            logger.warning(f"All email methods failed for {to_email}")
+            # Continue without email - user will see success message but no email sent
             pass
 
 def custom_password_reset_confirm(request, uidb64, token):

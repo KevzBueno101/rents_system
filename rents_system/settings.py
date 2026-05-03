@@ -100,13 +100,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Email Configuration for Password Reset
 # Production-ready email with robust fallback mechanism
-if os.getenv('SENDGRID_API_KEY') and os.getenv('RENDER'):
-    # Render deployment: Use console backend to prevent 500 errors
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-    DEFAULT_FROM_EMAIL = os.getenv('FROM_EMAIL', 'RENTS System <noreply@rents.com>')
-    SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
-elif os.getenv('SENDGRID_API_KEY'):
-    # Production: Use SendGrid as primary (more reliable for cloud deployment)
+if os.getenv('SENDGRID_API_KEY'):
+    # Production: Use SendGrid API for actual email delivery
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
     EMAIL_HOST = 'smtp.sendgrid.net'
     EMAIL_PORT = 587
