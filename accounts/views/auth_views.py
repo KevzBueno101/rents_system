@@ -296,7 +296,18 @@ class CustomPasswordResetView(PasswordResetView):
             messages.info(self.request, 'If an account with that email exists, a password reset link has been sent.')
             return super().form_valid(form)
         
-        return super().form_valid(form)
+        try:
+            # Try to send email with error handling
+            return super().form_valid(form)
+        except Exception as e:
+            # Log the error but don't expose it to user
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in password reset form_valid: {e}")
+            
+            # Show user-friendly message
+            messages.error(self.request, 'An error occurred while processing your request. Please try again later.')
+            return redirect('password_reset')
     
     def send_mail(self, subject_template_name, email_template_name, context, from_email, to_email, html_email_template_name=None):
         """
