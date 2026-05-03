@@ -5,6 +5,12 @@ A Django-based boarding house management system for managing tenants, rooms, bil
 ## Current Status: **Production Ready** v2.9
 
 **Latest Updates (May 3, 2026):**
+- ✅ **Complete Password Reset System** - Fully functional forgot password flow with email integration
+- ✅ **Password Reset Email Templates** - HTML and plain text email templates with proper reset links
+- ✅ **Function-Based Reset View** - Custom implementation bypassing Django authentication middleware
+- ✅ **AJAX Password Reset Handling** - Fixed JavaScript to handle Django 302 redirects properly
+- ✅ **Template Structure Fixes** - Fixed password reset confirm template to be standalone
+- ✅ **Tenant Dashboard Template Fix** - Corrected template path for tenant dashboard access
 - ✅ **Mobile Billing Cards System** - Collapsible cards for tenant bills with mobile-optimized layout
 - ✅ **Responsive Billing Stats** - 2x3 grid layout for mobile billing statistics cards
 - ✅ **Mobile Profile Enhancement** - Click-to-edit mobile profile with dynamic photo display
@@ -360,6 +366,10 @@ rents_system/
 ### Authentication
 - **Login System**: Role toggle (Admin / Tenant) with enhanced JavaScript
 - **Tenant Self-Signup**: Real-time room selection with detailed room information
+- **Password Reset System**: Complete forgot password flow with email integration
+- **Email Templates**: HTML and plain text password reset emails with clickable links
+- **Token Validation**: Secure token-based password reset with expiration
+- **AJAX Handling**: Proper handling of Django redirects in password reset forms
 - **Password Visibility Toggle**: Fixed for both login and signup forms
 - **Profile Management**: Clickable profile sections with photo preview
 - **Enhanced Security**: CSRF protection and session-based authentication
