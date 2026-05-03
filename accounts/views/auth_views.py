@@ -300,7 +300,7 @@ class CustomPasswordResetView(PasswordResetView):
     
     def send_mail(self, subject_template_name, email_template_name, context, from_email, to_email, html_email_template_name=None):
         """
-        Override send_mail to use Django's standard email backend
+        Override send_mail with robust error handling and fallback mechanism
         """
         try:
             # Use Django's standard email sending
@@ -311,9 +311,36 @@ class CustomPasswordResetView(PasswordResetView):
             import logging
             logger = logging.getLogger(__name__)
             logger.error(f"Error sending password reset email: {e}")
-            print(f"❌ EMAIL ERROR: {e}")
             
-            # Continue without email - user will see success message but no email sent
+            # Try fallback to SendGrid API directly if SMTP fails
+            try:
+                from django.conf import settings
+                if hasattr(settings, 'SENDGRID_API_KEY') and settings.SENDGRID_API_KEY:
+                    import sendgrid
+                    from sendgrid.helpers.mail import Mail, Email, Content
+                    
+                    subject = render_to_string(subject_template_name, context)
+                    subject = ''.join(subject.splitlines())
+                    
+                    message = Mail(
+                        from_email=Email(from_email),
+                        to_emails=[Email(to_email)],
+                        subject=subject,
+                        html_content=Content('text/html', render_to_string(html_email_template_name, context)) if html_email_template_name else None,
+                        plain_text_content=Content('text/plain', render_to_string(email_template_name, context))
+                    )
+                    
+                    sg = sendgrid.SendGridAPIClient(settings.SENDGRID_API_KEY)
+                    response = sg.send(message)
+                    
+                    logger.info(f"Fallback SendGrid email sent: {response.status_code}")
+                    return
+                    
+            except Exception as fallback_error:
+                logger.error(f"Fallback SendGrid also failed: {fallback_error}")
+            
+            # If all methods fail, continue without email - user will see success message but no email sent
+            logger.warning(f"All email methods failed for {to_email}")
             pass
 
 def custom_password_reset_confirm(request, uidb64, token):
