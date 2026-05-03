@@ -300,24 +300,46 @@ class CustomPasswordResetView(PasswordResetView):
     
     def send_mail(self, subject_template_name, email_template_name, context, from_email, to_email, html_email_template_name=None):
         """
-        Override send_mail to work with SendGrid backend
+        Override send_mail to work with SendGrid library directly
         """
         try:
+            from django.conf import settings
             subject = render_to_string(subject_template_name, context)
             subject = ''.join(subject.splitlines())
             
-            # SendGrid handles both HTML and plain text automatically
-            # Use the HTML template if available, otherwise use text template
-            if html_email_template_name:
-                html_email = render_to_string(html_email_template_name, context)
-                email_message = EmailMultiAlternatives(subject, '', from_email, [to_email])
-                email_message.attach_alternative(html_email, "text/html")
-                email_message.send()
+            # Use SendGrid if API key is available
+            if hasattr(settings, 'SENDGRID_API_KEY') and settings.SENDGRID_API_KEY:
+                import sendgrid
+                from sendgrid.helpers.mail import Mail, Email, Content, Personalization
+                
+                message = Mail(
+                    from_email=Email(from_email),
+                    to_emails=[Email(to_email)],
+                    subject=subject,
+                    html_content=Content('text/html', render_to_string(html_email_template_name, context)) if html_email_template_name else None,
+                    plain_text_content=Content('text/plain', render_to_string(email_template_name, context))
+                )
+                
+                sg = sendgrid.SendGridAPIClient(settings.SENDGRID_API_KEY)
+                response = sg.send(message)
+                
+                # Log SendGrid response for debugging
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.info(f"SendGrid response: {response.status_code}")
+                
             else:
-                # Fallback to plain text
-                plain_text = render_to_string(email_template_name, context)
-                from django.core.mail import send_mail
-                send_mail(subject, plain_text, from_email, [to_email])
+                # Fallback to Django's email backend
+                if html_email_template_name:
+                    html_email = render_to_string(html_email_template_name, context)
+                    email_message = EmailMultiAlternatives(subject, '', from_email, [to_email])
+                    email_message.attach_alternative(html_email, "text/html")
+                    email_message.send()
+                else:
+                    # Fallback to plain text
+                    plain_text = render_to_string(email_template_name, context)
+                    from django.core.mail import send_mail
+                    send_mail(subject, plain_text, from_email, [to_email])
                 
         except Exception as e:
             # Log the error but don't expose it to user

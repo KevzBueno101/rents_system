@@ -102,7 +102,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Use SendGrid backend for production, fallback to console for development
 if os.getenv('SENDGRID_API_KEY'):
     # SendGrid backend for production
-    EMAIL_BACKEND = 'sendgrid_backend.SendgridBackend'
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
     SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
     DEFAULT_FROM_EMAIL = os.getenv('FROM_EMAIL', 'RENTS System <noreply@rents.com>')
 elif os.getenv('EMAIL_HOST_USER') and os.getenv('EMAIL_HOST_PASSWORD'):
