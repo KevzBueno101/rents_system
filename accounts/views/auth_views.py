@@ -300,52 +300,18 @@ class CustomPasswordResetView(PasswordResetView):
     
     def send_mail(self, subject_template_name, email_template_name, context, from_email, to_email, html_email_template_name=None):
         """
-        Override send_mail to work with SendGrid library directly
+        Override send_mail to use Django's standard email backend
         """
         try:
-            from django.conf import settings
-            subject = render_to_string(subject_template_name, context)
-            subject = ''.join(subject.splitlines())
-            
-            # Use SendGrid if API key is available
-            if hasattr(settings, 'SENDGRID_API_KEY') and settings.SENDGRID_API_KEY:
-                import sendgrid
-                from sendgrid.helpers.mail import Mail, Email, Content, Personalization
-                
-                message = Mail(
-                    from_email=Email(from_email),
-                    to_emails=[Email(to_email)],
-                    subject=subject,
-                    html_content=Content('text/html', render_to_string(html_email_template_name, context)) if html_email_template_name else None,
-                    plain_text_content=Content('text/plain', render_to_string(email_template_name, context))
-                )
-                
-                sg = sendgrid.SendGridAPIClient(settings.SENDGRID_API_KEY)
-                response = sg.send(message)
-                
-                # Log SendGrid response for debugging
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.info(f"SendGrid response: {response.status_code}")
-                
-            else:
-                # Fallback to Django's email backend
-                if html_email_template_name:
-                    html_email = render_to_string(html_email_template_name, context)
-                    email_message = EmailMultiAlternatives(subject, '', from_email, [to_email])
-                    email_message.attach_alternative(html_email, "text/html")
-                    email_message.send()
-                else:
-                    # Fallback to plain text
-                    plain_text = render_to_string(email_template_name, context)
-                    from django.core.mail import send_mail
-                    send_mail(subject, plain_text, from_email, [to_email])
+            # Use Django's standard email sending
+            return super().send_mail(subject_template_name, email_template_name, context, from_email, to_email, html_email_template_name)
                 
         except Exception as e:
             # Log the error but don't expose it to user
             import logging
             logger = logging.getLogger(__name__)
             logger.error(f"Error sending password reset email: {e}")
+            print(f"❌ EMAIL ERROR: {e}")
             
             # Continue without email - user will see success message but no email sent
             pass
