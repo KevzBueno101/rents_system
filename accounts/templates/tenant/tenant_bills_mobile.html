@@ -1,0 +1,608 @@
+{% extends 'tenant/tenant_base.html' %}
+
+{% block title %}My Bills{% endblock %}
+{% block page_title %}My Bills{% endblock %}
+
+{% block content %}
+
+<style>
+/* Mobile Bills Cards Styling */
+.bills-mobile-container {
+    padding: 0;
+    margin: 0;
+}
+
+.bill-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.bill-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+.bill-card.expanded {
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}
+
+/* Collapsed State */
+.bill-collapsed {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.bill-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.bill-number {
+    font-size: 16px;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+}
+
+.bill-status {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-paid {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-partial {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-overdue {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.status-sent {
+    background: #e2e3e5;
+    color: #383d41;
+}
+
+.bill-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.bill-tenant {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+}
+
+.bill-room {
+    font-size: 13px;
+    color: #666;
+}
+
+.bill-due {
+    font-size: 13px;
+    color: #666;
+}
+
+.bill-balance {
+    font-size: 18px;
+    font-weight: 700;
+    color: #333;
+}
+
+/* Expanded State */
+.bill-expanded {
+    border-top: 1px solid #e9ecef;
+    padding: 16px;
+    display: none;
+}
+
+.bill-card.expanded .bill-expanded {
+    display: block;
+}
+
+.bill-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.bill-detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.bill-detail-label {
+    font-size: 13px;
+    color: #666;
+    font-weight: 500;
+}
+
+.bill-detail-value {
+    font-size: 14px;
+    color: #333;
+    font-weight: 600;
+}
+
+.bill-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.bill-action-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex: 1;
+    min-width: 100px;
+}
+
+.btn-view {
+    background: #007bff;
+    color: white;
+}
+
+.btn-view:hover {
+    background: #0056b3;
+}
+
+.btn-pay {
+    background: #28a745;
+    color: white;
+}
+
+.btn-pay:hover {
+    background: #1e7e34;
+}
+
+.btn-edit {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-edit:hover {
+    background: #545b62;
+}
+
+/* Controls */
+.bills-controls {
+    background: white;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 16px;
+}
+
+.control-buttons {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.control-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    background: white;
+    color: #333;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex: 1;
+}
+
+.control-btn:hover {
+    background: #f8f9fa;
+}
+
+.control-btn.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.search-bar {
+    position: relative;
+    margin-bottom: 16px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px 16px 12px 48px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    font-size: 14px;
+    background: #f8f9fa;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #007bff;
+    background: white;
+}
+
+.search-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+    font-size: 16px;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid #dee2e6;
+    background: white;
+    color: #666;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+    background: #f8f9fa;
+}
+
+.filter-btn.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: #666;
+}
+
+.empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: #ccc;
+}
+
+.empty-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.empty-text {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* Loading State */
+.loading-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: #666;
+}
+
+.loading-spinner {
+    font-size: 24px;
+    margin-bottom: 16px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+    .bill-card {
+        margin-bottom: 12px;
+    }
+    
+    .bill-collapsed {
+        padding: 12px;
+    }
+    
+    .bill-expanded {
+        padding: 12px;
+    }
+    
+    .bill-actions {
+        gap: 6px;
+    }
+    
+    .bill-action-btn {
+        min-width: 80px;
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+}
+</style>
+
+<div class="bills-mobile-container">
+    <!-- Controls Section -->
+    <div class="bills-controls">
+        <!-- Expand/Collapse All Buttons -->
+        <div class="control-buttons">
+            <button class="control-btn" id="expandAllBtn">
+                <i class="bi bi-arrows-expand"></i> Expand All
+            </button>
+            <button class="control-btn" id="collapseAllBtn">
+                <i class="bi bi-arrows-collapse"></i> Collapse All
+            </button>
+        </div>
+        
+        <!-- Search Bar -->
+        <div class="search-bar">
+            <i class="bi bi-search search-icon"></i>
+            <input type="text" 
+                   class="search-input" 
+                   id="searchInput"
+                   placeholder="Search bill # or tenant name...">
+        </div>
+        
+        <!-- Filter Buttons -->
+        <div class="filter-buttons">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="paid">Paid</button>
+            <button class="filter-btn" data-filter="partial">Partial</button>
+            <button class="filter-btn" data-filter="overdue">Overdue</button>
+            <button class="filter-btn" data-filter="sent">Sent</button>
+        </div>
+    </div>
+
+    <!-- Bills Cards Container -->
+    <div id="billsContainer">
+        {% if bills %}
+            {% for bill in bills %}
+            <div class="bill-card" 
+                 data-bill-id="{{ bill.id }}"
+                 data-status="{{ bill.status }}"
+                 data-bill-number="{{ bill.bill_number|default:'N/A' }}"
+                 data-tenant-name="{{ bill.tenant.full_name|default:bill.tenant.user.username }}">
+                
+                <!-- Collapsed State -->
+                <div class="bill-collapsed">
+                    <div class="bill-header">
+                        <h3 class="bill-number">{{ bill.bill_number|default:"—" }}</h3>
+                        <span class="bill-status status-{{ bill.status }}">
+                            {{ bill.status|title }}
+                        </span>
+                    </div>
+                    
+                    <div class="bill-info">
+                        <div class="bill-tenant">{{ bill.tenant.full_name|default:bill.tenant.user.username }}</div>
+                        <div class="bill-room">Room: {{ bill.room.room_code|default:"—" }}</div>
+                        <div class="bill-due">Due: {{ bill.due_date|date:"M d, Y"|default:"—" }}</div>
+                        <div class="bill-balance">₱{{ bill.balance|floatformat:2|default:"0.00" }}</div>
+                    </div>
+                </div>
+                
+                <!-- Expanded State -->
+                <div class="bill-expanded">
+                    <div class="bill-details">
+                        <div class="bill-detail-row">
+                            <span class="bill-detail-label">Period</span>
+                            <span class="bill-detail-value">
+                                {{ bill.period_start|date:"M d"|default:"—" }} - 
+                                {{ bill.period_end|date:"M d, Y"|default:"—" }}
+                            </span>
+                        </div>
+                        <div class="bill-detail-row">
+                            <span class="bill-detail-label">Total Amount</span>
+                            <span class="bill-detail-value">₱{{ bill.total_amount|floatformat:2|default:"0.00" }}</span>
+                        </div>
+                        <div class="bill-detail-row">
+                            <span class="bill-detail-label">Paid Amount</span>
+                            <span class="bill-detail-value">₱{{ bill.paid_amount|floatformat:2|default:"0.00" }}</span>
+                        </div>
+                        <div class="bill-detail-row">
+                            <span class="bill-detail-label">Balance</span>
+                            <span class="bill-detail-value">₱{{ bill.balance|floatformat:2|default:"0.00" }}</span>
+                        </div>
+                        <div class="bill-detail-row">
+                            <span class="bill-detail-label">Receipt</span>
+                            <span class="bill-detail-value">
+                                {% if bill.payments.last.receipt_image %}
+                                    <i class="bi bi-check-circle text-success"></i> Available
+                                {% else %}
+                                    <i class="bi bi-x-circle text-muted"></i> None
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="bill-actions">
+                        {% if bill.payments.last.receipt_image %}
+                        <button class="bill-action-btn btn-view" 
+                                onclick="viewReceipt('{{ bill.payments.last.receipt_image.url }}')">
+                            <i class="bi bi-receipt"></i> View Receipt
+                        </button>
+                        {% endif %}
+                        
+                        <button class="bill-action-btn btn-view" 
+                                onclick="viewBill({{ bill.id }})">
+                            <i class="bi bi-eye"></i> View Details
+                        </button>
+                        
+                        {% if bill.status != 'paid' %}
+                        <button class="bill-action-btn btn-pay" 
+                                onclick="makePayment({{ bill.id }}, '{{ bill.bill_number|default:'N/A' }}', {{ bill.balance }})">
+                            <i class="bi bi-cash"></i> Pay
+                        </button>
+                        {% endif %}
+                        
+                        <button class="bill-action-btn btn-edit" 
+                                onclick="editBill({{ bill.id }})">
+                            <i class="bi bi-pencil"></i> Edit
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="bi bi-receipt"></i>
+            </div>
+            <div class="empty-title">No bills found</div>
+            <div class="empty-text">
+                You don't have any bills yet. Check back later or contact your administrator.
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Mobile Bills Cards JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    const billsContainer = document.getElementById('billsContainer');
+    const expandAllBtn = document.getElementById('expandAllBtn');
+    const collapseAllBtn = document.getElementById('collapseAllBtn');
+    const searchInput = document.getElementById('searchInput');
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    
+    let currentExpandedCard = null;
+    
+    // Toggle card expansion
+    function toggleCard(card) {
+        const isExpanded = card.classList.contains('expanded');
+        
+        // Collapse current expanded card if different
+        if (currentExpandedCard && currentExpandedCard !== card) {
+            currentExpandedCard.classList.remove('expanded');
+        }
+        
+        // Toggle current card
+        if (isExpanded) {
+            card.classList.remove('expanded');
+            currentExpandedCard = null;
+        } else {
+            card.classList.add('expanded');
+            currentExpandedCard = card;
+        }
+    }
+    
+    // Card click handlers
+    billsContainer.addEventListener('click', function(e) {
+        const card = e.target.closest('.bill-card');
+        if (!card) return;
+        
+        // Don't toggle if clicking on action buttons
+        if (e.target.closest('.bill-actions')) return;
+        
+        toggleCard(card);
+    });
+    
+    // Expand All
+    expandAllBtn.addEventListener('click', function() {
+        const cards = document.querySelectorAll('.bill-card');
+        cards.forEach(card => card.classList.add('expanded'));
+        currentExpandedCard = null; // Allow multiple when expanded all
+    });
+    
+    // Collapse All
+    collapseAllBtn.addEventListener('click', function() {
+        const cards = document.querySelectorAll('.bill-card');
+        cards.forEach(card => card.classList.remove('expanded'));
+        currentExpandedCard = null;
+    });
+    
+    // Search functionality
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const cards = document.querySelectorAll('.bill-card');
+        
+        cards.forEach(card => {
+            const billNumber = card.dataset.billNumber.toLowerCase();
+            const tenantName = card.dataset.tenantName.toLowerCase();
+            
+            if (billNumber.includes(searchTerm) || tenantName.includes(searchTerm)) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    });
+    
+    // Filter functionality
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Update active state
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            const filter = this.dataset.filter;
+            const cards = document.querySelectorAll('.bill-card');
+            
+            cards.forEach(card => {
+                if (filter === 'all' || card.dataset.status === filter) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    });
+    
+    // Action functions
+    window.viewReceipt = function(receiptUrl) {
+        window.open(receiptUrl, '_blank');
+    };
+    
+    window.viewBill = function(billId) {
+        // Navigate to bill details page
+        window.location.href = `/view-bill/${billId}/`;
+    };
+    
+    window.makePayment = function(billId, billNumber, balance) {
+        // Open payment modal
+        alert(`Payment functionality for Bill #${billNumber} - Balance: ₱${balance}`);
+        // TODO: Implement payment modal
+    };
+    
+    window.editBill = function(billId) {
+        // Navigate to edit page
+        window.location.href = `/edit-bill/${billId}/`;
+    };
+});
+</script>
+
+{% endblock %}
