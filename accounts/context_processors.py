@@ -147,9 +147,10 @@ def notifications(request):
         }
     
     # Use NotificationService for optimized notification retrieval
+    # Remove limit to allow scrollable container to show all notifications
     notifications, unread_count = NotificationService.get_user_notifications(
         user=request.user,
-        limit=5
+        limit=50  # Increased limit for scrollable container
     )
     
     return {

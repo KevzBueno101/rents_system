@@ -1,0 +1,265 @@
+{% extends 'tenant/tenant_base.html' %}
+
+{% block title %}Show Rooms{% endblock %}
+{% block page_title %}Show Rooms{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .rooms-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+        margin-bottom: 18px;
+    }
+    .rooms-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 18px;
+    }
+    .room-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        min-height: 100%;
+    }
+    .room-photo {
+        height: 158px;
+        background: #f4f6f9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .room-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .room-body {
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        flex: 1;
+    }
+    .room-title-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: flex-start;
+    }
+    .room-title {
+        font-size: 18px;
+        font-weight: 800;
+        margin: 0;
+    }
+    .room-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+    .room-meta {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px;
+        background: #fafaf8;
+    }
+    .room-meta-label {
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        font-weight: 700;
+        letter-spacing: .05em;
+        margin-bottom: 3px;
+    }
+    .room-meta-value {
+        font-weight: 800;
+        overflow-wrap: anywhere;
+    }
+    .feature-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .tenant-list {
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.5;
+    }
+    @media (max-width: 768px) {
+        .rooms-toolbar > * {
+            width: 100%;
+        }
+        .rooms-toolbar form {
+            flex-direction: column;
+            align-items: stretch !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="t-stat-grid" style="margin-bottom:20px;">
+    <div class="t-stat" style="border-left:3px solid #2563eb;">
+        <div class="t-stat-label">Total Rooms</div>
+        <div class="t-stat-value">{{ rooms|length }}</div>
+        <div class="t-stat-sub">visible rooms</div>
+    </div>
+    <div class="t-stat" style="border-left:3px solid #059669;">
+        <div class="t-stat-label">Vacant Beds</div>
+        <div class="t-stat-value" style="color:#059669;">{{ vacant_beds }}</div>
+        <div class="t-stat-sub">available slots</div>
+    </div>
+    <div class="t-stat" style="border-left:3px solid #f59e0b;">
+        <div class="t-stat-label">Occupied Beds</div>
+        <div class="t-stat-value">{{ occupied_beds }}</div>
+        <div class="t-stat-sub">of {{ total_beds }} beds</div>
+    </div>
+    <div class="t-stat" style="border-left:3px solid #2d6a4f;">
+        <div class="t-stat-label">Your Room</div>
+        <div class="t-stat-value" style="font-size:20px;">
+            {% if profile.room %}{{ profile.room.room_code }}{% else %}Unassigned{% endif %}
+        </div>
+        <div class="t-stat-sub">current assignment</div>
+    </div>
+</div>
+
+<div class="t-card" style="margin-bottom:20px;">
+    <div class="t-card-body">
+        <div class="rooms-toolbar">
+            <div>
+                <h5 class="fw-bold mb-1">Rooms Availability</h5>
+                <div class="text-muted small">View room rates, occupancy, inclusions, and available beds.</div>
+            </div>
+            <form method="GET" class="d-flex gap-2 align-items-center">
+                <input type="text" name="search" class="t-input" value="{{ search }}" placeholder="Search room, floor, rate..." style="min-width:240px;">
+                <select name="sort" class="t-input" style="width:auto;">
+                    <option value="floor" {% if current_sort == 'floor' %}selected{% endif %}>Floor</option>
+                    <option value="room_number" {% if current_sort == 'room_number' %}selected{% endif %}>Room #</option>
+                    <option value="rate" {% if current_sort == 'rate' %}selected{% endif %}>Rate</option>
+                    <option value="capacity" {% if current_sort == 'capacity' %}selected{% endif %}>Capacity</option>
+                </select>
+                <select name="order" class="t-input" style="width:auto;">
+                    <option value="asc" {% if current_order == 'asc' %}selected{% endif %}>Asc</option>
+                    <option value="desc" {% if current_order == 'desc' %}selected{% endif %}>Desc</option>
+                </select>
+                <button type="submit" class="t-btn t-btn-primary">
+                    <i class="bi bi-search"></i> Apply
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if rooms %}
+<div class="rooms-grid">
+    {% for room in rooms %}
+    <article class="room-card">
+        <div class="room-photo">
+            {% if room.photo %}
+                <img src="{{ room.photo.url }}" alt="{{ room.room_code }}">
+            {% else %}
+                <i class="bi bi-door-open" style="font-size:46px; color:#c9c9c9;"></i>
+            {% endif %}
+            <span class="t-badge {% if room.is_full %}t-badge-danger{% else %}t-badge-success{% endif %}"
+                  style="position:absolute; top:12px; right:12px;">
+                {% if room.is_full %}Occupied{% else %}Vacant: {{ room.available_beds }}{% endif %}
+            </span>
+            {% if profile.room_id == room.id %}
+                <span class="t-badge t-badge-info" style="position:absolute; top:12px; left:12px;">Your Room</span>
+            {% endif %}
+        </div>
+
+        <div class="room-body">
+            <div class="room-title-row">
+                <div>
+                    <h3 class="room-title">{{ room.room_code }}</h3>
+                    <div class="text-muted small">Floor {{ room.floor }} · {{ room.get_bed_type_display }}</div>
+                </div>
+                <div class="text-end">
+                    <div class="fw-bold">PHP {{ room.monthly_rate|floatformat:2 }}</div>
+                    <div class="text-muted small">monthly</div>
+                </div>
+            </div>
+
+            <div>
+                <div class="d-flex justify-content-between small mb-1">
+                    <span class="text-muted">Occupancy</span>
+                    <strong>{{ room.occupied_beds }} / {{ room.capacity }}</strong>
+                </div>
+                <div class="progress" style="height:7px;">
+                    <div class="progress-bar {% if room.is_full %}bg-danger{% else %}bg-success{% endif %}"
+                         style="width:{% widthratio room.occupied_beds room.capacity 100 %}%"></div>
+                </div>
+            </div>
+
+            <div class="room-meta-grid">
+                <div class="room-meta">
+                    <div class="room-meta-label">Capacity</div>
+                    <div class="room-meta-value">{{ room.capacity }} tenant{{ room.capacity|pluralize }}</div>
+                </div>
+                <div class="room-meta">
+                    <div class="room-meta-label">Available</div>
+                    <div class="room-meta-value">{{ room.available_beds }} bed{{ room.available_beds|pluralize }}</div>
+                </div>
+                <div class="room-meta">
+                    <div class="room-meta-label">Comfort Room</div>
+                    <div class="room-meta-value">{{ room.num_cr }} CR</div>
+                </div>
+                <div class="room-meta">
+                    <div class="room-meta-label">Area</div>
+                    <div class="room-meta-value">{% if room.area %}{{ room.area }} sqm{% else %}Not set{% endif %}</div>
+                </div>
+            </div>
+
+            <div>
+                <div class="room-meta-label mb-2">Features and Inclusions</div>
+                <div class="feature-list">
+                    <span class="t-badge {% if room.has_lababo %}t-badge-success{% else %}t-badge-muted{% endif %}">
+                        <i class="bi bi-droplet-half"></i> Sink
+                    </span>
+                    <span class="t-badge {% if room.water_included %}t-badge-success{% else %}t-badge-muted{% endif %}">
+                        <i class="bi bi-droplet"></i> Water
+                    </span>
+                    <span class="t-badge {% if room.electricity_included %}t-badge-success{% else %}t-badge-muted{% endif %}">
+                        <i class="bi bi-lightning"></i> Electricity
+                    </span>
+                    <span class="t-badge {% if room.has_wifi %}t-badge-success{% else %}t-badge-muted{% endif %}">
+                        <i class="bi bi-wifi"></i> WiFi
+                    </span>
+                    {% for inclusion in room.dynamic_inclusions.all %}
+                        <span class="t-badge t-badge-info">{{ inclusion.name }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="tenant-list mt-auto">
+                <i class="bi bi-people"></i>
+                {% for tenant in room.get_tenants %}
+                    {{ tenant.full_name }}{% if not forloop.last %}, {% endif %}
+                {% empty %}
+                    No tenants assigned yet
+                {% endfor %}
+            </div>
+        </div>
+    </article>
+    {% endfor %}
+</div>
+{% else %}
+<div class="t-card">
+    <div class="t-empty">
+        <i class="bi bi-door-open"></i>
+        <p>No rooms found.</p>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

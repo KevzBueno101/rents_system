@@ -1,3 +1,5 @@
+/* Cache-bust: 20260503_110743 */
+
 /* ── LAYOUT ── */
 body {
     min-height: 100vh;
@@ -122,13 +124,14 @@ body {
     background: white;
     padding: 12px 20px;
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    border-bottom: 1px solid #e0e0e0;
+    align-items: center;
+    border-bottom: 1px solid #e9ecef;
+    gap: 8px;
+    width: 100%;
     position: sticky;
     top: 0;
     z-index: 999;
-    gap: 8px;
 }
 
 #topbar h6 {
@@ -136,11 +139,51 @@ body {
     white-space: nowrap;
 }
 
-.topbar-right {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+/* Topbar right components - using Bootstrap ms-auto */
+#topbar .ms-auto {
     flex-shrink: 0;
+    margin-left: auto !important;
+}
+
+/* Force right alignment for admin dashboard */
+#topbar .d-flex.align-items-center.gap-2:last-child {
+    margin-left: auto !important;
+}
+
+/* Ensure date, bell, and logout are visible and positioned correctly */
+#topbar .d-none.d-md-flex,
+#topbar .position-relative,
+#topbar .btn.btn-sm.btn-outline-dark {
+    display: flex !important;
+    align-items: center !important;
+}
+
+/* Additional force positioning for admin dashboard */
+#topbar > .d-flex {
+    justify-content: space-between !important;
+    align-items: center !important;
+}
+
+#topbar > .d-flex > div:last-child {
+    margin-left: auto !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+/* Force specific elements to be visible */
+#topbar .d-none.d-md-flex {
+    display: flex !important;
+    align-items: center !important;
+}
+
+#topbar .position-relative {
+    display: block !important;
+}
+
+#topbar .btn.btn-sm.btn-outline-dark {
+    display: inline-flex !important;
+    align-items: center !important;
 }
 
 .topbar-date {

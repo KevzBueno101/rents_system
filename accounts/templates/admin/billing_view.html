@@ -108,6 +108,7 @@
                                 <th>Method</th>
                                 <th>Amount</th>
                                 <th>Reference</th>
+                                <th>Proof</th>
                                 <th>Receipt</th>
                                 <th>Actions</th>
                             </tr>
@@ -127,6 +128,9 @@
                                     {% else %}
                                     <span class="text-muted">—</span>
                                     {% endif %}
+                                </td>
+                                <td>
+                                    {% include 'components/receipt_card.html' with payment=payment %}
                                 </td>
                                 <td>
                                     <form method="POST" action="{% url 'delete_payment' payment.id %}"

@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.db.models import Q, ProtectedError
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from ..models import Room, Inclusion, Appliance
+from ..models import Room, Inclusion, Appliance, TenantProfile
 from ..activity_utils import log_activity
 
 
@@ -60,6 +60,51 @@ def room_list(request):
         'total_beds'   : total_beds,
         'occupied_beds': occupied_beds,
         'vacant_beds'  : total_beds - occupied_beds,
+    })
+
+
+@login_required(login_url='/')
+def tenant_show_rooms(request):
+    """Read-only room availability for tenant users."""
+    if request.user.is_staff:
+        return redirect('room_list')
+
+    profile = TenantProfile.objects.select_related('user', 'room').get(user=request.user)
+    search = request.GET.get('search', '')
+    sort_by = request.GET.get('sort', 'floor')
+    order = request.GET.get('order', 'asc')
+
+    valid_sorts = {
+        'floor': 'floor',
+        'rate': 'monthly_rate',
+        'capacity': 'capacity',
+        'room_number': 'room_number',
+    }
+    sort_field = valid_sorts.get(sort_by, 'floor')
+
+    rooms = Room.objects.prefetch_related('dynamic_inclusions').order_by(sort_field, 'room_number')
+    if search:
+        rooms = rooms.filter(
+            Q(room_number__icontains=search) |
+            Q(floor__icontains=search) |
+            Q(monthly_rate__icontains=search)
+        )
+    if order == 'desc':
+        rooms = rooms.order_by(f'-{sort_field}', 'room_number')
+
+    all_rooms = list(Room.objects.all())
+    total_beds = sum(room.capacity for room in all_rooms)
+    occupied_beds = sum(room.occupied_beds() for room in all_rooms)
+
+    return render(request, 'tenant/tenant_rooms.html', {
+        'profile': profile,
+        'rooms': rooms,
+        'current_sort': sort_by,
+        'current_order': order,
+        'search': search,
+        'total_beds': total_beds,
+        'occupied_beds': occupied_beds,
+        'vacant_beds': total_beds - occupied_beds,
     })
 
 

@@ -5,6 +5,8 @@ from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 from . import views
 from .views import admin_views
+from .views import api_views
+from .views.auth_views import mark_notification
 
 urlpatterns = [
     path('', views.login_view, name='login'),
@@ -42,7 +44,12 @@ urlpatterns = [
     path('delete-admin/<int:user_id>/', views.delete_admin, name='delete_admin'),
 
     # ─── TENANTS ─────────────────────────────────────
-    path('tenant-dashboard/', views.tenant_dashboard, name='tenant_dashboard'),
+    path('tenant/dashboard/', views.tenant_dashboard, name='tenant_dashboard'),
+    path('tenant-dashboard/', views.tenant_dashboard, name='tenant_dashboard_legacy'),
+    path('tenant/rooms/', views.tenant_show_rooms, name='tenant_show_rooms'),
+    path('tenant/bills/', views.tenant_bills, name='tenant_bills'),
+    path('tenant/reports/', views.tenant_reports, name='tenant_reports'),
+    path('tenant/reports/maintenance/create/', views.tenant_submit_maintenance, name='tenant_submit_maintenance'),
     path('tenant-list/', views.tenant_list, name='tenant_list'),
     path('add-tenant/', views.add_tenant, name='add_tenant'),
     path('edit-tenant/<int:tenant_id>/', views.edit_tenant, name='edit_tenant'),
@@ -82,6 +89,9 @@ urlpatterns = [
     path('billing/view/<int:bill_id>/', views.view_bill, name='view_bill'),
     path('billing/delete/<int:bill_id>/', views.delete_bill, name='delete_bill'),
     path('billing/pay/<int:bill_id>/', views.record_payment, name='record_payment'),
+    path('billing/payments/<int:payment_id>/generate-receipt/', views.generate_payment_receipt, name='generate_payment_receipt'),
+    path('billing/payments/<int:payment_id>/download-receipt/', views.download_payment_receipt, name='download_payment_receipt'),
+    path('billing/payments/<int:payment_id>/send-receipt/', views.send_payment_receipt, name='send_payment_receipt'),
     path('billing/delete-payment/<int:payment_id>/', views.delete_payment, name='delete_payment'),
     path('billing/mark-sent/<int:bill_id>/', views.mark_as_sent, name='mark_as_sent'),
 
@@ -96,7 +106,8 @@ urlpatterns = [
     path('notifications/', views.notification_list, name='notification_list'),
     path('notifications/<int:notification_id>/read/', views.mark_notification_read, name='mark_notification_read'),
     path('notifications/read-all/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
-
+    path('notification/<int:notif_id>/mark-read/', mark_notification, name='mark_notification'),
+    path('notification/<int:notif_id>/mark-read/', views.auth_views.mark_notification, name='mark_notification'),
     # ─── MAINTENANCE ─────────────────────────────────
     path('maintenance/', views.maintenance_list, name='maintenance_list'),
     path('maintenance/create/', views.create_maintenance, name='create_maintenance'),
@@ -107,4 +118,9 @@ urlpatterns = [
     path('violations/', views.violation_list, name='violation_list'),
     path('violations/create/', views.create_violation, name='create_violation'),
     path('violations/delete/<int:violation_id>/', views.delete_violation, name='delete_violation'),
+
+    # ─── API ENDPOINTS ─────────────────────────────
+    path('api/check-username/', api_views.check_username_availability, name='check_username_availability'),
+    path('api/user-info/', api_views.get_current_user_info, name='get_current_user_info'),
+    path('api/update-username/', api_views.update_username, name='update_username'),
 ]

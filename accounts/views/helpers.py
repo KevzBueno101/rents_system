@@ -12,7 +12,7 @@ def parse_phone(raw):
     if not raw:
         return None
     digits = re.sub(r"\D", "", str(raw))
-    return int(digits) if digits else None
+    return digits if digits else None
 
 
 def get_available_rooms():

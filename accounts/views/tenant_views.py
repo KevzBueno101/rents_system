@@ -6,8 +6,6 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db.models import Q, Sum
-from tenant.services.dashboard_service import get_tenant_dashboard_data
-from maintenance.services.maintenance_service import get_dashboard_summary
 from ..models import Bill, MaintenanceReport, Room, TenantProfile, Violation
 from ..activity_utils import log_activity
 from .helpers import parse_phone, get_available_rooms
@@ -15,23 +13,17 @@ from .helpers import parse_phone, get_available_rooms
 
 @login_required(login_url='/')
 def tenant_dashboard(request):
-    """Tenant-only dashboard with actionable billing, receipt, and alert data."""
+    """Tenant-only dashboard."""
     if request.user.is_staff:
         return redirect('admin_dashboard')
     
-    # Get existing dashboard data
-    dashboard_data = get_tenant_dashboard_data(request.user)
+    try:
+        profile = TenantProfile.objects.select_related('user', 'room').get(user=request.user)
+    except TenantProfile.DoesNotExist:
+        messages.error(request, 'Tenant profile not found.')
+        return redirect('login')
     
-    # Get new dashboard components data
-    dashboard_components = get_dashboard_summary(request.user)
-    
-    return render(request, 'tenant/tenant_dashboard.html', {
-        'dashboard_data': dashboard_data,
-        'maintenance': dashboard_components['maintenance'],
-        'payment': dashboard_components['payment'],
-        'activities': dashboard_components['activities'],
-    })
-
+    return render(request, 'tenant/dashboard.html', {'profile': profile})
 
 @login_required(login_url='/')
 def tenant_bills(request):

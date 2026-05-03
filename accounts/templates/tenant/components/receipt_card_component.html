@@ -1,0 +1,90 @@
+<section class="section-card">
+    <div class="section-header">
+        <h2 class="section-title"><i class="bi bi-receipt text-primary"></i> Latest Receipt</h2>
+        {% if data.latest_receipt %}
+            <span class="badge bg-success">Available</span>
+        {% else %}
+            <span class="badge bg-secondary">Pending</span>
+        {% endif %}
+    </div>
+    <div class="section-body">
+        {% if data.latest_receipt %}
+            <div class="receipt-info">
+                <div class="receipt-details">
+                    <div class="receipt-meta">
+                        <span class="text-muted">Receipt for</span>
+                        <strong>{{ data.latest_receipt.bill.bill_number }}</strong>
+                    </div>
+                    <div class="receipt-amount">
+                        <span class="amount-value">PHP {{ data.latest_receipt.amount|floatformat:2 }}</span>
+                    </div>
+                    <div class="receipt-date text-muted">
+                        <i class="bi bi-calendar3"></i>
+                        {{ data.latest_receipt.payment_date|date:"M d, Y" }}
+                    </div>
+                </div>
+                <div class="receipt-actions d-flex flex-column flex-sm-row gap-2 mobile-full">
+                    <a href="{{ data.latest_receipt.receipt_image.url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-eye"></i> View
+                    </a>
+                    <a href="{% url 'download_payment_receipt' data.latest_receipt.id %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-download"></i> Download
+                    </a>
+                </div>
+            </div>
+        {% else %}
+            <div class="empty-state text-center py-4">
+                <i class="bi bi-receipt-cutoff text-muted" style="font-size: 2rem;"></i>
+                <p class="text-muted mb-0">No receipt is available yet.</p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<style>
+.receipt-info {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.receipt-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.receipt-meta {
+    font-size: 13px;
+}
+
+.receipt-amount {
+    margin: 4px 0;
+}
+
+.amount-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.receipt-date {
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+@media (min-width: 768px) {
+    .receipt-info {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .receipt-actions {
+        flex-direction: row;
+        align-items: center;
+    }
+}
+</style>

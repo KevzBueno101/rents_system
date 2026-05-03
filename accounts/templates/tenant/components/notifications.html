@@ -1,0 +1,30 @@
+<section class="section-card">
+    <div class="section-header">
+        <h2 class="section-title"><i class="bi bi-bell text-warning"></i> Notifications</h2>
+        {% if data.unread_notifications %}
+            <span class="t-badge t-badge-warning">{{ data.unread_notifications }} unread</span>
+        {% endif %}
+    </div>
+    <div class="section-body">
+        {% if data.notifications %}
+            <div class="d-flex flex-column gap-2">
+                {% for notice in data.notifications %}
+                    <div class="alert alert-{{ notice.level }} mb-0 py-2 px-3">
+                        <div class="d-flex gap-2">
+                            <i class="bi {{ notice.icon }}"></i>
+                            <div>
+                                <strong>{{ notice.title }}</strong>
+                                <div class="small">{{ notice.message }}</div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="t-empty py-4">
+                <i class="bi bi-bell-slash"></i>
+                <p>No alerts right now.</p>
+            </div>
+        {% endif %}
+    </div>
+</section>

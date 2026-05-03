@@ -1,7 +1,10 @@
 from django import forms
 from django.forms import formset_factory
+from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from .models import Bill, BillItem, Payment, TenantProfile, TenantReminder
 from django.utils import timezone
+from .services.user_service import UserService
 
 
 class BillForm(forms.ModelForm):
@@ -72,3 +75,131 @@ class TenantReminderForm(forms.ModelForm):
         self.fields['tenant'].queryset = TenantProfile.objects.select_related('user', 'room').filter(room__isnull=False).order_by('full_name')
         self.fields['scheduled_at'].required = False
         self.fields['scheduled_at'].help_text = 'Leave empty to send immediately'
+
+
+# ─── USERNAME VALIDATION FORMS ────────────────────────
+
+class UsernameUpdateForm(forms.ModelForm):
+    """Form for updating username with robust validation."""
+    
+    class Meta:
+        model = User
+        fields = ['username']
+        widgets = {
+            'username': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Enter new username',
+                'required': True
+            })
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['username'].help_text = 'Username must be at least 3 characters long and unique.'
+    
+    def clean_username(self):
+        """Validate username with case-insensitive uniqueness check."""
+        username = self.cleaned_data.get('username')
+        
+        try:
+            return UserService.validate_username(username, exclude_user_id=self.instance.id)
+        except ValidationError as e:
+            raise forms.ValidationError(str(e))
+
+
+class UserRegistrationForm(forms.ModelForm):
+    """Form for user registration with username validation."""
+    
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        help_text='Password must be at least 8 characters long.'
+    )
+    confirm_password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        label='Confirm Password'
+    )
+    
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password']
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+        }
+    
+    def clean_username(self):
+        """Validate username for new user registration."""
+        username = self.cleaned_data.get('username')
+        
+        try:
+            return UserService.validate_username(username)
+        except ValidationError as e:
+            raise forms.ValidationError(str(e))
+    
+    def clean_email(self):
+        """Validate email uniqueness."""
+        email = self.cleaned_data.get('email')
+        
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError('Email is already registered.')
+        
+        return email
+    
+    def clean(self):
+        """Validate password confirmation."""
+        cleaned_data = super().clean()
+        password = cleaned_data.get('password')
+        confirm_password = cleaned_data.get('confirm_password')
+        
+        if password and confirm_password and password != confirm_password:
+            raise forms.ValidationError('Passwords do not match.')
+        
+        if password and len(password) < 8:
+            raise forms.ValidationError('Password must be at least 8 characters long.')
+        
+        return cleaned_data
+
+
+class ProfileUpdateForm(forms.ModelForm):
+    """Form for updating user profile with username validation."""
+    
+    username = forms.CharField(
+        max_length=150,
+        required=True,
+        widget=forms.TextInput(attrs={'class': 't-input'}),
+        help_text='Username must be at least 3 characters long and unique.'
+    )
+    email = forms.EmailField(
+        required=True,
+        widget=forms.EmailInput(attrs={'class': 't-input'})
+    )
+    
+    class Meta:
+        model = User
+        fields = ['username', 'email']
+        widgets = {
+            'email': forms.EmailInput(attrs={'class': 't-input'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and getattr(self.instance, 'username', None):
+            self.fields['username'].initial = self.instance.username
+    
+    def clean_username(self):
+        """Validate username with case-insensitive uniqueness check."""
+        username = self.cleaned_data.get('username')
+        
+        try:
+            return UserService.validate_username(username, exclude_user_id=self.instance.id)
+        except ValidationError as e:
+            raise forms.ValidationError(str(e))
+    
+    def clean_email(self):
+        """Validate email uniqueness."""
+        email = self.cleaned_data.get('email')
+        
+        if User.objects.filter(email__iexact=email).exclude(id=self.instance.id).exists():
+            raise forms.ValidationError('Email is already registered.')
+        
+        return email

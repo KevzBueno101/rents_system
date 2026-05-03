@@ -50,6 +50,7 @@ TEMPLATES = [
                 'accounts.context_processors.system_stats',   # System statistics
                 'accounts.context_processors.recent_activity', # Recent activity feed
                 'accounts.context_processors.recent_payments', # Recent payments feed
+                'accounts.context_processors.notifications',   # Notification system
                 'accounts.context_processors.app_settings',   # App metadata
             ],
         },
@@ -60,7 +61,7 @@ WSGI_APPLICATION = 'rents_system.wsgi.application'
 
 import dj_database_url
 
-USE_POSTGRES = os.getenv('USE_POSTGRES', 'false') == 'true'
+USE_POSTGRES = os.getenv('USE_POSTGRES', 'false').strip().lower() == 'true'
 
 if USE_POSTGRES and os.getenv('DATABASE_URL'):
     DATABASES = {

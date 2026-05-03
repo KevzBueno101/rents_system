@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="{% static 'css/layout.css' %}">
     <link rel="stylesheet" href="{% static 'css/components.css' %}">
     <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'css/responsive.css' %}">
     <link rel="icon" href="https://img.icons8.com/ios-filled/50/door.png" type="image/png">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     {% csrf_token %}
@@ -118,26 +119,175 @@
 
     </div>
 
+    <!-- Mobile Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Mobile Offcanvas Sidebar -->
+    <div class="offcanvas offcanvas-start sidebar-mobile" tabindex="-1" id="sidebarOffcanvas" aria-labelledby="sidebarOffcanvasLabel">
+        <div class="offcanvas-header bg-dark text-white">
+            <h5 class="offcanvas-title" id="sidebarOffcanvasLabel">
+                <i class="bi bi-list me-2"></i>Menu
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body p-0">
+            <div class="brand p-3 border-bottom">
+                <h4 class="text-white mb-1">RENTS</h4>
+                <small class="text-white-50">Boarding House Management</small>
+            </div>
+
+            <nav class="p-3">
+
+                <div class="nav-section text-muted small text-uppercase mb-2">Main</div>
+
+                <a href="{% url 'admin_dashboard' %}"
+                    class="nav-link d-flex align-items-center gap-2 rounded mb-1 {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+                    <i class="bi bi-grid"></i> Dashboard
+                </a>
+
+                <a href="{% url 'tenant_list' %}"
+                    class="nav-link d-flex align-items-center gap-2 rounded mb-1 {% if request.resolver_match.url_name == 'tenant_list' %}active{% endif %}">
+                    <i class="bi bi-people"></i> Tenants
+                </a>
+
+                <a href="{% url 'room_list' %}"
+                    class="nav-link d-flex align-items-center gap-2 rounded mb-1 {% if request.resolver_match.url_name == 'room_list' %}active{% endif %}">
+                    <i class="bi bi-door-open"></i> Rooms
+                </a>
+
+                {% if request.user.is_superuser %}
+                <a href="{% url 'admin_list' %}"
+                    class="nav-link d-flex align-items-center gap-2 rounded mb-1 {% if request.resolver_match.url_name == 'admin_list' %}active{% endif %}">
+                    <i class="bi bi-shield-check"></i> Admins
+                </a>
+                {% endif %}
+
+                <div class="nav-section text-muted small text-uppercase mb-2 mt-3">Finance</div>
+
+                <a href="{% url 'billing_list' %}"
+                    class="nav-link d-flex align-items-center gap-2 rounded mb-1 {% if request.resolver_match.url_name == 'billing_list' %}active{% endif %}">
+                    <i class="bi bi-cash-stack"></i> Billing
+                </a>
+
+                <div class="nav-section text-muted small text-uppercase mb-2 mt-3">Reports</div>
+
+                <a href="{% url 'maintenance_list' %}"
+                    class="nav-link d-flex align-items-center gap-2 rounded mb-1 {% if request.resolver_match.url_name == 'maintenance_list' %}active{% endif %}">
+                    <i class="bi bi-tools"></i> Maintenance
+                </a>
+
+                <a href="{% url 'violation_list' %}"
+                    class="nav-link d-flex align-items-center gap-2 rounded mb-1 {% if request.resolver_match.url_name == 'violation_list' %}active{% endif %}">
+                    <i class="bi bi-exclamation-triangle"></i> Violations
+                </a>
+                <a href="{% url 'audit_trail' %}"
+                    class="nav-link d-flex align-items-center gap-2 rounded mb-1 {% if request.resolver_match.url_name == 'audit_trail' %}active{% endif %}">
+                    <i class="bi bi-activity"></i> Audit Trail
+                </a>
+
+            </nav>
+            
+            <!-- Profile Section -->
+            <div class="sidebar-footer" style="margin-top: auto; padding: 16px; border-top: 1px solid #444;">
+                <div class="d-flex align-items-center gap-2" style="cursor:pointer;" onclick="openProfileModal()">
+                    
+                    {% if user_profile and user_profile.photo %}
+                        <img src="{{ user_profile.photo.url }}"
+                             style="width:36px; height:36px; border-radius:50%; object-fit:cover; flex-shrink:0;">
+                    {% else %}
+                        <div style="width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:15px;">
+                            {{ request.user.username|first|upper }}
+                        </div>
+                    {% endif %}
+
+                    <div>
+                        <div class="text-white" style="font-size:13px; font-weight:600;">
+                            {{ request.user.username }}
+                        </div>
+                        <div style="font-size:11px; color:#aaa;">
+                            {% if request.user.is_superuser %}Superadmin{% else %}Administrator{% endif %}
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- MAIN -->
     <div id="main">
 
         <!-- TOPBAR -->
-        <div id="topbar">
-            <div class="d-flex align-items-center gap-2">
-                <button class="btn btn-sm btn-outline-secondary d-md-none" onclick="toggleSidebar()">
-                    <i class="bi bi-list"></i>
-                </button>
-                <h6 class="mb-0 fw-bold">{% block page_title %}Dashboard{% endblock %}</h6>
+        <div id="topbar" style="background: white; padding: 12px 20px; border-bottom: 1px solid #e9ecef;">
+            <div class="d-flex align-items-center flex-wrap" style="justify-content: space-between; width: 100%;">
+                <!-- LEFT SIDE -->
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Mobile Menu Toggle -->
+                    <button class="btn btn-dark d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarOffcanvas" aria-controls="sidebarOffcanvas">
+                        <i class="bi bi-list fs-5"></i>
+                    </button>
+                    <h6 class="mb-0 fw-bold">{% block page_title %}Dashboard{% endblock %}</h6>
+                </div>
+                
+                <!-- PUSH RIGHT - TOP RIGHT COMPONENTS -->
+                <div class="d-flex align-items-center gap-2" style="margin-left: auto; display: flex !important;">
+                    <!-- Date Display -->
+                    <div class="d-none d-md-flex align-items-center gap-1 text-muted small" style="display: flex !important;">
+                        <i class="bi bi-calendar3"></i>
+                        <span id="currentDate"></span>
+                    </div>
+                    
+                    <!-- Notification Bell -->
+                    <div class="position-relative" style="display: block !important;">
+                        <button class="btn btn-sm btn-light position-relative" id="notifBtn" style="background: #f8f9fa; border: 1px solid #dee2e6; min-width: 40px; display: inline-flex !important; align-items: center !important;">
+                            <i class="bi bi-bell-fill"></i>
+                            {% if unread_count and unread_count > 0 %}
+                            <span class="badge bg-danger position-absolute top-0 start-100 translate-middle rounded-pill" style="font-size: 10px; padding: 2px 5px;">
+                                {{ unread_count }}
+                            </span>
+                            {% endif %}
+                        </button>
+                    </div>
+                    
+                    <!-- Logout Button -->
+                    <button class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#logoutModal" style="display: inline-flex !important; align-items: center !important;">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span class="d-none d-md-inline">Logout</span>
+                    </button>
+                </div>
             </div>
-            <div class="topbar-right">
-                <span class="topbar-date">
-                    <i class="bi bi-calendar3"></i>
-                    <span id="currentDate"></span>
-                </span>
-                <button class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#logoutModal">
-                    <i class="bi bi-box-arrow-right"></i>
-                    <span class="d-none d-md-inline">Logout</span>
-                </button>
+        </div>
+
+        <!-- Notification Dropdown -->
+        <div id="notifDropdown" class="dropdown-menu dropdown-menu-end p-2 shadow" style="width:320px; display:none; position: absolute; right: 80px; top: 60px; z-index: 1050;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0 fw-bold">Notifications</h6>
+                {% if unread_count > 0 %}
+                <small class="text-muted">{{ unread_count }} unread</small>
+                {% endif %}
+            </div>
+            <hr class="my-2">
+            
+            <!-- Scrollable Notification Container -->
+            <div class="notif-container">
+                {% for notif in notifications %}
+                    <a href="{% url 'mark_notification' notif.id %}" class="dropdown-item {% if not notif.is_read %}fw-bold text-primary{% endif %} text-decoration-none">
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-bell-fill me-2 mt-1 {% if not notif.is_read %}text-primary{% else %}text-muted{% endif %}"></i>
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold">{{ notif.title }}</div>
+                                <div class="small text-muted">{{ notif.message|truncatechars:50 }}</div>
+                                <small class="text-muted">{{ notif.created_at|timesince }} ago</small>
+                            </div>
+                        </div>
+                    </a>
+                    {% if not forloop.last %}<hr class="my-1">{% endif %}
+                {% empty %}
+                    <div class="dropdown-item text-muted text-center py-3">
+                        <i class="bi bi-bell-slash d-block fs-3 mb-2"></i>
+                        No notifications yet
+                    </div>
+                {% endfor %}
             </div>
         </div>
 
@@ -358,6 +508,56 @@
         </div>
     </div>
 </div>
+<!-- Notification Toggle Script -->
+    <script>
+        const notifBtn = document.getElementById('notifBtn');
+        const notifDropdown = document.getElementById('notifDropdown');
+
+        if (notifBtn && notifDropdown) {
+            notifBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                notifDropdown.style.display = notifDropdown.style.display === 'block' ? 'none' : 'block';
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) {
+                    notifDropdown.style.display = 'none';
+                }
+            });
+
+            notifDropdown.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        }
+
+        // Mobile sidebar click-outside-to-close functionality
+        if (window.innerWidth < 992) {
+            const sidebarToggle = document.querySelector('[data-bs-toggle="offcanvas"]');
+            const sidebar = document.getElementById('sidebarOffcanvas');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            if (sidebarToggle && sidebar && overlay) {
+                // Show overlay when sidebar opens
+                sidebarToggle.addEventListener('click', function() {
+                    overlay.classList.add('show');
+                });
+                
+                // Close sidebar when clicking overlay
+                overlay.addEventListener('click', function() {
+                    const bsOffcanvas = bootstrap.Offcanvas.getInstance(sidebar);
+                    if (bsOffcanvas) {
+                        bsOffcanvas.hide();
+                    }
+                    overlay.classList.remove('show');
+                });
+                
+                // Hide overlay when sidebar is closed
+                sidebar.addEventListener('hidden.bs.offcanvas', function () {
+                    overlay.classList.remove('show');
+                });
+            }
+        }
+    </script>
 </body>
 
 </html>

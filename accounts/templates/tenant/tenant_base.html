@@ -95,6 +95,10 @@
         <i class="bi bi-receipt"></i>
         <span>Billing</span>
     </a>
+    <a href="{% url 'tenant_reports' %}" class="t-bottom-link {% if request.resolver_match.url_name == 'tenant_reports' %}active{% endif %}">
+        <i class="bi bi-flag"></i>
+        <span>Reports</span>
+    </a>
     <a href="{% url 'edit_profile' %}" class="t-bottom-link {% if request.resolver_match.url_name == 'edit_profile' %}active{% endif %}">
         <i class="bi bi-person-circle"></i>
         <span>Profile</span>
@@ -107,9 +111,6 @@
     <!-- TOPBAR -->
     <div id="t-topbar">
         <div style="display:flex; align-items:center; gap:10px;">
-            <button class="t-btn t-btn-outline t-btn-sm d-md-none" onclick="openSidebar()" style="padding:6px 10px;">
-                <i class="bi bi-list"></i>
-            </button>
             <span class="t-page-title">{% block page_title %}Dashboard{% endblock %}</span>
         </div>
         <div class="t-topbar-right">
@@ -145,7 +146,7 @@
         <hr class="my-2">
         
         {% for notif in notifications %}
-            <a href="{% url 'mark_notification' notif.id %}" class="dropdown-item {% if not notif.is_read %}fw-bold text-primary{% endif %} text-decoration-none">
+            <a href="{% url 'mark_notification_read' notif.id %}" class="dropdown-item {% if not notif.is_read %}fw-bold text-primary{% endif %} text-decoration-none">
                 <div class="d-flex align-items-start">
                     <i class="bi bi-bell-fill me-2 mt-1 {% if not notif.is_read %}text-primary{% else %}text-muted{% endif %}"></i>
                     <div class="flex-grow-1">
@@ -206,6 +207,23 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    // Error handler for message channel and other async errors
+    window.addEventListener('error', function(e) {
+        // Ignore service worker and message channel errors
+        if (e.message && e.message.includes('message channel')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    window.addEventListener('unhandledrejection', function(e) {
+        // Ignore promise rejections related to message channels
+        if (e.reason && e.reason.message && e.reason.message.includes('message channel')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
     // Date display
     const d = new Date();
     document.getElementById('t-date').textContent = d.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric', year:'numeric'});

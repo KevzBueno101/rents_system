@@ -1,0 +1,69 @@
+<!-- Upcoming Payment Component -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0">
+            <i class="bi bi-credit-card me-2"></i>
+            Upcoming Payment
+        </h5>
+    </div>
+    
+    <div class="card-body">
+        {% if payment %}
+            <div class="payment-info">
+                <!-- Amount Display -->
+                <div class="text-center mb-3">
+                    <div class="h3 text-primary mb-1">
+                        ₱{{ payment.amount|floatformat:2 }}
+                    </div>
+                    <small class="text-muted">{{ payment.bill_number }}</small>
+                </div>
+
+                <!-- Due Date -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-muted">Due Date:</span>
+                    <strong>{{ payment.due_date|date:"M d, Y" }}</strong>
+                </div>
+
+                <!-- Days Left Alert -->
+                <div class="alert alert-{{ payment.alert_class }} py-2 mb-3">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-clock me-2"></i>
+                        <span class="fw-semibold">
+                            {% if payment.is_overdue %}
+                                {{ payment.days_overdue }} day{{ payment.days_overdue|pluralize }} overdue
+                            {% elif payment.days_left == 0 %}
+                                Due Today!
+                            {% else %}
+                                {{ payment.days_left }} day{{ payment.days_left|pluralize }} left
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#contactAdminModal">
+                        <i class="bi bi-credit-card me-1"></i>
+                        Pay Now
+                    </button>
+                    <a href="{% url 'tenant_bills' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-receipt me-1"></i>
+                        View Bill Details
+                    </a>
+                </div>
+            </div>
+        {% else %}
+            <div class="text-center py-4">
+                <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+                <p class="text-muted mb-0">No pending payments</p>
+                <small class="text-muted">All bills are up to date!</small>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.payment-info {
+    /* Additional styling if needed */
+}
+</style>

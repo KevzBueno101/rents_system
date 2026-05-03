@@ -160,3 +160,58 @@
     content: ">";
     color: var(--text-muted);
 }
+
+/* ============================================
+   NOTIFICATION CONTAINER - Scrollable Panel
+   ============================================ */
+
+.notif-container {
+    max-height: calc(85px * 3); /* 3 items max */
+    overflow-y: auto;
+    padding-right: 5px;
+    min-height: 0; /* Prevents flex layout issues */
+}
+
+/* Custom scrollbar styling */
+.notif-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.notif-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.notif-container::-webkit-scrollbar-thumb {
+    background-color: #ccc;
+    border-radius: 10px;
+    border: 1px solid #f1f1f1;
+}
+
+.notif-container::-webkit-scrollbar-thumb:hover {
+    background-color: #aaa;
+}
+
+/* Mobile optimization */
+@media (max-width: 768px) {
+    .notif-container {
+        max-height: 200px;
+    }
+}
+
+/* Ensure dropdown items maintain proper spacing */
+.notif-container .dropdown-item {
+    padding: 0.75rem 1rem;
+    border-radius: 0.375rem;
+    margin-bottom: 0.25rem;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.notif-container .dropdown-item:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+/* Fix for horizontal scrolling */
+.notif-container {
+    overflow-x: hidden;
+}

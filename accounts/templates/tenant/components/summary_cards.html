@@ -1,0 +1,52 @@
+<section aria-label="Critical billing summary">
+    <div class="row g-3">
+        <div class="col-6 col-md-6 col-lg-3">
+            <div class="metric-card {% if data.balance > 0 %}danger{% else %}success{% endif %}">
+                <div class="metric-label">Current Balance</div>
+                <div>
+                    <div class="metric-value">PHP {{ data.balance|floatformat:2 }}</div>
+                    <div class="metric-sub">
+                        {% if data.balance > 0 %}Payment needed{% else %}No outstanding balance{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-6 col-lg-3">
+            <div class="metric-card {% if data.payment_status == 'overdue' %}danger{% else %}warning{% endif %}">
+                <div class="metric-label">Next Due Date</div>
+                <div>
+                    <div class="metric-value">
+                        {% if data.due_date %}{{ data.due_date|date:"M d, Y" }}{% else %}No bill{% endif %}
+                    </div>
+                    <div class="metric-sub">
+                        {% if data.current_bill %}{{ data.current_bill.bill_number }}{% else %}Nothing due right now{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-6 col-lg-3">
+            <div class="metric-card {% if data.payment_status == 'paid' %}success{% elif data.payment_status == 'overdue' %}danger{% else %}warning{% endif %}">
+                <div class="metric-label">Payment Status</div>
+                <div>
+                    <div class="metric-value">{{ data.payment_status_label }}</div>
+                    <div class="metric-sub">
+                        {% if data.payment_status == 'paid' %}Account is current{% elif data.payment_status == 'no_bill' %}No active billing yet{% else %}Review billing details{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-6 col-lg-3">
+            <div class="metric-card info">
+                <div class="metric-label">Room Info</div>
+                <div>
+                    <div class="metric-value">
+                        {% if data.room %}{{ data.room.room_code }}{% else %}Unassigned{% endif %}
+                    </div>
+                    <div class="metric-sub">
+                        {% if data.room %}Monthly rent PHP {{ data.room.monthly_rate|floatformat:2 }}{% else %}Contact admin for assignment{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
