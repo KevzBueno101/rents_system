@@ -192,8 +192,11 @@ def get_tenant_dashboard_data(user):
 
     summary = get_payment_summary(user)
     enhanced_status = get_enhanced_payment_status(tenant)
-    due_date = focus_bill.due_date if focus_bill else None
-    payment_status = focus_bill.status if focus_bill else "no_bill"
+    
+    # Use enhanced summary data for real-time synchronization
+    next_bill = summary.get('next_bill')
+    due_date = next_bill.due_date if next_bill else None
+    payment_status = next_bill.status if next_bill else "no_bill"
     payment_status_labels = {
         "draft": "Draft",
         "sent": "Sent",
