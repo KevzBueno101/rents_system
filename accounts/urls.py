@@ -46,6 +46,7 @@ urlpatterns = [
     path('tenant-dashboard/', views.tenant_dashboard, name='tenant_dashboard_legacy'),
     path('tenant/rooms/', views.tenant_show_rooms, name='tenant_show_rooms'),
     path('tenant/bills/', views.tenant_bills, name='tenant_bills'),
+    path('tenant/billing/', views.tenant_bills, name='tenant_billing'),  # Alias for notifications
     path('tenant/reports/', views.tenant_reports, name='tenant_reports'),
     path('tenant/reports/maintenance/create/', views.tenant_submit_maintenance, name='tenant_submit_maintenance'),
     path('tenant-list/', views.tenant_list, name='tenant_list'),
