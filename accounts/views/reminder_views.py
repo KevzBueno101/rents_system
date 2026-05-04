@@ -168,13 +168,22 @@ def send_reminder_now(request, reminder_id):
 
 @login_required(login_url='/')
 def notification_list(request):
-    """List notifications for the current user (future-ready for tenant dashboard)."""
+    """List notifications for the current user with enhanced context."""
     notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
     
-    return render(request, 'tenant/notifications.html', {
+    # Enhanced context for better template rendering
+    context = {
         'notifications': notifications,
-        'unread_count': notifications.filter(is_read=False).count()
-    })
+        'unread_count': notifications.filter(is_read=False).count(),
+        'total_count': notifications.count(),
+        'page_title': 'Notifications',
+        'breadcrumb': [
+            {'title': 'Dashboard', 'url': 'tenant_dashboard'},
+            {'title': 'Notifications', 'url': None}
+        ]
+    }
+    
+    return render(request, 'tenant/notifications.html', context)
 
 
 @login_required(login_url='/')
