@@ -107,6 +107,32 @@ def get_notifications(user):
     return notifications[:6]
 
 
+def get_enhanced_payment_status(tenant):
+    """Get comprehensive payment status across all bills"""
+    from django.utils import timezone
+    from django.db.models import Count
+    today = timezone.localdate()
+    
+    bills = Bill.objects.filter(tenant=tenant)
+    
+    # Status breakdown
+    status_counts = bills.values('status').annotate(count=Count('id'))
+    status_summary = {item['status']: item['count'] for item in status_counts}
+    
+    # Find most urgent bill
+    overdue_bills = bills.filter(status='overdue').order_by('due_date')
+    urgent_bills = bills.filter(status__in=['sent', 'partial'], due_date__lte=today + timezone.timedelta(days=7))
+    
+    return {
+        'total_bills': bills.count(),
+        'paid_bills': status_summary.get('paid', 0),
+        'overdue_bills': status_summary.get('overdue', 0),
+        'pending_bills': status_summary.get('sent', 0) + status_summary.get('partial', 0),
+        'most_urgent_bill': overdue_bills.first() or urgent_bills.first(),
+        'has_urgent_payment': overdue_bills.exists() or urgent_bills.exists()
+    }
+
+
 def get_tenant_dashboard_data(user):
     if user.is_staff:
         raise PermissionDenied("Tenant dashboard is only available to tenant users.")
@@ -142,6 +168,7 @@ def get_tenant_dashboard_data(user):
     )
 
     summary = get_payment_summary(user)
+    enhanced_status = get_enhanced_payment_status(tenant)
     due_date = focus_bill.due_date if focus_bill else None
     payment_status = focus_bill.status if focus_bill else "no_bill"
     payment_status_labels = {
@@ -166,5 +193,6 @@ def get_tenant_dashboard_data(user):
         "current_bill": focus_bill,
         "room": tenant.room,
         "summary": summary,
+        "enhanced_status": enhanced_status,
         "unread_notifications": Notification.objects.filter(user=user, is_read=False).count(),
     }
