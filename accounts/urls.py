@@ -117,6 +117,9 @@ urlpatterns = [
     path('violations/create/', views.create_violation, name='create_violation'),
     path('violations/delete/<int:violation_id>/', views.delete_violation, name='delete_violation'),
 
+    # ─── REAL-TIME DASHBOARD API ─────────────────────────────
+    path('api/tenant/dashboard-data/', views.api_tenant_dashboard_data, name='api_tenant_dashboard_data'),
+
     # ─── API ENDPOINTS ─────────────────────────────
     path('api/check-username/', api_views.check_username_availability, name='check_username_availability'),
     path('api/user-info/', api_views.get_current_user_info, name='get_current_user_info'),

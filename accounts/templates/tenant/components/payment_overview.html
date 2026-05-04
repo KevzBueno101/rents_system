@@ -8,7 +8,7 @@
             <div class="col-12 col-md-4">
                 <div class="border rounded p-3 h-100">
                     <div class="muted-small">Latest Payment</div>
-                    <strong>
+                    <strong data-latest-payment>
                         {% if data.latest_payment %}{{ data.latest_payment.payment_date|date:"M d, Y" }}{% else %}No payment yet{% endif %}
                     </strong>
                 </div>
@@ -22,7 +22,7 @@
             <div class="col-12 col-md-4">
                 <div class="border rounded p-3 h-100">
                     <div class="muted-small">Remaining Balance</div>
-                    <strong class="{% if data.balance > 0 %}text-danger{% else %}text-success{% endif %}">PHP {{ data.balance|floatformat:2 }}</strong>
+                    <strong data-remaining-balance class="{% if data.balance > 0 %}text-danger{% else %}text-success{% endif %}">PHP {{ data.balance|floatformat:2 }}</strong>
                 </div>
             </div>
         </div>

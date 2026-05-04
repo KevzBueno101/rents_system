@@ -145,4 +145,58 @@ def update_username(request):
         return JsonResponse({
             'success': False,
             'message': str(e)
-        }, status=400)
+        }, status=500)
+
+
+@login_required
+def api_tenant_dashboard_data(request):
+    """API endpoint for real-time dashboard data."""
+    
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    try:
+        # Get tenant profile
+        from tenant.services.dashboard_service import get_tenant_dashboard_data
+        data = get_tenant_dashboard_data(request.user)
+        
+        # Add timestamp for change detection
+        from django.utils import timezone
+        data['last_updated'] = timezone.now().isoformat()
+        
+        # Clear cache to ensure fresh data
+        cache_key = f'tenant_dashboard_{request.user.id}'
+        cache.delete(cache_key)
+        
+        return JsonResponse({
+            'success': True,
+            'data': data
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+@require_POST
+def api_force_dashboard_refresh(request):
+    """Force dashboard refresh for all connected clients."""
+    
+    try:
+        # Clear cache for this user
+        cache_key = f'tenant_dashboard_{request.user.id}'
+        cache.delete(cache_key)
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Dashboard cache cleared'
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)

@@ -121,9 +121,10 @@
                 <button class="t-btn t-btn-light position-relative" id="notifBtn" style="background: #f8f9fa; border: 1px solid #dee2e6; min-width: 40px; padding: 6px 10px;">
                     <i class="bi bi-bell-fill"></i>
                     {% if unread_count and unread_count > 0 %}
-                    <span class="t-badge t-badge-danger position-absolute top-0 start-100 translate-middle rounded-pill" style="font-size: 10px; padding: 2px 5px; background: #dc2626; color: white; border-radius: 10px; min-width: 18px; text-align: center;">
-                        {{ unread_count }}
-                    </span>
+                    <span class="t-badge t-badge-danger position-absolute top-0 start-100 translate-middle rounded-pill" style="font-size: 10px; padding: 2px 5px; background: #dc2626;">
+                        <span class="position-absolute top-0 start-80 translate-middle badge rounded-pill bg-danger" id="notification-count" data-notification-count>
+                            {{ unread_notifications }}
+                        </span>
                     {% endif %}
                 </button>
             </div>

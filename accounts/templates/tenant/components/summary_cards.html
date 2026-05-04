@@ -1,7 +1,7 @@
 <section aria-label="Critical billing summary">
     <div class="row g-3">
         <div class="col-6 col-md-6 col-lg-3">
-            <div class="metric-card {% if data.balance > 0 %}danger{% else %}success{% endif %}">
+            <div class="metric-card {% if data.summary.has_overdue %}danger{% elif data.balance > 0 %}warning{% else %}success{% endif %}" data-balance="current">
                 <div class="metric-label">Current Balance</div>
                 <div>
                     <div class="metric-value">PHP {{ data.balance|floatformat:2 }}</div>
@@ -12,7 +12,7 @@
             </div>
         </div>
         <div class="col-6 col-md-6 col-lg-3">
-            <div class="metric-card {% if data.payment_status == 'overdue' %}danger{% else %}warning{% endif %}">
+            <div class="metric-card {% if data.payment_status == 'overdue' %}danger{% else %}warning{% endif %}" data-balance="due-date">
                 <div class="metric-label">Next Due Date</div>
                 <div>
                     <div class="metric-value">
@@ -25,7 +25,7 @@
             </div>
         </div>
         <div class="col-6 col-md-6 col-lg-3">
-            <div class="metric-card {% if data.payment_status == 'paid' %}success{% elif data.payment_status == 'overdue' %}danger{% else %}warning{% endif %}">
+            <div class="metric-card {% if data.payment_status == 'paid' %}success{% elif data.payment_status == 'overdue' %}danger{% else %}warning{% endif %}" data-balance="payment-status">
                 <div class="metric-label">Payment Status</div>
                 <div>
                     <div class="metric-value">{{ data.payment_status_label }}</div>
@@ -36,7 +36,7 @@
             </div>
         </div>
         <div class="col-6 col-md-6 col-lg-3">
-            <div class="metric-card info">
+            <div class="metric-card info" data-balance="room-info">
                 <div class="metric-label">Room Info</div>
                 <div>
                     <div class="metric-value">
