@@ -126,7 +126,15 @@
     <div class="t-stat" style="border-left:3px solid #2d6a4f;">
         <div class="t-stat-label">Your Room</div>
         <div class="t-stat-value" style="font-size:20px;">
-            {% if profile.room %}{{ profile.room.room_code }}{% else %}Unassigned{% endif %}
+            {% if data.room %}
+                {{ data.room.room_code }}
+            {% elif profile.room %}
+                {{ profile.room.room_code }}
+            {% elif profile.room_number %}
+                {{ profile.room_number }}
+            {% else %}
+                Unassigned
+            {% endif %}
         </div>
         <div class="t-stat-sub">current assignment</div>
     </div>

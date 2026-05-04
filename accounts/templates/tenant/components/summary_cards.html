@@ -40,10 +40,24 @@
                 <div class="metric-label">Room Info</div>
                 <div>
                     <div class="metric-value">
-                        {% if data.room %}{{ data.room.room_code }}{% else %}Unassigned{% endif %}
+                        {% if data.room %}
+                            {{ data.room.room_code }}
+                        {% elif profile.room %}
+                            {{ profile.room.room_code }}
+                        {% elif profile.room_number %}
+                            {{ profile.room_number }}
+                        {% else %}
+                            Unassigned
+                        {% endif %}
                     </div>
                     <div class="metric-sub">
-                        {% if data.room %}Monthly rent PHP {{ data.room.monthly_rate|floatformat:2 }}{% else %}Contact admin for assignment{% endif %}
+                        {% if data.room %}
+                            Monthly rent PHP {{ data.room.monthly_rate|floatformat:2 }}
+                        {% elif profile.room %}
+                            Monthly rent PHP {{ profile.room.monthly_rate|floatformat:2 }}
+                        {% else %}
+                            Contact admin for assignment
+                        {% endif %}
                     </div>
                 </div>
             </div>

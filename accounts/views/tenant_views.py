@@ -18,12 +18,17 @@ def tenant_dashboard(request):
         return redirect('admin_dashboard')
     
     try:
-        profile = TenantProfile.objects.select_related('user', 'room').get(user=request.user)
+        # Import dashboard service for consistent data structure
+        from tenant.services.dashboard_service import get_tenant_dashboard_data
+        data = get_tenant_dashboard_data(request.user)
+        
+        # Add profile for backward compatibility with existing templates
+        data['profile'] = data.get('tenant')
+        
+        return render(request, 'tenant/tenant_dashboard.html', data)
     except TenantProfile.DoesNotExist:
         messages.error(request, 'Tenant profile not found.')
         return redirect('login')
-    
-    return render(request, 'tenant/tenant_dashboard.html', {'profile': profile})
 
 @login_required(login_url='/')
 def tenant_bills(request):
