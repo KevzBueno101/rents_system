@@ -27,15 +27,38 @@ def _notification(level, title, message, icon="bi-info-circle"):
 
 
 def get_payment_summary(user):
+    from django.utils import timezone
+    today = timezone.localdate()
+    
     tenant = TenantProfile.objects.get(user=user)
-    bills = Bill.objects.filter(tenant=tenant)
-    total_billed = _money(bills.aggregate(total=Sum("total_amount"))["total"])
-    total_paid = _money(Payment.objects.filter(bill__tenant=tenant).aggregate(total=Sum("amount"))["total"])
-
+    
+    # Get only unpaid/partial bills for balance calculation
+    unpaid_bills = Bill.objects.filter(
+        tenant=tenant,
+        status__in=['sent', 'partial', 'overdue']
+    ).aggregate(
+        total_billed=Sum('total_amount'),
+        total_paid=Sum('payments__amount')
+    )
+    
+    total_billed = _money(unpaid_bills['total_billed'])
+    total_paid = _money(unpaid_bills['total_paid'])
+    outstanding_balance = total_billed - total_paid
+    
+    # Get next bill info
+    next_bill = Bill.objects.filter(
+        tenant=tenant,
+        status__in=['sent', 'partial', 'overdue']
+    ).order_by('due_date').first()
+    
     return {
         "total_billed": total_billed,
         "total_paid": total_paid,
-        "balance": total_billed - total_paid,
+        "balance": outstanding_balance,
+        "next_bill": next_bill,
+        "has_overdue": Bill.objects.filter(tenant=tenant, status='overdue').exists(),
+        "days_until_due": (next_bill.due_date - today).days if next_bill and next_bill.due_date > today else None,
+        "is_overdue": next_bill and next_bill.due_date < today and next_bill.status != 'paid'
     }
 
 

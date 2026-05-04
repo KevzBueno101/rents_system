@@ -190,13 +190,13 @@
 
 {% block content %}
 <div class="container-fluid tenant-dashboard">
-    {% include 'tenant/components/summary_cards.html' with data=dashboard_data %}
+    {% include 'tenant/components/summary_cards.html' %}
 
     <div class="row g-3">
         <!-- Main Content Column -->
         <div class="col-lg-8 col-12">
             <div class="dashboard-stack">
-                {% include 'tenant/components/payment_overview.html' with data=dashboard_data %}
+                {% include 'tenant/components/payment_overview.html' %}
                 {% include 'tenant/components/upcoming_payment.html' with payment=payment %}
             </div>
         </div>
@@ -204,8 +204,8 @@
         <!-- Sidebar Column -->
         <div class="col-lg-4 col-12">
             <div class="dashboard-stack">
-                {% include 'tenant/components/quick_actions.html' with data=dashboard_data %}
-                {% include 'tenant/components/receipt_card_component.html' with data=dashboard_data %}
+                {% include 'tenant/components/quick_actions.html' %}
+                {% include 'tenant/components/receipt_card_component.html' %}
             </div>
         </div>
     </div>
