@@ -123,7 +123,9 @@
             <!-- PHONE -->
             <div class="input-group mb-2">
               <span class="input-group-text"><i class="bi bi-phone"></i></span>
-              <input type="text" name="phone" class="form-control" placeholder="Phone Number" required>
+              <input type="tel" name="phone" class="form-control phone-input" placeholder="Phone Number (10-15 digits)" 
+                       pattern="[0-9]{10,15}" title="Phone number must contain only digits (10-15 numbers)" 
+                       maxlength="15" required>
             </div>
 
             <!-- ROOM NUMBER -->

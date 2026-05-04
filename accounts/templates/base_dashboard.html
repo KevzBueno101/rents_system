@@ -24,6 +24,8 @@
     <script src="{% static 'js/dashboard.js' %}" defer></script>
     <!-- PROFILE CONFIRMATION JS -->
     <script src="{% static 'js/profile-confirmation.js' %}" defer></script>
+    <!-- PHONE VALIDATION JS -->
+    <script src="{% static 'js/phone-validation.js' %}" defer></script>
     {% comment %} Modal fix CSSs {% endcomment %}
     <link rel="stylesheet" href="{% static 'css/modal-fix.css' %}">
 </head>
@@ -415,8 +417,12 @@
                         <label class="form-label text-muted" style="font-size:13px;">
                             <i class="bi bi-phone"></i> Phone
                         </label>
-                        <input type="text" id="phoneInput" name="phone" class="form-control" 
-                               value="{{ admin_profile.phone|default:'' }}" >
+                        <input type="tel" id="phoneInput" name="phone" class="form-control phone-input"
+                               value="{{ admin_profile.phone|default:'' }}"
+                               pattern="[0-9]{10,15}"
+                               title="Phone number must contain only digits (10-15 numbers)"
+                               placeholder="Enter phone number (10-15 digits)"
+                               maxlength="15">
                     </div>
 
                     <!-- PASSWORD -->

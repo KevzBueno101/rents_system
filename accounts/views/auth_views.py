@@ -63,7 +63,16 @@ def signup_view(request):
         password  = request.POST.get('password')
         email     = request.POST.get('email')
         full_name = request.POST.get('full_name')
-        phone     = parse_phone(request.POST.get('phone'))
+        phone_raw = request.POST.get('phone')
+        phone     = parse_phone(phone_raw)
+        
+        # Validate phone number
+        if phone_raw and not phone:
+            return render(request, 'login.html', {
+                'signup_error'   : 'Phone number must contain 10-15 digits only.',
+                'available_rooms': get_available_rooms(),
+            })
+        
         room_id   = request.POST.get('room_id')
         photo     = request.FILES.get('photo')
 
