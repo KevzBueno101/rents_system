@@ -146,16 +146,29 @@
         <hr class="my-2">
         
         {% for notif in notifications %}
-            <a href="{% url 'mark_notification_read' notif.id %}" class="dropdown-item {% if not notif.is_read %}fw-bold text-primary{% endif %} text-decoration-none">
-                <div class="d-flex align-items-start">
-                    <i class="bi bi-bell-fill me-2 mt-1 {% if not notif.is_read %}text-primary{% else %}text-muted{% endif %}"></i>
-                    <div class="flex-grow-1">
-                        <div class="fw-semibold">{{ notif.title }}</div>
-                        <div class="small text-muted">{{ notif.message|truncatechars:50 }}</div>
-                        <small class="text-muted">{{ notif.created_at|timesince }} ago</small>
+            {% if notif.id %}
+                <a href="{% url 'mark_notification_read' notif.id %}" class="dropdown-item {% if not notif.is_read %}fw-bold text-primary{% endif %} text-decoration-none">
+                    <div class="d-flex align-items-start">
+                        <i class="bi bi-bell-fill me-2 mt-1 {% if not notif.is_read %}text-primary{% else %}text-muted{% endif %}"></i>
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold">{{ notif.title }}</div>
+                            <div class="small text-muted">{{ notif.message|truncatechars:50 }}</div>
+                            <small class="text-muted">{{ notif.created_at|timesince }} ago</small>
+                        </div>
+                    </div>
+                </a>
+            {% else %}
+                <div class="dropdown-item {% if not notif.is_read %}fw-bold text-primary{% endif %}">
+                    <div class="d-flex align-items-start">
+                        <i class="bi bi-bell-fill me-2 mt-1 {% if not notif.is_read %}text-primary{% else %}text-muted{% endif %}"></i>
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold">{{ notif.title }}</div>
+                            <div class="small text-muted">{{ notif.message|truncatechars:50 }}</div>
+                            <small class="text-muted">{{ notif.created_at|timesince }} ago</small>
+                        </div>
                     </div>
                 </div>
-            </a>
+            {% endif %}
             {% if not forloop.last %}<hr class="my-1">{% endif %}
         {% empty %}
             <div class="dropdown-item text-muted text-center py-3">

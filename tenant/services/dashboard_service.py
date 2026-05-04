@@ -90,14 +90,19 @@ def get_notifications(user):
 
     stored_notifications = Notification.objects.filter(user=user).order_by("-created_at")[:5]
     for item in stored_notifications:
-        notifications.append(
-            _notification(
-                "info" if item.is_read else "warning",
-                item.title,
-                item.message,
-                "bi-bell",
-            )
+        # Create notification dict but preserve the original object properties
+        notification_dict = _notification(
+            "info" if item.is_read else "warning",
+            item.title,
+            item.message,
+            "bi-bell",
         )
+        # Preserve the original notification object properties
+        notification_dict['id'] = item.id
+        notification_dict['is_read'] = item.is_read
+        notification_dict['created_at'] = item.created_at
+        notification_dict['link'] = item.get_absolute_url()
+        notifications.append(notification_dict)
 
     return notifications[:6]
 
