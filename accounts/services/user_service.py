@@ -47,9 +47,33 @@ class UserService:
         
         return username.strip()
     
+    
     @staticmethod
     @transaction.atomic
     def update_username(user, new_username, request=None):
+        old_username = user.username
+        
+        validated_username = UserService.validate_username(
+            new_username, 
+            exclude_user_id=user.id
+        )
+        
+        if old_username == validated_username:
+            return user
+        
+        user.username = validated_username
+        user.save()
+        
+        # Fixed: removed invalid 'request' kwarg, fixed action to valid choice
+        log_activity(
+            user=user,
+            action='tenant_updated',  # ← valid ACTION_CHOICES value
+            description=f'Username changed from "{old_username}" to "{validated_username}"',
+            content_type='User',
+            object_id=user.id
+        )
+        
+        return user
         """
         Update user username with validation and logging.
         

@@ -18,12 +18,12 @@ def tenant_dashboard(request):
         return redirect('admin_dashboard')
     
     try:
-        # Import dashboard service for consistent data structure
         from tenant.services.dashboard_service import get_tenant_dashboard_data
-        data = get_tenant_dashboard_data(request.user)
+        from maintenance.services.maintenance_service import get_upcoming_payment  # ← ADD THIS
         
-        # Add profile for backward compatibility with existing templates
+        data = get_tenant_dashboard_data(request.user)
         data['profile'] = data.get('tenant')
+        data['payment'] = get_upcoming_payment(request.user)
         
         return render(request, 'tenant/tenant_dashboard.html', data)
     except TenantProfile.DoesNotExist:
