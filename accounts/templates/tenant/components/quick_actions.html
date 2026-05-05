@@ -10,8 +10,8 @@
             <a href="{% url 'tenant_bills' %}" class="btn btn-outline-primary">
                 <i class="bi bi-list-check"></i> View Billing
             </a>
-            {% if data.latest_receipt %}
-                <a href="{% url 'download_payment_receipt' data.latest_receipt.id %}" class="btn btn-outline-primary">
+            {% if latest_receipt %}
+                <a href="{% url 'download_payment_receipt' latest_receipt.id %}" class="btn btn-outline-primary">
                     <i class="bi bi-download"></i> Download Receipt
                 </a>
             {% else %}

@@ -105,6 +105,7 @@ def tenant_show_rooms(request):
         'total_beds': total_beds,
         'occupied_beds': occupied_beds,
         'vacant_beds': total_beds - occupied_beds,
+        'data': {'room': profile.room},
     })
 
 

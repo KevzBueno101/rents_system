@@ -9,7 +9,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from accounts.services.user_service import UserService
-
+from django.core.cache import cache
 
 @csrf_exempt
 @require_http_methods(["GET"])
@@ -148,38 +148,64 @@ def update_username(request):
         }, status=500)
 
 
+
 @login_required
 def api_tenant_dashboard_data(request):
-    """API endpoint for real-time dashboard data."""
-    
     if request.method != 'GET':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
     
     try:
-        # Get tenant profile
         from tenant.services.dashboard_service import get_tenant_dashboard_data
+        from django.utils import timezone
+        from decimal import Decimal
+        
         data = get_tenant_dashboard_data(request.user)
         
-        # Add timestamp for change detection
-        from django.utils import timezone
-        data['last_updated'] = timezone.now().isoformat()
+        # Serialize only safe, primitive values
+        summary = data.get('summary', {})
+        enhanced = data.get('enhanced_status', {})
+        next_bill = summary.get('next_bill')
+        latest_payment = data.get('latest_payment')
         
-        # Clear cache to ensure fresh data
-        cache_key = f'tenant_dashboard_{request.user.id}'
-        cache.delete(cache_key)
+        safe_data = {
+            'balance': float(data.get('balance') or 0),
+            'payment_status': data.get('payment_status', 'no_bill'),
+            'payment_status_label': data.get('payment_status_label', 'No bill'),
+            'due_date': str(data['due_date']) if data.get('due_date') else None,
+            'last_updated': timezone.now().isoformat(),
+            'summary': {
+                'total_billed': float(summary.get('total_billed') or 0),
+                'total_paid': float(summary.get('total_paid') or 0),
+                'has_overdue': summary.get('has_overdue', False),
+                'is_overdue': summary.get('is_overdue', False),
+                'days_until_due': summary.get('days_until_due'),
+                'next_bill': {
+                    'due_date': str(next_bill.due_date),
+                    'bill_number': next_bill.bill_number,
+                } if next_bill else None,
+            },
+            'enhanced_status': {
+                'total_bills': enhanced.get('total_bills', 0),
+                'paid_bills': enhanced.get('paid_bills', 0),
+                'pending_bills': enhanced.get('pending_bills', 0),
+                'has_urgent_payment': enhanced.get('has_urgent_payment', False),
+            },
+            'latest_payment': {
+                'payment_date': str(latest_payment.payment_date),
+                'amount': float(latest_payment.amount),
+            } if latest_payment else None,
+            'unread_notifications': data.get('unread_notifications', 0),
+        }
         
-        return JsonResponse({
-            'success': True,
-            'data': data
-        })
+        return JsonResponse({'success': True, **safe_data})
         
     except Exception as e:
+        import traceback
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': str(e),
+            'detail': traceback.format_exc()
         }, status=500)
-
-
 @login_required
 @require_POST
 def api_force_dashboard_refresh(request):
