@@ -878,6 +878,13 @@ DB_PASSWORD=
 DB_HOST=localhost
 DB_PORT=3306
 
+# Production-only (required when DEBUG=False)
+# IMPORTANT: ALLOWED_HOSTS must be hostnames only (no https://)
+ALLOWED_HOSTS=your-app.onrender.com
+
+# Public base URL used in password reset emails
+SITE_URL=https://your-app.onrender.com
+
 # Email Configuration
 SENDGRID_API_KEY=your_sendgrid_api_key_here
 FROM_EMAIL=your_verified_email@domain.com
@@ -897,6 +904,10 @@ DEFAULT_FROM_EMAIL=your_email@gmail.com
 1. **Go to Render Dashboard** → Your RENTS application → **Environment** tab
 2. **Add these environment variables**:
    ```
+   DEBUG=False
+   SECRET_KEY=your_secret_key_here
+   ALLOWED_HOSTS=your-app.onrender.com
+   SITE_URL=https://your-app.onrender.com
    SENDGRID_API_KEY=your_sendgrid_api_key_here
    FROM_EMAIL=your_verified_email@domain.com
    ```
@@ -912,6 +923,7 @@ DEFAULT_FROM_EMAIL=your_email@gmail.com
 - ✅ **Emails sent to user inboxes** via SendGrid API
 - ✅ **Robust fallback** if primary method fails
 - ✅ **Comprehensive logging** for debugging
+ - ✅ **Forgot password modal** returns accurate success/error (AJAX uses JSON)
 
 ### 4. Create MySQL database
 ```sql
@@ -1051,11 +1063,15 @@ git push origin dev
 |---|---|---|
 | `SECRET_KEY` | Django cryptographic key (keep secure!) | `3ot&+cue4i760gjrayixr!1a3tq_%h#...` |
 | `DEBUG` | True (local) / False (production) | `True` |
+| `ALLOWED_HOSTS` | Comma-separated hostnames allowed (required when DEBUG=False) | `your-app.onrender.com,www.example.com` |
+| `SITE_URL` | Public base URL for outbound links (password reset emails) | `https://your-app.onrender.com` |
 | `DB_NAME` | Database name | `rents_db` |
 | `DB_USER` | Database user | `root` |
 | `DB_PASSWORD` | Database password | (leave empty for local dev) |
 | `DB_HOST` | Database host | `localhost` |
 | `DB_PORT` | Database port | `3306` |
+| `SENDGRID_API_KEY` | SendGrid API key for production email delivery | (your SendGrid API key) |
+| `FROM_EMAIL` | Verified sender email used for outbound mail | `noreply@yourdomain.com` |
 | `EMAIL_HOST` | SMTP server for emails | `smtp.gmail.com` |
 | `EMAIL_PORT` | SMTP port | `587` |
 | `EMAIL_USE_TLS` | Use TLS encryption | `True` |

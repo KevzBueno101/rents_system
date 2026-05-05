@@ -330,25 +330,53 @@
       fetch('{% url "password_reset" %}', {
         method: 'POST',
         body: formData,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        redirect: 'manual'  // Prevent automatic redirect handling
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
+        },
+        redirect: 'manual'
       })
-      .then(response => {
-        // Django returns 302 for successful password reset
-        if (response.status === 302 || response.status === 0) {
-          // Success - show success message
-          return '';
-        } else if (response.ok) {
-          return response.text();
-        } else {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      .then(async (response) => {
+        const contentType = (response.headers.get('Content-Type') || '').toLowerCase();
+        if (contentType.includes('application/json')) {
+          const data = await response.json();
+          if (!response.ok || !data.ok) {
+            const msg =
+              data.error ||
+              (data.errors && JSON.stringify(data.errors)) ||
+              ('HTTP ' + response.status);
+            throw new Error(msg);
+          }
+          return { mode: 'json', data };
         }
+        if (response.status === 302 || response.status === 0 || response.redirected) {
+          return { mode: 'redirect' };
+        }
+        if (!response.ok) {
+          throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+        }
+        const txt = await response.text();
+        if (txt.includes('error') || txt.includes('errorlist')) {
+          throw new Error('Please check the email address and try again.');
+        }
+        return { mode: 'htmlFallback' };
       })
-      .then(html => {
+      .then((result) => {
         const modalBody = document.querySelector('#forgotPasswordModal .modal-body');
         const formElement = modalBody.querySelector('form');
         if (formElement) formElement.style.display = 'none';
         modalBody.querySelectorAll('.alert').forEach(alert => alert.remove());
+
+        const message =
+          (result.data && result.data.message) ||
+          'If an account with that email exists, a password reset link has been sent.';
+
+        const consoleHint =
+          {% if DEBUG %}
+          `<p class="text-muted small">If you use the console email backend, check the Django console for the reset link.</p>`
+          {% else %}
+          `<p class="text-muted small">Check your inbox and spam folder.</p>`
+          {% endif %}
 
         const successDiv = document.createElement('div');
         successDiv.className = 'text-center';
@@ -356,9 +384,9 @@
           <div class="mb-3">
             <i class="bi bi-envelope-check text-success" style="font-size: 3rem;"></i>
           </div>
-          <h5>Email Sent!</h5>
-          <p class="text-muted">If an account with that email exists, a password reset link has been sent.</p>
-          <p class="text-muted small">Check the Django console for the reset link.</p>
+          <h5>Request received</h5>
+          <p class="text-muted">${message}</p>
+          ${consoleHint}
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         `;
         modalBody.appendChild(successDiv);
@@ -404,7 +432,7 @@
       const form = modalBody.querySelector('form');
       modalBody.querySelectorAll('.alert').forEach(alert => alert.remove());
       const successDiv = modalBody.querySelector('.text-center');
-      if (successDiv && successDiv.innerHTML.includes('Email Sent!')) successDiv.remove();
+      if (successDiv && successDiv.innerHTML.includes('Request received')) successDiv.remove();
       if (form) { form.style.display = 'block'; form.reset(); }
       const modalFooter = this.querySelector('.modal-footer');
       if (modalFooter) modalFooter.style.display = 'flex';

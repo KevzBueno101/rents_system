@@ -1,12 +1,15 @@
 """
 Authentication-related views: login, signup, logout, profile management.
 """
+import json
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.contrib.auth.views import PasswordResetView, PasswordResetConfirmView
+from django.contrib.auth.views import PasswordResetView
 from django.contrib.auth.forms import PasswordResetForm
+from django.contrib.auth.tokens import default_token_generator
+from django.http import JsonResponse, HttpResponseRedirect
 from django.contrib import messages
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
@@ -286,102 +289,228 @@ def _edit_tenant_profile(request):
         'completion_fields': completion_fields,
         'filled_fields_count': sum(completion_fields.values()),
     })
+
+
+class CustomPasswordResetForm(PasswordResetForm):
+    """PasswordResetForm whose send_mail is actually invoked by form.save(); tracks delivery failures."""
+
+    mail_delivery_failed = False
+
+    def save(
+        self,
+        domain_override=None,
+        subject_template_name='registration/password_reset_subject.txt',
+        email_template_name='registration/password_reset_email.html',
+        use_https=False,
+        token_generator=default_token_generator,
+        from_email=None,
+        request=None,
+        html_email_template_name=None,
+        extra_email_context=None,
+    ):
+        self.mail_delivery_failed = False
+        return super().save(
+            domain_override=domain_override,
+            subject_template_name=subject_template_name,
+            email_template_name=email_template_name,
+            use_https=use_https,
+            token_generator=token_generator,
+            from_email=from_email,
+            request=request,
+            html_email_template_name=html_email_template_name,
+            extra_email_context=extra_email_context,
+        )
+
+    def send_mail(
+        self,
+        subject_template_name,
+        email_template_name,
+        context,
+        from_email,
+        to_email,
+        html_email_template_name=None,
+    ):
+        """Send mail with SendGrid API, SMTP fallback, console fallback for DEBUG; marks mail_delivery_failed."""
+        import logging
+
+        from django.conf import settings
+        from django.core.mail import send_mail as django_send_mail
+
+        logger = logging.getLogger(__name__)
+
+        # Try SendGrid HTTP API first when configured (not SMTP)
+        try:
+            sg_key = getattr(settings, 'SENDGRID_API_KEY', '') or ''
+            if sg_key:
+                import sendgrid
+                from sendgrid.helpers.mail import Mail
+
+                subject = render_to_string(subject_template_name, context)
+                subject = ''.join(subject.splitlines())
+
+                message = Mail(
+                    from_email=from_email,
+                    to_emails=to_email,
+                    subject=subject,
+                    html_content=(
+                        render_to_string(html_email_template_name, context) if html_email_template_name else None
+                    ),
+                    plain_text_content=render_to_string(email_template_name, context),
+                )
+
+                sg = sendgrid.SendGridAPIClient(sg_key)
+                response = sg.send(message)
+
+                logger.info('SendGrid API email sent: %s to %s', response.status_code, to_email)
+                return
+
+        except Exception:
+            logger.exception('SendGrid API failed for %s', to_email)
+
+        try:
+            return PasswordResetForm.send_mail(
+                self,
+                subject_template_name,
+                email_template_name,
+                context,
+                from_email,
+                to_email,
+                html_email_template_name=html_email_template_name,
+            )
+
+        except Exception as smtp_error:
+            logger.error('SMTP send failed for %s: %s', to_email, smtp_error, exc_info=True)
+
+            try:
+                from django.core.mail import get_connection
+
+                connection = get_connection('django.core.mail.backends.console.EmailBackend')
+                subject = render_to_string(subject_template_name, context)
+                subject = ''.join(subject.splitlines())
+
+                if html_email_template_name:
+                    html_body = render_to_string(html_email_template_name, context)
+                    email_message = EmailMultiAlternatives(subject, '', from_email, [to_email], connection=connection)
+                    email_message.attach_alternative(html_body, 'text/html')
+                    email_message.send()
+                else:
+                    plain_text = render_to_string(email_template_name, context)
+                    django_send_mail(subject, plain_text, from_email, [to_email], connection=connection)
+
+                logger.info('Console fallback email sent to %s', to_email)
+
+            except Exception as console_error:
+                logger.error('Console email fallback failed for %s: %s', to_email, console_error)
+                logger.warning('All email methods failed for %s', to_email)
+                self.mail_delivery_failed = True
+
+
 class CustomPasswordResetView(PasswordResetView):
-    """Custom password reset view with security improvements."""
+    """Password reset: SITE_URL in emails (domain_override), JSON for AJAX from login modal."""
+
     template_name = 'registration/password_reset_form.html'
     email_template_name = 'registration/password_reset_email.txt'
     html_email_template_name = 'registration/password_reset_email.html'
     subject_template_name = 'registration/password_reset_subject.txt'
     success_url = '/password-reset/done/'
-    form_class = PasswordResetForm
-    
+    form_class = CustomPasswordResetForm
+
+    @staticmethod
+    def _expects_json(request):
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return True
+        accept = (request.headers.get('Accept') or '').lower()
+        return 'application/json' in accept
+
+    def form_invalid(self, form):
+        if self._expects_json(self.request):
+            return JsonResponse(
+                {'ok': False, 'email_sent': False, 'errors': form.errors.as_json()},
+                status=400,
+            )
+        return super().form_invalid(form)
+
     def form_valid(self, form):
-        # Check if user exists before sending email
-        email = form.cleaned_data['email']
-        users = User.objects.filter(email=email)
-        
-        if not users.exists():
-            # Don't reveal if email exists or not for security
-            messages.info(self.request, 'If an account with that email exists, a password reset link has been sent.')
-            return super().form_valid(form)
-        
-        # Use Django's standard password reset which will work with Gmail SMTP
-        return super().form_valid(form)
-    
+        from django.conf import settings
+
+        site_url = (getattr(settings, 'SITE_URL', '') or '').strip().rstrip('/')
+        domain_only = (
+            site_url.replace('http://', '', 1).replace('https://', '', 1)
+            if site_url
+            else ''
+        )
+        use_https = site_url.startswith('https://')
+
+        extra = {'site_name': 'RENTS System'}
+        if self.extra_email_context:
+            extra.update(self.extra_email_context)
+
+        opts = {
+            'use_https': use_https,
+            'domain_override': domain_only or None,
+            'token_generator': self.token_generator,
+            'from_email': self.from_email,
+            'email_template_name': self.email_template_name,
+            'subject_template_name': self.subject_template_name,
+            'request': self.request,
+            'html_email_template_name': self.html_email_template_name,
+            'extra_email_context': extra,
+        }
+
+        try:
+            form.save(**opts)
+        except Exception as exc:
+            if self._expects_json(self.request):
+                return JsonResponse(
+                    {'ok': False, 'email_sent': False, 'error': str(exc)},
+                    status=503,
+                )
+            messages.error(
+                self.request,
+                'We could not send the password reset email. Try again later or contact support.',
+            )
+            return HttpResponseRedirect(self.get_success_url())
+
+        failed = getattr(form, 'mail_delivery_failed', False)
+        if failed:
+            if self._expects_json(self.request):
+                return JsonResponse(
+                    {
+                        'ok': False,
+                        'email_sent': False,
+                        'error': 'We could not send the password reset email. Try again later or contact support.',
+                    },
+                    status=503,
+                )
+            messages.error(
+                self.request,
+                'We could not send the password reset email. Try again later or contact support.',
+            )
+            return HttpResponseRedirect(self.get_success_url())
+
+        if self._expects_json(self.request):
+            return JsonResponse(
+                {
+                    'ok': True,
+                    'email_sent': True,
+                    'message': 'If an account with that email exists, a password reset link has been sent.',
+                }
+            )
+
+        messages.info(
+            self.request,
+            'If an account with that email exists, a password reset link has been sent.',
+        )
+        return HttpResponseRedirect(self.get_success_url())
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Override domain to use proper URL from settings
         from django.conf import settings
-        context['domain'] = settings.SITE_URL.replace('http://', '').replace('https://', '')
-        context['protocol'] = 'https' if settings.SITE_URL.startswith('https://') else 'http'
+
+        su = (getattr(settings, 'SITE_URL', '') or '').strip().rstrip('/')
+        context['domain'] = su.replace('http://', '').replace('https://', '')
+        context['protocol'] = 'https' if su.startswith('https://') else 'http'
         return context
-    
-    def send_mail(self, subject_template_name, email_template_name, context, from_email, to_email, html_email_template_name=None):
-        """
-        Override send_mail with robust error handling and SendGrid API fallback
-        """
-        from django.conf import settings
-        import logging
-        logger = logging.getLogger(__name__)
-        
-        # Try SendGrid API first (most reliable for production)
-        try:
-            if hasattr(settings, 'SENDGRID_API_KEY') and settings.SENDGRID_API_KEY:
-                import sendgrid
-                from sendgrid.helpers.mail import Mail, Email, Content
-                
-                subject = render_to_string(subject_template_name, context)
-                subject = ''.join(subject.splitlines())
-                
-                message = Mail(
-                    from_email=from_email,
-                    to_emails=to_email,
-                    subject=subject,
-                    html_content=render_to_string(html_email_template_name, context) if html_email_template_name else None,
-                    plain_text_content=render_to_string(email_template_name, context)
-                )
-                
-                sg = sendgrid.SendGridAPIClient(settings.SENDGRID_API_KEY)
-                response = sg.send(message)
-                
-                logger.info(f"SendGrid API email sent: {response.status_code} to {to_email}")
-                return
-                
-        except Exception as api_error:
-            logger.error(f"SendGrid API failed: {api_error}")
-        
-        # Fallback to Django SMTP (Gmail or SendGrid SMTP)
-        try:
-            return super().send_mail(subject_template_name, email_template_name, context, from_email, to_email, html_email_template_name)
-                
-        except Exception as smtp_error:
-            logger.error(f"SMTP failed: {smtp_error}")
-            
-            # Final fallback: try console backend for debugging
-            try:
-                from django.core.mail import get_connection
-                connection = get_connection('django.core.mail.backends.console.EmailBackend')
-                subject = render_to_string(subject_template_name, context)
-                subject = ''.join(subject.splitlines())
-                
-                if html_email_template_name:
-                    html_email = render_to_string(html_email_template_name, context)
-                    email_message = EmailMultiAlternatives(subject, '', from_email, [to_email], connection=connection)
-                    email_message.attach_alternative(html_email, "text/html")
-                    email_message.send()
-                else:
-                    plain_text = render_to_string(email_template_name, context)
-                    from django.core.mail import send_mail
-                    send_mail(subject, plain_text, from_email, [to_email], connection=connection)
-                
-                logger.info(f"Console fallback email sent to {to_email}")
-                
-            except Exception as console_error:
-                logger.error(f"Console fallback failed: {console_error}")
-                logger.warning(f"All email methods failed for {to_email}")
-            
-            # Continue without email - user will see success message but no email sent
-            pass
 
 def custom_password_reset_confirm(request, uidb64, token):
     """

@@ -1,15 +1,39 @@
 from pathlib import Path
 from dotenv import load_dotenv
 import os
+import warnings
 
 # Load environment variables FIRST
 load_dotenv(override=True)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
-ALLOWED_HOSTS = ['*']
+
+_SECRET = os.getenv('SECRET_KEY')
+if _SECRET:
+    SECRET_KEY = _SECRET
+elif DEBUG:
+    SECRET_KEY = 'django-insecure-dev-only-change-me'
+    warnings.warn(
+        'SECRET_KEY is unset; using an insecure development default. Set SECRET_KEY in .env.',
+        RuntimeWarning,
+        stacklevel=1,
+    )
+else:
+    raise ValueError(
+        'SECRET_KEY must be set when DEBUG=False (e.g. in your production environment variables).'
+    )
+
+_allowed = [h.strip() for h in os.getenv('ALLOWED_HOSTS', '').split(',') if h.strip()]
+if _allowed:
+    ALLOWED_HOSTS = _allowed
+elif DEBUG:
+    ALLOWED_HOSTS = ['*']
+else:
+    raise ValueError(
+        'ALLOWED_HOSTS must list at least one host when DEBUG=False (comma-separated ALLOWED_HOSTS).'
+    )
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -98,6 +122,9 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Used by SendGrid HTTP API fallback in CustomPasswordResetForm (see accounts.views.auth_views)
+SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY', '')
+
 # Email Configuration for Password Reset
 # Use Gmail SMTP as primary for immediate working solution
 if os.getenv('EMAIL_HOST_USER') and os.getenv('EMAIL_HOST_PASSWORD'):
@@ -128,12 +155,21 @@ PASSWORD_RESET_TIMEOUT = 86400  # 24 hours in seconds
 # Site Configuration for Password Reset Links
 SITE_ID = 1
 
-# Domain configuration for password reset links
-if os.getenv('RENDER'):
-    # Production: Use Render domain
-    SITE_URL = os.getenv('RENDER_EXTERNAL_URL', 'https://rents-system.onrender.com')
+# Public URL for outbound links (password reset emails). Prefer SITE_URL in any deployment.
+def _canonical_base_url(raw: str, fallback: str) -> str:
+    u = (raw or '').strip().rstrip('/')
+    return u if u else fallback
+
+
+_site_url_explicit = _canonical_base_url(os.getenv('SITE_URL', ''), '')
+if _site_url_explicit:
+    SITE_URL = _site_url_explicit
+elif os.getenv('RENDER'):
+    SITE_URL = _canonical_base_url(
+        os.getenv('RENDER_EXTERNAL_URL', ''),
+        'https://rents-system.onrender.com',
+    )
 else:
-    # Development: Use localhost
     SITE_URL = 'http://127.0.0.1:8000'
 
 MEDIA_URL  = '/media/'
