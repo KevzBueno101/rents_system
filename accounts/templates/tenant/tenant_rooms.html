@@ -168,98 +168,14 @@
 </div>
 
 {% if rooms %}
-<div class="rooms-grid">
-    {% for room in rooms %}
-    <article class="room-card">
-        <div class="room-photo">
-            {% if room.photo %}
-                <img src="{{ room.photo.url }}" alt="{{ room.room_code }}">
-            {% else %}
-                <i class="bi bi-door-open" style="font-size:46px; color:#c9c9c9;"></i>
-            {% endif %}
-            <span class="t-badge {% if room.is_full %}t-badge-danger{% else %}t-badge-success{% endif %}"
-                  style="position:absolute; top:12px; right:12px;">
-                {% if room.is_full %}Occupied{% else %}Vacant: {{ room.available_beds }}{% endif %}
-            </span>
-            {% if profile.room_id == room.id %}
-                <span class="t-badge t-badge-info" style="position:absolute; top:12px; left:12px;">Your Room</span>
-            {% endif %}
+<div id="content">
+    <div class="container-fluid px-0">
+        <div class="row g-4">
+            {% for room in rooms %}
+                {% include 'components/room_card.html' with room=room show_tenant_badge=True show_info_button=True show_action_buttons=False profile=profile %}
+            {% endfor %}
         </div>
-
-        <div class="room-body">
-            <div class="room-title-row">
-                <div>
-                    <h3 class="room-title">{{ room.room_code }}</h3>
-                    <div class="text-muted small">Floor {{ room.floor }} · {{ room.get_bed_type_display }}</div>
-                </div>
-                <div class="text-end">
-                    <div class="fw-bold">PHP {{ room.monthly_rate|floatformat:2 }}</div>
-                    <div class="text-muted small">monthly</div>
-                </div>
-            </div>
-
-            <div>
-                <div class="d-flex justify-content-between small mb-1">
-                    <span class="text-muted">Occupancy</span>
-                    <strong>{{ room.occupied_beds }} / {{ room.capacity }}</strong>
-                </div>
-                <div class="progress" style="height:7px;">
-                    <div class="progress-bar {% if room.is_full %}bg-danger{% else %}bg-success{% endif %}"
-                         style="width:{% widthratio room.occupied_beds room.capacity 100 %}%"></div>
-                </div>
-            </div>
-
-            <div class="room-meta-grid">
-                <div class="room-meta">
-                    <div class="room-meta-label">Capacity</div>
-                    <div class="room-meta-value">{{ room.capacity }} tenant{{ room.capacity|pluralize }}</div>
-                </div>
-                <div class="room-meta">
-                    <div class="room-meta-label">Available</div>
-                    <div class="room-meta-value">{{ room.available_beds }} bed{{ room.available_beds|pluralize }}</div>
-                </div>
-                <div class="room-meta">
-                    <div class="room-meta-label">Comfort Room</div>
-                    <div class="room-meta-value">{{ room.num_cr }} CR</div>
-                </div>
-                <div class="room-meta">
-                    <div class="room-meta-label">Area</div>
-                    <div class="room-meta-value">{% if room.area %}{{ room.area }} sqm{% else %}Not set{% endif %}</div>
-                </div>
-            </div>
-
-            <div>
-                <div class="room-meta-label mb-2">Features and Inclusions</div>
-                <div class="feature-list">
-                    <span class="t-badge {% if room.has_lababo %}t-badge-success{% else %}t-badge-muted{% endif %}">
-                        <i class="bi bi-droplet-half"></i> Sink
-                    </span>
-                    <span class="t-badge {% if room.water_included %}t-badge-success{% else %}t-badge-muted{% endif %}">
-                        <i class="bi bi-droplet"></i> Water
-                    </span>
-                    <span class="t-badge {% if room.electricity_included %}t-badge-success{% else %}t-badge-muted{% endif %}">
-                        <i class="bi bi-lightning"></i> Electricity
-                    </span>
-                    <span class="t-badge {% if room.has_wifi %}t-badge-success{% else %}t-badge-muted{% endif %}">
-                        <i class="bi bi-wifi"></i> WiFi
-                    </span>
-                    {% for inclusion in room.dynamic_inclusions.all %}
-                        <span class="t-badge t-badge-info">{{ inclusion.name }}</span>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <div class="tenant-list mt-auto">
-                <i class="bi bi-people"></i>
-                {% for tenant in room.get_tenants %}
-                    {{ tenant.full_name }}{% if not forloop.last %}, {% endif %}
-                {% empty %}
-                    No tenants assigned yet
-                {% endfor %}
-            </div>
-        </div>
-    </article>
-    {% endfor %}
+    </div>
 </div>
 {% else %}
 <div class="t-card">
@@ -269,5 +185,131 @@
     </div>
 </div>
 {% endif %}
+
+<!-- ROOM INFO MODAL -->
+<div class="modal fade" id="roomInfoModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-info-circle"></i>
+                    <span id="infoRoomCode"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="infoRoomPhoto"></div>
+                <div class="p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="text-muted">Status</span>
+                        <span id="infoStatus" class="badge"></span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted"><i class="bi bi-building"></i> Floor</span>
+                        <span id="infoFloor"></span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted"><i class="bi bi-people"></i> Occupancy</span>
+                        <span id="infoOccupancy"></span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted"><i class="bi bi-cash"></i> Monthly Rate</span>
+                        <span id="infoRate" class="fw-bold"></span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted"><i class="bi bi-rulers"></i> Area</span>
+                        <span id="infoArea"></span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted"><i class="bi bi-droplet"></i> CR</span>
+                        <span id="infoCR"></span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="text-muted"><i class="bi bi-moon"></i> Bed Type</span>
+                        <span id="infoBedType"></span>
+                    </div>
+                    <hr>
+                    <p class="text-muted mb-2" style="font-size:13px;">
+                        <i class="bi bi-check2-square"></i> Inclusions:
+                    </p>
+                    <div id="infoInclusions" class="mb-3"></div>
+                    <hr>
+                    <p class="text-muted mb-2" style="font-size:13px;">
+                        <i class="bi bi-person"></i> Tenants in this room:
+                    </p>
+                    <div id="infoTenants"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Room Info Modal functionality
+    const infoButtons = document.querySelectorAll('.info-room-btn');
+    const roomInfoModal = document.getElementById('roomInfoModal');
+    
+    if (infoButtons.length > 0 && roomInfoModal) {
+        infoButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const data = this.dataset;
+                
+                // Set room code in modal title
+                document.getElementById('infoRoomCode').textContent = data.code;
+                
+                // Set room photo
+                const photoDiv = document.getElementById('infoRoomPhoto');
+                if (data.photo) {
+                    photoDiv.innerHTML = `<img src="${data.photo}" alt="${data.code}" style="width:100%; height:200px; object-fit:cover;">`;
+                } else {
+                    photoDiv.innerHTML = `<div style="width:100%; height:200px; background:#f4f6f9; display:flex; align-items:center; justify-content:center;"><i class="bi bi-door-open" style="font-size:48px; color:#ccc;"></i></div>`;
+                }
+                
+                // Set status
+                const statusBadge = document.getElementById('infoStatus');
+                statusBadge.textContent = data.status;
+                if (data.status === 'Vacant') {
+                    statusBadge.style.backgroundColor = '#1db954';
+                } else {
+                    statusBadge.style.backgroundColor = '#e53935';
+                }
+                
+                // Set basic info
+                document.getElementById('infoFloor').textContent = data.floor;
+                document.getElementById('infoOccupancy').textContent = `${data.occupied} / ${data.capacity}`;
+                document.getElementById('infoRate').textContent = `₱${data.rate}`;
+                document.getElementById('infoArea').textContent = data.area || '--';
+                document.getElementById('infoCR').textContent = data.cr;
+                document.getElementById('infoBedType').textContent = data.bedtype;
+                
+                // Set inclusions
+                const inclusionsDiv = document.getElementById('infoInclusions');
+                let inclusionsHtml = '';
+                
+                if (data.water === '1') inclusionsHtml += '<span class="badge bg-primary me-1 mb-1">Water</span>';
+                if (data.elec === '1') inclusionsHtml += '<span class="badge bg-primary me-1 mb-1">Electricity</span>';
+                if (data.wifi === '1') inclusionsHtml += '<span class="badge bg-primary me-1 mb-1">WiFi</span>';
+                if (data.sink === '1') inclusionsHtml += '<span class="badge bg-primary me-1 mb-1">Sink</span>';
+                
+                inclusionsDiv.innerHTML = inclusionsHtml || '<span class="text-muted">No inclusions</span>';
+                
+                // Set tenants
+                const tenantsDiv = document.getElementById('infoTenants');
+                const tenantNames = data.tenants ? data.tenants.split('|') : [];
+                if (tenantNames.length > 0 && tenantNames[0]) {
+                    tenantsDiv.innerHTML = tenantNames.map(name => `<div class="mb-1"><i class="bi bi-person me-2"></i>${name}</div>`).join('');
+                } else {
+                    tenantsDiv.innerHTML = '<span class="text-muted">No tenants assigned yet</span>';
+                }
+                
+                // Show modal
+                const modal = new bootstrap.Modal(roomInfoModal);
+                modal.show();
+            });
+        });
+    }
+});
+</script>
 
 {% endblock %}

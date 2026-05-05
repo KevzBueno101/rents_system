@@ -32,17 +32,24 @@ def get_payment_summary(user):
     
     tenant = TenantProfile.objects.get(user=user)
     
-    # Get only unpaid/partial bills for balance calculation
+    # Get all bills for total billed amount
+    all_bills = Bill.objects.filter(tenant=tenant).aggregate(
+        total_billed=Sum('total_amount')
+    )
+    
+    # Get all payments from ALL bills for accurate total paid calculation
+    all_payments = Payment.objects.filter(bill__tenant=tenant).aggregate(
+        total_paid=Sum('amount')
+    )
+    
+    # Get only unpaid/partial bills for next bill calculation
     unpaid_bills = Bill.objects.filter(
         tenant=tenant,
         status__in=['sent', 'partial', 'overdue']
-    ).aggregate(
-        total_billed=Sum('total_amount'),
-        total_paid=Sum('payments__amount')
-    )
+    ).order_by('due_date').first()
     
-    total_billed = _money(unpaid_bills['total_billed'])
-    total_paid = _money(unpaid_bills['total_paid'])
+    total_billed = _money(all_bills['total_billed'])
+    total_paid = _money(all_payments['total_paid'])
     outstanding_balance = total_billed - total_paid
     
     # Get next bill info
@@ -55,10 +62,10 @@ def get_payment_summary(user):
         "total_billed": total_billed,
         "total_paid": total_paid,
         "balance": outstanding_balance,
-        "next_bill": next_bill,
+        "next_bill": unpaid_bills,
         "has_overdue": Bill.objects.filter(tenant=tenant, status='overdue').exists(),
-        "days_until_due": (next_bill.due_date - today).days if next_bill and next_bill.due_date > today else None,
-        "is_overdue": next_bill and next_bill.due_date < today and next_bill.status != 'paid'
+        "days_until_due": (unpaid_bills.due_date - today).days if unpaid_bills and unpaid_bills.due_date > today else None,
+        "is_overdue": unpaid_bills and unpaid_bills.due_date < today and unpaid_bills.status != 'paid'
     }
 
 
