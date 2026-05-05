@@ -2,9 +2,23 @@
 
 A Django-based boarding house management system for managing tenants, rooms, billing, maintenance, and violations.
 
-## Current Status: **Production Ready** v2.9
+## Current Status: **Production Ready** v3.0
 
-**Latest Updates (May 4, 2026):**
+**Latest Updates (May 5, 2026):**
+- ✅ **Real-Time Dashboard Synchronization** - Complete real-time data synchronization system for tenant dashboard
+- ✅ **JavaScript Polling System** - 10-second interval polling with intelligent change detection
+- ✅ **API Endpoints for Dashboard** - RESTful API endpoints for real-time dashboard data delivery
+- ✅ **Cache Invalidation System** - Automatic cache updates on bill/payment changes
+- ✅ **Template Data Attributes** - Enhanced templates with data attributes for JavaScript targeting
+- ✅ **Django Import Errors Fixed** - Resolved NameError and AttributeError preventing server startup
+- ✅ **Template Syntax Errors Fixed** - Fixed static tag loading and JavaScript file path issues
+- ✅ **Enhanced Dashboard Service** - Unified data source with accurate calculations and caching
+- ✅ **Real-Time UI Components** - Stats cards and bills details update without page refresh
+- ✅ **Error Handling & Retry Logic** - Robust error handling with automatic retry mechanisms
+- ✅ **Cross-Tab Synchronization** - Dashboard updates sync across multiple browser tabs
+- ✅ **Performance Optimization** - Efficient data hashing to prevent unnecessary updates
+
+**Previous Updates (May 4, 2026):**
 - ✅ **SendGrid API Email Delivery** - Implemented SendGrid API for reliable email delivery on Render
 - ✅ **Email Delivery Chain** - SendGrid API → SMTP → Console fallback for maximum reliability
 - ✅ **Render Deployment Ready** - Fixed 500 errors and ensured actual email delivery on production
@@ -211,6 +225,7 @@ rents_system/
     │   ├── billing_views.py      ← billing, payments
     │   ├── maintenance_views.py  ← maintenance, violations
     │   ├── reminder_views.py     ← reminders, notifications
+    │   ├── api_views.py          ← API endpoints for real-time sync
     │   └── helpers.py            ← shared helper functions
     │
     ├── templatetags/              ← custom template tags
@@ -227,6 +242,19 @@ rents_system/
     ├── urls.py
     ├── admin.py
     └── apps.py
+
+├── services/                    ← Business logic services
+    │   ├── user_service.py        ← User management utilities
+    │   ├── notification_service.py ← Notification system
+    │   └── dashboard_service.py   ← Real-time dashboard data
+
+├── templates/                   ← Template files
+    │   ├── tenant/
+    │   │   ├── components/
+    │   │   │   ├── real_time_sync.js ← Real-time synchronization
+    │   │   │   ├── summary_cards.html
+    │   │   │   ├── payment_overview.html
+    │   │   │   └── ...
 ```
 
 ---
@@ -462,6 +490,40 @@ rents_system/
 - **Announcement**: System announcements → redirects to dashboard
 - **System**: General system notifications → redirects to dashboard
 
+### Real-Time Dashboard Synchronization (NEW)
+- **Live Data Updates**: Automatic dashboard updates without page refresh
+- **JavaScript Polling System**: 10-second interval polling with intelligent change detection
+- **API Endpoints**: RESTful API endpoints for real-time dashboard data delivery
+- **Cache Invalidation**: Automatic cache updates on bill/payment changes
+- **Cross-Tab Synchronization**: Dashboard updates sync across multiple browser tabs
+- **Error Handling**: Robust error handling with automatic retry mechanisms
+- **Performance Optimization**: Efficient data hashing to prevent unnecessary updates
+- **Template Integration**: Data attributes for JavaScript targeting
+- **Visual Feedback**: Real-time sync indicators and status updates
+- **Mobile Responsive**: Real-time updates work on all device sizes
+
+#### Real-Time Features
+- **Stats Cards**: Current balance, due date, payment status update in real-time
+- **Payment Overview**: Latest payments and total paid amounts update automatically
+- **Bill Details**: Bill status and payment progress update without refresh
+- **Notification Count**: Unread notification counter updates instantly
+- **Room Information**: Room details and availability update dynamically
+
+#### API Endpoints
+| Endpoint | Method | Description | Authentication |
+|---|---|---|---|
+| `/api/tenant/dashboard-data/` | GET | Real-time dashboard data | @login_required |
+| `/api/force-dashboard-refresh/` | POST | Force dashboard refresh | @login_required |
+
+#### JavaScript Integration
+```javascript
+// Automatic initialization
+window.dashboardSync = new DashboardSync();
+
+// Manual refresh
+window.forceDashboardUpdate();
+```
+
 ### Dashboard
 - **Enhanced Stats**: Total tenants, vacant rooms, occupancy rate
 - **Real-time Data**: Live bed availability calculations
@@ -470,6 +532,7 @@ rents_system/
 - **Dark sidebar navigation**
 - **Mobile responsive** (Pixel 7 optimized)
 - **Clickable stat cards** with navigation
+- **Real-time synchronization** with automatic updates
 
 ### User Experience
 - **Modern UI**: Clean, professional interface with dark sidebar
@@ -483,7 +546,189 @@ rents_system/
 
 ---
 
-## � Notification System API
+## 🔄 Real-Time Dashboard Synchronization API
+
+### DashboardService API
+
+The `DashboardService` provides centralized data management for real-time dashboard updates.
+
+#### Basic Usage
+
+```python
+from tenant.services.dashboard_service import DashboardService
+
+# Get unified dashboard data
+dashboard_data = DashboardService.get_tenant_dashboard_data(
+    user=request.user,
+    force_refresh=True  # Optional: bypass cache
+)
+```
+
+#### Response Structure
+
+```json
+{
+    "tenant": {
+        "id": 1,
+        "full_name": "John Doe",
+        "room": {
+            "room_number": "A-101",
+            "monthly_rate": 5000.00
+        }
+    },
+    "balance": 1500.00,
+    "due_date": "2026-05-15",
+    "payment_status": "partial",
+    "payment_status_label": "Partial Payment",
+    "latest_payment": {
+        "amount": 2000.00,
+        "payment_date": "2026-05-01",
+        "payment_method": "cash"
+    },
+    "summary": {
+        "total_bills": 3,
+        "paid_bills": 1,
+        "total_paid": 2000.00,
+        "next_bill": {
+            "due_date": "2026-05-15",
+            "amount": 3500.00
+        },
+        "is_overdue": false,
+        "days_until_due": 10
+    },
+    "enhanced_status": {
+        "total_bills": 3,
+        "paid_bills": 1,
+        "pending_bills": 2,
+        "has_overdue": false,
+        "has_urgent_payment": false
+    },
+    "notifications": [...],
+    "unread_notifications": 2
+}
+```
+
+### API Endpoints
+
+| Endpoint | Method | Description | Authentication | Cache |
+|---|---|---|---|---|
+| `/api/tenant/dashboard-data/` | GET | Real-time dashboard data | @login_required | 10 min |
+| `/api/force-dashboard-refresh/` | POST | Force cache invalidation | @login_required | Instant |
+
+#### JavaScript Integration
+
+```javascript
+// Automatic initialization (included in template)
+window.dashboardSync = new DashboardSync();
+
+// Manual refresh
+window.forceDashboardUpdate();
+
+// Listen for updates
+window.addEventListener('dashboard-data-updated', (event) => {
+    console.log('Dashboard updated:', event.detail);
+});
+```
+
+### Cache Management
+
+#### Cache Keys
+- `tenant_dashboard_{user_id}` - User-specific dashboard data
+- `dashboard_stats_{user_id}` - User-specific statistics
+
+#### Cache Invalidation
+- Automatic on bill creation/update/delete
+- Automatic on payment recording
+- Manual via force refresh endpoint
+
+#### Performance Features
+- **Change Detection**: Data hashing prevents unnecessary updates
+- **Intelligent Polling**: 10-second intervals with visibility API optimization
+- **Cross-Tab Sync**: Updates propagate across browser tabs
+- **Error Recovery**: Automatic retry with exponential backoff
+
+### Template Data Attributes
+
+```html
+<!-- Stats Cards -->
+<div data-balance="current">
+    <span class="metric-value">{{ balance }}</span>
+</div>
+
+<div data-balance="due-date">
+    <span class="metric-value">{{ due_date }}</span>
+</div>
+
+<div data-balance="payment-status">
+    <span class="metric-value">{{ payment_status_label }}</span>
+</div>
+
+<!-- Payment Overview -->
+<div data-latest-payment>
+    <strong>{{ latest_payment.payment_date }}</strong>
+</div>
+
+<div data-total-paid>
+    <strong>{{ summary.total_paid }}</strong>
+</div>
+
+<div data-remaining-balance>
+    <strong>{{ balance }}</strong>
+</div>
+```
+
+---
+
+## 📊 Dashboard Service Architecture
+
+### Data Flow
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Frontend      │    │   API Layer      │    │   Service       │
+│                 │    │                  │    │                 │
+│ JavaScript      │───▶│ api_views.py     │───▶│ DashboardService│
+│ Polling (10s)   │    │                  │    │                 │
+│ UI Updates      │    │ JSON Response    │    │ Cache Layer     │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+                                │                        │
+                                ▼                        ▼
+                       ┌──────────────────┐    ┌─────────────────┐
+                       │   URL Routing    │    │   Database      │
+                       │                  │    │                 │
+                       │ urls.py          │    │ Models:         │
+                       │                  │    │ - Bill          │
+                       └──────────────────┘    │ - Payment       │
+                                                │ - Tenant        │
+                                                └─────────────────┘
+```
+
+### Service Methods
+
+```python
+# Main data aggregation
+DashboardService.get_tenant_dashboard_data(user, force_refresh=False)
+
+# Cache management
+DashboardService.invalidate_user_cache(user_id)
+DashboardService.get_cache_key(user_id)
+
+# Data helpers
+DashboardService._calculate_balance(tenant)
+DashboardService._get_payment_summary(tenant)
+DashboardService._get_enhanced_status(tenant)
+```
+
+### Error Handling
+
+- **Network Errors**: Automatic retry with exponential backoff
+- **Server Errors**: Graceful degradation with cached data
+- **Authentication**: Proper login_required enforcement
+- **Data Validation**: Comprehensive error checking
+
+---
+
+## Notification System API
 
 ### NotificationService API
 
@@ -695,7 +940,19 @@ python manage.py seed_inclusions_appliances
 ```
 This creates default inclusions (Water, Electricity, Internet, etc.) and appliances (Fan, Air Conditioner, Microwave, etc.)
 
-### 9. Test Notification System (Recommended)
+### 9. Test Real-Time Dashboard Synchronization (Recommended)
+```bash
+python manage.py test_dashboard_sync --verbose
+```
+This runs comprehensive tests for the real-time dashboard system including:
+- API endpoint functionality
+- Cache invalidation mechanisms
+- Data synchronization accuracy
+- Error handling and retry logic
+- Performance optimization testing
+- Cross-tab synchronization
+
+### 10. Test Notification System (Recommended)
 ```bash
 python manage.py test_notification_system --verbose
 ```
@@ -706,12 +963,12 @@ This runs comprehensive tests for the notification system including:
 - Security validation
 - Performance testing
 
-### 10. Run the server
+### 11. Run the server
 ```bash
 python manage.py runserver
 ```
 
-### 11. Open in browser
+### 12. Open in browser
 ```
 http://127.0.0.1:8000/
 ```
