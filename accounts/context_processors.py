@@ -1,5 +1,9 @@
-from .models import AdminProfile, TenantProfile, Notification
+from django.contrib.auth.models import User
+from django.core.cache import cache
+from django.utils.timesince import timesince
+from .models import AdminProfile, TenantProfile, Rule
 from .services.notification_service import NotificationService
+from .models import ActivityLog
 
 
 def admin_profile(request):
@@ -28,7 +32,6 @@ def user_profile(request):
     if request.user.is_staff:
         try:
             profile = AdminProfile.objects.select_related('user').get(user=request.user)
-            # Calculate admin profile completion
             completion_fields = {
                 'full_name': bool(profile.full_name),
                 'email': bool(profile.user.email),
@@ -59,7 +62,6 @@ def user_profile(request):
     else:
         try:
             profile = TenantProfile.objects.select_related('user', 'room').get(user=request.user)
-            # Calculate tenant profile completion
             completion_fields = {
                 'full_name': bool(profile.full_name),
                 'email': bool(profile.user.email),
@@ -93,19 +95,13 @@ def system_stats(request):
     if not request.user.is_authenticated:
         return {'system_stats': {}}
     
-    # Use count() queries only - no full object loading
-    from django.core.cache import cache
-    
-    # Cache for 60 seconds to avoid repeated queries
     cache_key = f'system_stats_{request.user.id}'
     stats = cache.get(cache_key)
     
     if stats is None:
+        from .models import TenantProfile
         stats = {
             'total_tenants': TenantProfile.objects.count(),
-            'vacant_rooms': TenantProfile.objects.filter(room__isnull=False).count(),
-            'unpaid_bills': 0,  # Will add after Bill model optimization
-            'open_maintenance_reports': 0,  # Will add after Maintenance model optimization
         }
         cache.set(cache_key, stats, 60)
     
@@ -113,60 +109,58 @@ def system_stats(request):
 
 
 def recent_activity(request):
-    """Optimized recent activity feed for authenticated users"""
+    """Recent activity feed for authenticated users"""
     if not request.user.is_authenticated:
         return {'recent_activities': []}
     
-    from .activity_utils import get_recent_activities
-    
-    # Get only 3 most recent activities with user relation
-    activities = get_recent_activities(limit=3).select_related('user')
+    activities = ActivityLog.objects.select_related('user').order_by('-timestamp')[:3]
     
     return {'recent_activities': activities}
 
 
 def recent_payments(request):
-    """Recent payment activities for billing section"""
+    """Recent payments context processor for dashboard."""
     if not request.user.is_authenticated:
         return {'recent_payments': []}
     
-    from .activity_utils import get_recent_payments
-    
-    # Get only 3 most recent payment activities with user relation
-    payments = get_recent_payments(limit=3).select_related('user')
-    
-    return {'recent_payments': payments}
+    try:
+        from .models import Payment
+        payments = Payment.objects.select_related('bill').order_by('-payment_date')[:5]
+        return {'recent_payments': payments}
+    except Exception:
+        return {'recent_payments': []}
 
 
 def notifications(request):
-    """Enhanced notification context processor using NotificationService"""
+    """Notifications context processor for authenticated users."""
     if not request.user.is_authenticated:
-        return {
-            'notifications': [],
-            'unread_count': 0,
-        }
+        return {'notifications': []}
     
-    # Use NotificationService for optimized notification retrieval
-    # Remove limit to allow scrollable container to show all notifications
-    notifications, unread_count = NotificationService.get_user_notifications(
-        user=request.user,
-        limit=50  # Increased limit for scrollable container
-    )
-    
-    return {
-        'notifications': notifications,
-        'unread_count': unread_count,
-    }
+    try:
+        from .models import Notification
+        notifications = Notification.objects.filter(user=request.user, is_read=False)[:5]
+        return {'notifications': notifications}
+    except Exception:
+        return {'notifications': []}
 
 
 def app_settings(request):
-    """Static application settings - no database queries"""
-    from datetime import datetime
-    
+    """Application settings context processor."""
+    from django.conf import settings
     return {
-        'app_settings': {
-            'name': 'RENTS System',
-            'version': '2.6',
-            'current_year': datetime.now().year,
-        }
+        'app_name': getattr(settings, 'APP_NAME', 'RENTS'),
+        'app_version': getattr(settings, 'VERSION', '3.0'),
+        'debug_mode': settings.DEBUG,
     }
+
+
+def active_rules(request):
+    """Context processor for active rules in tenant templates."""
+    if not request.user.is_authenticated or request.user.is_staff:
+        return {'active_rules': []}
+    rules = Rule.objects.filter(is_active=True)[:5]
+    return {'active_rules': rules}
+    return {'active_rules': rules}
+
+def rules_count(request):
+    """Rules count for dashboards (active only) - available for all authenticated users."""

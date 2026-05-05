@@ -277,6 +277,8 @@ class ActivityLog(models.Model):
         ('maintenance_completed', 'Maintenance Completed'),
         ('reminder_created', 'Reminder Created'),
         ('reminder_sent', 'Reminder Sent'),
+        ('rule_created', 'Rule Created'),
+        ('rule_deleted', 'Rule Deleted'),
     ]
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='activities')
@@ -406,3 +408,25 @@ class TenantReminder(models.Model):
             title=self.title,
             message=self.message
         )
+
+
+# ─── RULE ──────────────────────────────────────────────
+class Rule(models.Model):
+    """Global rules managed by admin, viewable by tenants"""
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Rule'
+        verbose_name_plural = 'Rules'
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def status_display(self):
+        return 'Active' if self.is_active else 'Inactive'

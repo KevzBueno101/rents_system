@@ -1,0 +1,90 @@
+{% extends 'tenant/tenant_base.html' %}
+
+{% block title %}Rules{% endblock %}
+{% block page_title %}House Rules{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+    <i class="bi-bookmark-check fs-3 text-secondary"></i>
+    <div>
+        <h2 class="mb-1 fw-bold text-danger">House Rules</h2>
+        <p class="text-muted mb-0">({{ total_rules }} active rule{{ total_rules|pluralize }})</p>
+    </div>
+</div>
+
+{% if rules %}
+    <div class="row g-4">
+        {% for rule in rules %}
+        <div class="col-lg-8 col-xl-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="card-title fw-bold mb-2">{{ rule.title }}</h5>
+                        <small class="text-muted">{{ rule.created_at|date:"M d, Y" }}</small>
+                    </div>
+                    <div class="rule-description">
+                        {{ rule.description|linebreaks }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if rules.has_other_pages %}
+    <nav aria-label="Rules pagination" class="mt-5">
+        <ul class="pagination justify-content-center">
+            {% if rules.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1">&laquo; First</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ rules.previous_page_number }}">Previous</a>
+                </li>
+            {% endif %}
+
+            {% for num in rules.paginator.page_range %}
+                {% if rules.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                {% elif num > rules.number|add:'-3' and num < rules.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if rules.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ rules.next_page_number }}">Next</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ rules.paginator.num_pages }}">Last &raquo;</a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+{% else %}
+<div class="text-center py-8">
+    <i class="bi bi-shield-check fs-1 text-muted mb-4 opacity-50"></i>
+    <h4 class="text-muted mb-2">No active rules</h4>
+    <p class="text-muted">No house rules have been set by administration.</p>
+</div>
+{% endif %}
+
+<style>
+.rule-description {
+    line-height: 1.6;
+    color: #374151;
+}
+.card {
+    transition: box-shadow 0.2s;
+}
+.card:hover {
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}

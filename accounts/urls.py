@@ -6,6 +6,7 @@ from django.contrib.auth import views as auth_views
 from . import views
 from .views import admin_views
 from .views import api_views
+from .views import rules_views
 from .views.reminder_views import mark_notification_read
 
 urlpatterns = [
@@ -117,6 +118,13 @@ urlpatterns = [
     path('violations/create/', views.create_violation, name='create_violation'),
     path('violations/delete/<int:violation_id>/', views.delete_violation, name='delete_violation'),
 
+    # ─── RULES ─────────────────────────────────────
+    path('rules/', views.rules_views.rules_list, name='rules_list'),
+    path('rules/create/', views.rules_views.create_rule, name='create_rule'),
+    path('rules/edit/<int:rule_id>/', views.rules_views.edit_rule, name='edit_rule'),
+    path('rules/delete/<int:rule_id>/', views.rules_views.delete_rule, name='delete_rule'),
+    path('tenant/rules/', views.rules_views.tenant_rules, name='tenant_rules'),
+
     # ─── REAL-TIME DASHBOARD API ─────────────────────────────
     path('api/tenant/dashboard-data/', api_views.api_tenant_dashboard_data, name='api_tenant_dashboard_data'),
 
@@ -124,4 +132,5 @@ urlpatterns = [
     path('api/check-username/', api_views.check_username_availability, name='check_username_availability'),
     path('api/user-info/', api_views.get_current_user_info, name='get_current_user_info'),
     path('api/update-username/', api_views.update_username, name='update_username'),
+    path('api/rules-data/', api_views.api_rules_data, name='api_rules_data'),
 ]

@@ -1,0 +1,98 @@
+{% extends 'base_dashboard.html' %}
+{% load static %}
+
+{% block title %}Edit Rule{% endblock %}
+{% block page_title %}Edit Rule{% endblock %}
+
+{% block content %}
+<!-- BREADCRUMBS -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item">
+            <a href="{% url 'rules_list' %}" class="text-decoration-none text-muted">
+                <i class="bi bi-house"></i> Dashboard
+            </a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'rules_list' %}" class="text-decoration-none text-muted">
+                <i class="bi bi-list"></i> Rules
+            </a>
+        </li>
+        <li class="breadcrumb-item active text-primary fw-bold" aria-current="page">
+            <i class="bi bi-pencil"></i> Edit Rule
+        </li>
+    </ol>
+</nav>
+
+<!-- EDIT RULE FORM -->
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-pencil"></i> Edit Rule
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="POST" action="{% url 'edit_rule' rule.id %}">
+                    {% csrf_token %}
+                    
+                    <!-- TITLE -->
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Rule Title</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="title" 
+                               name="title" 
+                               value="{{ rule.title }}" 
+                               required>
+                    </div>
+
+                    <!-- DESCRIPTION -->
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" 
+                                  id="description" 
+                                  name="description" 
+                                  rows="5" 
+                                  required>{{ rule.description }}</textarea>
+                    </div>
+
+                    <!-- STATUS -->
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" 
+                                   type="checkbox" 
+                                   id="is_active" 
+                                   name="is_active" 
+                                   {% if rule.is_active %}checked{% endif %}>
+                            <label class="form-check-label" for="is_active">
+                                <i class="bi bi-toggle-on"></i> Active
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- BUTTONS -->
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'rules_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Update Rule
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

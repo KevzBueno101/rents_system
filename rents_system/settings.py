@@ -76,6 +76,7 @@ TEMPLATES = [
                 'accounts.context_processors.recent_payments', # Recent payments feed
                 'accounts.context_processors.notifications',   # Notification system
                 'accounts.context_processors.app_settings',   # App metadata
+                'accounts.context_processors.active_rules',
             ],
         },
     },

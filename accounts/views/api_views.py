@@ -10,6 +10,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from accounts.services.user_service import UserService
 from django.core.cache import cache
+from ..models import Rule
+from django.utils import timezone
 
 @csrf_exempt
 @require_http_methods(["GET"])
@@ -233,4 +235,81 @@ def api_force_dashboard_refresh(request):
         return JsonResponse({
             'success': False,
             'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@login_required
+@require_http_methods(["GET"])
+def api_rules_data(request):
+    """
+    API endpoint to get rules data for real-time synchronization.
+    
+    GET /api/rules-data/
+    
+    Returns:
+        {
+            "rules": [
+                {
+                    "id": 1,
+                    "title": "Rule Title",
+                    "description": "Rule Description",
+                    "is_active": true,
+                    "created_at": "2023-05-05T10:30:00Z",
+                    "updated_at": "2023-05-05T10:30:00Z"
+                }
+            ],
+            "total_count": 5,
+            "last_updated": "2023-05-05T10:30:00Z"
+        }
+    """
+    try:
+        # Get cache key for rules
+        cache_key = 'rules_data'
+        
+        # Try to get from cache first
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return JsonResponse(cached_data)
+        
+        # Get rules from database
+        if request.user.is_staff:
+            # Admin gets all rules
+            rules = Rule.objects.all()
+        else:
+            # Tenant gets only active rules
+            rules = Rule.objects.filter(is_active=True)
+        
+        # Convert to list of dictionaries
+        rules_data = []
+        for rule in rules:
+            rules_data.append({
+                'id': rule.id,
+                'title': rule.title,
+                'description': rule.description,
+                'is_active': rule.is_active,
+                'created_at': rule.created_at.isoformat(),
+                'updated_at': rule.updated_at.isoformat(),
+            })
+        
+        # Get latest update timestamp
+        latest_update = rules.order_by('-updated_at').first()
+        last_updated = latest_update.updated_at.isoformat() if latest_update else timezone.now().isoformat()
+        
+        # Prepare response data
+        response_data = {
+            'rules': rules_data,
+            'total_count': rules.count(),
+            'last_updated': last_updated,
+        }
+        
+        # Cache for 5 minutes
+        cache.set(cache_key, response_data, 300)
+        
+        return JsonResponse(response_data)
+        
+    except Exception as e:
+        return JsonResponse({
+            'error': 'Failed to fetch rules data',
+            'message': str(e)
         }, status=500)

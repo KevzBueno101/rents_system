@@ -1,0 +1,165 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}Rules{% endblock %}
+{% block page_title %}Rules Management{% endblock %}
+
+{% block content %}
+
+<!-- CREATE RULE MODAL -->
+<div class="modal fade" id="createRuleModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle"></i> Create New Rule
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="{% url 'create_rule' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Title</label>
+                        <input type="text" name="title" class="form-control" placeholder="Rule title" required maxlength="255">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Description</label>
+                        <textarea name="description" class="form-control" rows="5" placeholder="Detailed rule description..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check-lg"></i> Create Rule
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- RULES LIST -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-0 py-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 fw-bold">
+                <i class="bi bi-shield-check me-2"></i>Rules ({{ rules.count }})
+            </h6>
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createRuleModal">
+                <i class="bi bi-plus"></i> New Rule
+            </button>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <!-- FILTERS -->
+        <div class="p-3 border-bottom">
+            <form method="GET">
+                <div class="row g-2">
+                    <div class="col-md-5">
+                        <input type="text" name="search" class="form-control form-control-sm" placeholder="Search title or description..." value="{{ search }}">
+                    </div>
+                    <div class="col-md-3">
+                        <select name="status" class="form-select form-select-sm">
+                            <option value="">All Status</option>
+                            <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                            <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex gap-1">
+                            <button type="submit" class="btn btn-outline-secondary btn-sm flex-grow-1">
+                                <i class="bi bi-search"></i> Filter
+                            </button>
+                            <a href="{% url 'rules_list' %}" class="btn btn-outline-danger btn-sm px-2">
+                                <i class="bi bi-x"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- TABLE -->
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 40%;">Title</th>
+                        <th style="width: 45%;">Description</th>
+                        <th style="width: 10%;">Status</th>
+                        <th style="width: 5%;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rule in rules %}
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">{{ rule.title }}</div>
+                            <small class="text-muted">{{ rule.created_at|date:"M d, Y" }}</small>
+                        </td>
+                        <td>
+                            <div class="text-truncate" style="max-height: 40px; overflow: hidden;" title="{{ rule.description }}">
+                                {{ rule.description|truncatewords:15 }}
+                            </div>
+                        </td>
+<td>
+                            <span class="badge bg-{% if rule.is_active %}success{% else %}secondary{% endif %}">
+                                {{ rule.status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{% url 'edit_rule' rule.id %}" class="btn btn-sm btn-outline-primary" title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteRule({{ rule.id }})" title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-muted">
+                            <i class="bi bi-shield-slash fs-1 d-block mb-3 opacity-50"></i>
+                            <div>No rules found</div>
+                            <small class="opacity-75">Create your first rule to get started</small>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div class="modal fade" id="deleteRuleModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title fw-bold">
+                    <i class="bi bi-trash text-danger"></i> Delete Rule
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="mb-3">
+                    <i class="bi bi-exclamation-triangle text-warning fs-1"></i>
+                </div>
+                <p class="mb-4">Are you sure you want to delete this rule?<br><small class="text-muted">This action cannot be undone.</small></p>
+                <form method="POST" action="" id="deleteRuleForm" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger px-4">Delete</button>
+                </form>
+                <button type="button" class="btn btn-outline-secondary ms-2 px-4" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function deleteRule(id) {
+    document.getElementById('deleteRuleForm').action = `/rules/delete/${id}/`;
+    new bootstrap.Modal(document.getElementById('deleteRuleModal')).show();
+}
+</script>
+
+{% endblock %}
