@@ -19,6 +19,7 @@ from ..services.notification_service import NotificationService
 from ..activity_utils import log_activity
 from .helpers import parse_phone, get_available_rooms, get_dashboard_context
 from accounts.services.user_service import UserService
+from accounts.forms import ProfileUpdateForm
 
 
 
@@ -206,11 +207,10 @@ def _edit_tenant_profile(request):
         messages.error(request, 'Tenant profile not found.')
         return redirect('tenant_dashboard')
 
+    form = ProfileUpdateForm(request.POST or None, instance=request.user)
+
     if request.method == 'POST':
         full_name        = request.POST.get('full_name', '').strip()
-        new_username     = request.POST.get('username', '').strip()
-        new_email        = request.POST.get('email', '').strip()
-        phone_raw        = request.POST.get('phone', '').strip()
         current_password = request.POST.get('current_password')
         new_password     = request.POST.get('new_password') or request.POST.get('password')
         confirm_password = request.POST.get('confirm_password')
@@ -218,16 +218,12 @@ def _edit_tenant_profile(request):
 
         errors = []
 
-        if new_username and User.objects.filter(username=new_username).exclude(id=request.user.id).exists():
-            errors.append('Username is already taken.')
-
-        if new_email and User.objects.filter(email__iexact=new_email).exclude(id=request.user.id).exists():
-            errors.append('Email is already registered.')
+        # Validate form (username, email, phone)
+        if not form.is_valid():
+            errors.extend([err for field_errors in form.errors.values() for err in field_errors])
 
         if not full_name or len(full_name) < 2:
             errors.append('Full name must be at least 2 characters long.')
-
-        phone = parse_phone(phone_raw) if phone_raw else None
 
         if new_password:
             if not current_password:
@@ -242,23 +238,23 @@ def _edit_tenant_profile(request):
         if errors:
             return render(request, 'tenant/tenant_profile.html', {
                 'profile': profile,
+                'form': form,
                 'profile_errors': errors,
             })
 
-        user = request.user
-        if new_username:
-            user.username = new_username
-        if new_email:
-            user.email = new_email
+        # Save user fields (username, email)
+        user = form.save(commit=False)
         if new_password:
             user.set_password(new_password)
         user.save()
         if new_password:
             update_session_auth_hash(request, user)
 
-        profile.full_name = full_name or profile.full_name
-        if phone_raw:
-            profile.phone = phone
+        # Save tenant profile fields
+        profile.full_name = full_name
+        # Get validated phone from form
+        if 'phone' in form.cleaned_data:
+            profile.phone = form.cleaned_data['phone']
         if photo:
             profile.photo = photo
         profile.save()
@@ -285,6 +281,7 @@ def _edit_tenant_profile(request):
 
     return render(request, 'tenant/tenant_profile.html', {
         'profile': profile,
+        'form': ProfileUpdateForm(instance=request.user),
         'completion_percentage': completion_percentage,
         'completion_fields': completion_fields,
         'filled_fields_count': sum(completion_fields.values()),

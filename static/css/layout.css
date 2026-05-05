@@ -2,12 +2,7 @@
    LAYOUT STYLES - Sidebar, Navbar, Grid
    ============================================ */
 
-/* Sidebar Navigation */
-.sidebar {
-    min-height: 100vh;
-    background: var(--primary-dark);
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-}
+/* Sidebar Navigation - Styles moved to dashboard.css for better organization */
 
 .sidebar .nav-link {
     color: rgba(255, 255, 255, 0.8);
@@ -51,10 +46,7 @@
     min-height: 100vh;
 }
 
-.sidebar {
-    width: 280px;
-    flex-shrink: 0;
-}
+/* Sidebar width and positioning handled in dashboard.css */
 
 .content-area {
     flex: 1;
@@ -68,10 +60,7 @@
         flex-direction: column;
     }
     
-    .sidebar {
-        width: 100%;
-        order: 2;
-    }
+    /* Mobile sidebar styles handled in dashboard.css */
     
     .content-area {
         order: 1;

@@ -35,27 +35,66 @@
             min-height: 100vh;
             position: fixed;
             left: 0; top: 0;
-            display: flex;
+            display: flex !important;
             flex-direction: column;
             z-index: 1000;
             transition: transform .28s cubic-bezier(.4,0,.2,1);
+            box-shadow: 2px 0 20px rgba(0,0,0,.15);
         }
 
         .t-brand {
             padding: 24px 20px 16px;
-            border-bottom: 1px solid rgba(255,255,255,.07);
+            border-bottom: 1px solid rgba(255,255,255,.12);
+            background: rgba(255,255,255,.02);
+        }
+        a.t-brand-logo-link,
+        a.t-brand-logo-link:hover,
+        a.t-brand-logo-link:visited,
+        a.t-brand-logo-link:focus,
+        a.t-user-pill-link,
+        a.t-user-pill-link:hover,
+        a.t-user-pill-link:visited,
+        a.t-user-pill-link:focus,
+        a.t-brand-logo-link *,
+        a.t-user-pill-link * {
+            color: inherit !important;
+            text-decoration: none !important;
+            text-decoration-line: none !important;
+            text-decoration-color: transparent !important;
+            text-decoration-style: solid !important;
+            text-decoration-skip-ink: none !important;
+        }
+        a.t-brand-logo-link,
+        a.t-user-pill-link {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            align-items: flex-start;
+            line-height: normal;
+            color: inherit !important;
+            text-decoration: none !important;
+            text-decoration-line: none !important;
+            text-decoration-color: transparent !important;
+        }
+        a.t-user-pill-link {
+            display: flex;
+            flex-direction: row;
         }
         .t-brand-logo {
-            font-size: 18px;
-            font-weight: 700;
+            font-size: 20px;
+            font-weight: 800;
             color: #fff;
             letter-spacing: .04em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
         .t-brand-sub {
-            font-size: 10px;
-            color: rgba(255,255,255,.3);
+            font-size: 11px;
+            color: rgba(255,255,255,.45);
             margin-top: 2px;
             line-height: 1.4;
+            font-weight: 500;
         }
 
         .t-nav {
@@ -122,7 +161,25 @@
         /* Sidebar footer */
         .t-sidebar-footer {
             padding: 16px;
-            border-top: 1px solid rgba(255,255,255,.07);
+            border-top: 1px solid rgba(255,255,255,.12);
+            background: rgba(255,255,255,.02);
+            margin-top: auto;
+        }
+        .t-user-pill-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            transition: all .18s ease;
+            color: inherit;
+            text-decoration: none;
+            background: rgba(255,255,255,.05);
+        }
+        .t-user-pill-link:hover {
+            background: rgba(255,255,255,.12);
+            text-decoration: none;
+            transform: translateX(2px);
         }
         .t-user-pill {
             display: flex;
@@ -135,7 +192,7 @@
         }
         .t-user-pill:hover { background: rgba(255,255,255,.06); }
         .t-avatar {
-            width: 34px; height: 34px;
+            width: 40px; height: 40px;
             border-radius: 50%;
             object-fit: cover;
             flex-shrink: 0;
@@ -145,10 +202,11 @@
             justify-content: center;
             font-weight: 700;
             color: #fff;
-            font-size: 13px;
+            font-size: 14px;
+            border: 2px solid rgba(255,255,255,.2);
         }
-        .t-user-name { font-size: 13px; font-weight: 600; color: #fff; }
-        .t-user-role { font-size: 11px; color: rgba(255,255,255,.35); }
+        .t-user-name { font-size: 13px; font-weight: 700; color: #fff; line-height: 1.2; }
+        .t-user-role { font-size: 10px; color: rgba(255,255,255,.5); margin-top: 2px; line-height: 1.2; }
 
         /* ── MAIN ── */
         #t-main {
@@ -208,14 +266,7 @@
             padding: 24px;
         }
 
-        /* ── OVERLAY (mobile) ── */
-        #t-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,.5);
-            z-index: 999;
-        }
+        /* ── OVERLAY removed - hamburger deleted ── */
 
         /* ── CARDS ── */
         .t-card {
@@ -328,17 +379,32 @@
         .t-alert-danger  { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
         .t-alert-info    { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
 
+        /* ── MOBILE HAMBURGER ── */
+        .t-hamburger {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 20px;
+            padding: 4px 8px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all .2s ease;
+            flex-shrink: 0;
+        }
+        .t-hamburger:hover {
+            background: rgba(0,0,0,.05);
+        }
+
         /* ── MOBILE ── */
         .t-bottom-nav {
             display: none;
         }
 
-        @media (max-width: 768px) {
-            #t-sidebar { transform: translateX(-100%); }
-            #t-sidebar.open { transform: translateX(0); }
+@media (max-width: 768px) {
+            #t-sidebar { 
+                display: none !important; 
+            }
             #t-main { margin-left: 0; }
-            #t-overlay { display: block; opacity: 0; pointer-events: none; transition: opacity .28s; }
-            #t-overlay.show { opacity: 1; pointer-events: auto; }
             #t-content { padding: 16px 16px 84px; }
             .t-bottom-nav {
                 position: fixed;

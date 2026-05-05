@@ -148,8 +148,9 @@
 
 /* ===== SIDEBAR OFFCANVAS ===== */
 @media (max-width: 991px) {
+    /* Keep sidebar visible on all screen sizes */
     .sidebar-desktop {
-        display: none !important;
+        display: block !important;
     }
     
     .sidebar-mobile {

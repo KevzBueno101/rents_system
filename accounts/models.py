@@ -239,7 +239,11 @@ class Payment(models.Model):
     reference_number = models.CharField(max_length=50, blank=True)
     proof = models.ImageField(upload_to='payments/', blank=True, null=True)
     receipt_id = models.CharField(max_length=80, unique=True, blank=True, null=True)
-    receipt_image = models.ImageField(upload_to='', blank=True, null=True)
+    receipt_image = models.ImageField(
+        upload_to='receipts/', 
+        blank=True, 
+        null=True
+    )
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

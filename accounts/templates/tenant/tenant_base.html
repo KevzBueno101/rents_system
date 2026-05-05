@@ -19,14 +19,15 @@
 
 <body>
 
-<!-- OVERLAY -->
-<div id="t-overlay" onclick="closeSidebar()"></div>
+<!-- REMOVED: Mobile overlay (hamburger removed) -->
 
 <!-- SIDEBAR -->
 <div id="t-sidebar">
     <div class="t-brand">
-        <div class="t-brand-logo">🏠 RENTS</div>
-        <div class="t-brand-sub">Resident Portal</div>
+        <a href="{% url 'tenant_dashboard' %}" class="t-brand-logo-link">
+            <div class="t-brand-logo"><i class="bi bi-house-fill"></i> RENTS</div>
+            <div class="t-brand-sub">Resident Portal</div>
+        </a>
     </div>
 
     <nav class="t-nav">
@@ -61,7 +62,7 @@
     </nav>
 
     <div class="t-sidebar-footer">
-        <div class="t-user-pill">
+        <a href="{% url 'edit_profile' %}" class="t-user-pill t-user-pill-link">
             {% if user_profile and user_profile.photo %}
                 <img src="{{ user_profile.photo.url }}" class="t-avatar" alt="{{ user_profile.full_name }}">
             {% else %}
@@ -71,7 +72,7 @@
                 <div class="t-user-name">{{ user_profile.full_name|truncatechars:18|default:"Tenant" }}</div>
                 <div class="t-user-role">@{{ user_profile.user.username }} • {{ user_profile.get_room_display|default:"No Room" }}</div>
             </div>
-        </div>
+        </a>
         {% if profile_completion < 100 %}
         <div style="margin-top:8px; padding:4px 8px; background:#fef3c7; border-radius:4px; font-size:10px; color:#92400e; text-align:center;">
             <i class="bi bi-exclamation-circle" style="margin-right:2px;"></i>
@@ -110,9 +111,7 @@
 
     <!-- TOPBAR -->
     <div id="t-topbar">
-        <div style="display:flex; align-items:center; gap:10px;">
-            <span class="t-page-title">{% block page_title %}Dashboard{% endblock %}</span>
-        </div>
+<span class="t-page-title">{% block page_title %}Dashboard{% endblock %}</span>
         <div class="t-topbar-right">
             <span class="t-date-chip d-none d-sm-block" id="t-date"></span>
             
@@ -246,14 +245,7 @@
     const d = new Date();
     document.getElementById('t-date').textContent = d.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric', year:'numeric'});
 
-    function openSidebar() {
-        document.getElementById('t-sidebar').classList.add('open');
-        document.getElementById('t-overlay').classList.add('show');
-    }
-    function closeSidebar() {
-        document.getElementById('t-sidebar').classList.remove('open');
-        document.getElementById('t-overlay').classList.remove('show');
-    }
+    // openSidebar/closeSidebar removed - hamburger deleted
 
     // Add hover effects to alert close buttons
     document.querySelectorAll('.t-alert-close').forEach(btn => {

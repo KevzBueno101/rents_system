@@ -173,6 +173,18 @@ class ProfileUpdateForm(forms.ModelForm):
         required=True,
         widget=forms.EmailInput(attrs={'class': 't-input'})
     )
+    phone = forms.CharField(
+        max_length=20,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 't-input',
+            'type': 'tel',
+            'pattern': '[0-9]{10,15}',
+            'title': 'Phone number must contain only digits (10-15 numbers)',
+            'placeholder': 'Enter phone number (10-15 digits)'
+        }),
+        help_text='Phone number must contain 10-15 digits only.'
+    )
     
     class Meta:
         model = User
@@ -185,6 +197,9 @@ class ProfileUpdateForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.instance and getattr(self.instance, 'username', None):
             self.fields['username'].initial = self.instance.username
+        # Populate phone field from tenant profile if available
+        if self.instance and hasattr(self.instance, 'tenantprofile'):
+            self.fields['phone'].initial = self.instance.tenantprofile.phone or ''
     
     def clean_username(self):
         """Validate username with case-insensitive uniqueness check."""
@@ -203,3 +218,24 @@ class ProfileUpdateForm(forms.ModelForm):
             raise forms.ValidationError('Email is already registered.')
         
         return email
+    
+    def clean_phone(self):
+        """Validate phone number format and length."""
+        import re
+        phone = self.cleaned_data.get('phone', '').strip()
+        
+        if not phone:
+            return ''
+        
+        # Remove non-digit characters for validation
+        digits_only = re.sub(r'\D', '', phone)
+        
+        # Check length
+        if len(digits_only) < 10:
+            raise forms.ValidationError('Phone number must contain at least 10 digits.')
+        if len(digits_only) > 15:
+            raise forms.ValidationError('Phone number must contain at most 15 digits.')
+        
+        # Return digits only for storage
+        return digits_only
+

@@ -54,8 +54,9 @@ def tenant_bills(request):
     # Calculate additional stats using enhanced service data
     all_bills = Bill.objects.filter(tenant=dashboard_data['tenant'])
     total_billed = all_bills.aggregate(total=Sum('total_amount'))['total'] or 0
-    total_paid = sum(bill.paid_amount for bill in all_bills)
-
+    total_paid = all_bills.aggregate(
+    total=Sum('payments__amount')
+)['total'] or 0
     # Calculate additional stats
     from datetime import datetime
     current_month = datetime.now().month
