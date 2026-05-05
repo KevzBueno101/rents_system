@@ -2,9 +2,35 @@
 
 A Django-based boarding house management system for managing tenants, rooms, billing, maintenance, and violations.
 
-## Current Status: **Production Ready** v2.9
+## Current Status: **Production Ready** v3.0
 
-**Latest Updates (May 3, 2026):**
+**Latest Updates (May 5, 2026):**
+- ✅ **Real-Time Dashboard Synchronization** - Complete real-time data synchronization system for tenant dashboard
+- ✅ **JavaScript Polling System** - 10-second interval polling with intelligent change detection
+- ✅ **API Endpoints for Dashboard** - RESTful API endpoints for real-time dashboard data delivery
+- ✅ **Cache Invalidation System** - Automatic cache updates on bill/payment changes
+- ✅ **Template Data Attributes** - Enhanced templates with data attributes for JavaScript targeting
+- ✅ **Django Import Errors Fixed** - Resolved NameError and AttributeError preventing server startup
+- ✅ **Template Syntax Errors Fixed** - Fixed static tag loading and JavaScript file path issues
+- ✅ **Enhanced Dashboard Service** - Unified data source with accurate calculations and caching
+- ✅ **Real-Time UI Components** - Stats cards and bills details update without page refresh
+- ✅ **Error Handling & Retry Logic** - Robust error handling with automatic retry mechanisms
+- ✅ **Cross-Tab Synchronization** - Dashboard updates sync across multiple browser tabs
+- ✅ **Performance Optimization** - Efficient data hashing to prevent unnecessary updates
+
+**Previous Updates (May 4, 2026):**
+- ✅ **SendGrid API Email Delivery** - Implemented SendGrid API for reliable email delivery on Render
+- ✅ **Email Delivery Chain** - SendGrid API → SMTP → Console fallback for maximum reliability
+- ✅ **Render Deployment Ready** - Fixed 500 errors and ensured actual email delivery on production
+- ✅ **Production Email System** - Complete email delivery system with robust error handling
+- ✅ **Environment Variable Configuration** - Proper setup for SendGrid API keys and email settings
+- ✅ **Comprehensive Logging** - Enhanced error tracking and debugging for email delivery
+- ✅ **Complete Password Reset System** - Fully functional forgot password flow with email integration
+- ✅ **Password Reset Email Templates** - HTML and plain text email templates with proper reset links
+- ✅ **Function-Based Reset View** - Custom implementation bypassing Django authentication middleware
+- ✅ **AJAX Password Reset Handling** - Fixed JavaScript to handle Django 302 redirects properly
+- ✅ **Template Structure Fixes** - Fixed password reset confirm template to be standalone
+- ✅ **Tenant Dashboard Template Fix** - Corrected template path for tenant dashboard access
 - ✅ **Mobile Billing Cards System** - Collapsible cards for tenant bills with mobile-optimized layout
 - ✅ **Responsive Billing Stats** - 2x3 grid layout for mobile billing statistics cards
 - ✅ **Mobile Profile Enhancement** - Click-to-edit mobile profile with dynamic photo display
@@ -199,6 +225,7 @@ rents_system/
     │   ├── billing_views.py      ← billing, payments
     │   ├── maintenance_views.py  ← maintenance, violations
     │   ├── reminder_views.py     ← reminders, notifications
+    │   ├── api_views.py          ← API endpoints for real-time sync
     │   └── helpers.py            ← shared helper functions
     │
     ├── templatetags/              ← custom template tags
@@ -215,6 +242,19 @@ rents_system/
     ├── urls.py
     ├── admin.py
     └── apps.py
+
+├── services/                    ← Business logic services
+    │   ├── user_service.py        ← User management utilities
+    │   ├── notification_service.py ← Notification system
+    │   └── dashboard_service.py   ← Real-time dashboard data
+
+├── templates/                   ← Template files
+    │   ├── tenant/
+    │   │   ├── components/
+    │   │   │   ├── real_time_sync.js ← Real-time synchronization
+    │   │   │   ├── summary_cards.html
+    │   │   │   ├── payment_overview.html
+    │   │   │   └── ...
 ```
 
 ---
@@ -360,12 +400,27 @@ rents_system/
 ### Authentication
 - **Login System**: Role toggle (Admin / Tenant) with enhanced JavaScript
 - **Tenant Self-Signup**: Real-time room selection with detailed room information
+- **Password Reset System**: Complete forgot password flow with email integration
+- **Email Templates**: HTML and plain text password reset emails with clickable links
+- **Token Validation**: Secure token-based password reset with expiration
+- **AJAX Handling**: Proper handling of Django redirects in password reset forms
 - **Password Visibility Toggle**: Fixed for both login and signup forms
 - **Profile Management**: Clickable profile sections with photo preview
 - **Enhanced Security**: CSRF protection and session-based authentication
 - **Smart Redirects**: Automatic redirect if already logged in
 - **Improved Error Handling**: Comprehensive JavaScript error prevention
 - **Mobile Responsive**: Optimized for all device sizes
+
+### Email System Configuration
+- **SendGrid API Integration**: Primary email delivery via SendGrid API for production reliability
+- **Email Delivery Chain**: SendGrid API → SMTP → Console fallback for maximum reliability
+- **Render Deployment Ready**: Optimized for cloud deployment with automatic fallback handling
+- **Production Email System**: Complete email delivery system with robust error handling
+- **Smart Backend Selection**: Automatic backend selection based on environment and credentials
+- **Comprehensive Logging**: Enhanced error tracking and debugging for email delivery
+- **Email Templates**: Professional HTML and plain text email templates with reset links
+- **Security**: Secure token-based password reset with 24-hour expiration
+- **Environment Variables**: Configurable email settings via environment variables
 
 ### Room Management
 - **Room Creation**: Add rooms with detailed specifications
@@ -435,6 +490,40 @@ rents_system/
 - **Announcement**: System announcements → redirects to dashboard
 - **System**: General system notifications → redirects to dashboard
 
+### Real-Time Dashboard Synchronization (NEW)
+- **Live Data Updates**: Automatic dashboard updates without page refresh
+- **JavaScript Polling System**: 10-second interval polling with intelligent change detection
+- **API Endpoints**: RESTful API endpoints for real-time dashboard data delivery
+- **Cache Invalidation**: Automatic cache updates on bill/payment changes
+- **Cross-Tab Synchronization**: Dashboard updates sync across multiple browser tabs
+- **Error Handling**: Robust error handling with automatic retry mechanisms
+- **Performance Optimization**: Efficient data hashing to prevent unnecessary updates
+- **Template Integration**: Data attributes for JavaScript targeting
+- **Visual Feedback**: Real-time sync indicators and status updates
+- **Mobile Responsive**: Real-time updates work on all device sizes
+
+#### Real-Time Features
+- **Stats Cards**: Current balance, due date, payment status update in real-time
+- **Payment Overview**: Latest payments and total paid amounts update automatically
+- **Bill Details**: Bill status and payment progress update without refresh
+- **Notification Count**: Unread notification counter updates instantly
+- **Room Information**: Room details and availability update dynamically
+
+#### API Endpoints
+| Endpoint | Method | Description | Authentication |
+|---|---|---|---|
+| `/api/tenant/dashboard-data/` | GET | Real-time dashboard data | @login_required |
+| `/api/force-dashboard-refresh/` | POST | Force dashboard refresh | @login_required |
+
+#### JavaScript Integration
+```javascript
+// Automatic initialization
+window.dashboardSync = new DashboardSync();
+
+// Manual refresh
+window.forceDashboardUpdate();
+```
+
 ### Dashboard
 - **Enhanced Stats**: Total tenants, vacant rooms, occupancy rate
 - **Real-time Data**: Live bed availability calculations
@@ -443,6 +532,7 @@ rents_system/
 - **Dark sidebar navigation**
 - **Mobile responsive** (Pixel 7 optimized)
 - **Clickable stat cards** with navigation
+- **Real-time synchronization** with automatic updates
 
 ### User Experience
 - **Modern UI**: Clean, professional interface with dark sidebar
@@ -456,7 +546,189 @@ rents_system/
 
 ---
 
-## � Notification System API
+## 🔄 Real-Time Dashboard Synchronization API
+
+### DashboardService API
+
+The `DashboardService` provides centralized data management for real-time dashboard updates.
+
+#### Basic Usage
+
+```python
+from tenant.services.dashboard_service import DashboardService
+
+# Get unified dashboard data
+dashboard_data = DashboardService.get_tenant_dashboard_data(
+    user=request.user,
+    force_refresh=True  # Optional: bypass cache
+)
+```
+
+#### Response Structure
+
+```json
+{
+    "tenant": {
+        "id": 1,
+        "full_name": "John Doe",
+        "room": {
+            "room_number": "A-101",
+            "monthly_rate": 5000.00
+        }
+    },
+    "balance": 1500.00,
+    "due_date": "2026-05-15",
+    "payment_status": "partial",
+    "payment_status_label": "Partial Payment",
+    "latest_payment": {
+        "amount": 2000.00,
+        "payment_date": "2026-05-01",
+        "payment_method": "cash"
+    },
+    "summary": {
+        "total_bills": 3,
+        "paid_bills": 1,
+        "total_paid": 2000.00,
+        "next_bill": {
+            "due_date": "2026-05-15",
+            "amount": 3500.00
+        },
+        "is_overdue": false,
+        "days_until_due": 10
+    },
+    "enhanced_status": {
+        "total_bills": 3,
+        "paid_bills": 1,
+        "pending_bills": 2,
+        "has_overdue": false,
+        "has_urgent_payment": false
+    },
+    "notifications": [...],
+    "unread_notifications": 2
+}
+```
+
+### API Endpoints
+
+| Endpoint | Method | Description | Authentication | Cache |
+|---|---|---|---|---|
+| `/api/tenant/dashboard-data/` | GET | Real-time dashboard data | @login_required | 10 min |
+| `/api/force-dashboard-refresh/` | POST | Force cache invalidation | @login_required | Instant |
+
+#### JavaScript Integration
+
+```javascript
+// Automatic initialization (included in template)
+window.dashboardSync = new DashboardSync();
+
+// Manual refresh
+window.forceDashboardUpdate();
+
+// Listen for updates
+window.addEventListener('dashboard-data-updated', (event) => {
+    console.log('Dashboard updated:', event.detail);
+});
+```
+
+### Cache Management
+
+#### Cache Keys
+- `tenant_dashboard_{user_id}` - User-specific dashboard data
+- `dashboard_stats_{user_id}` - User-specific statistics
+
+#### Cache Invalidation
+- Automatic on bill creation/update/delete
+- Automatic on payment recording
+- Manual via force refresh endpoint
+
+#### Performance Features
+- **Change Detection**: Data hashing prevents unnecessary updates
+- **Intelligent Polling**: 10-second intervals with visibility API optimization
+- **Cross-Tab Sync**: Updates propagate across browser tabs
+- **Error Recovery**: Automatic retry with exponential backoff
+
+### Template Data Attributes
+
+```html
+<!-- Stats Cards -->
+<div data-balance="current">
+    <span class="metric-value">{{ balance }}</span>
+</div>
+
+<div data-balance="due-date">
+    <span class="metric-value">{{ due_date }}</span>
+</div>
+
+<div data-balance="payment-status">
+    <span class="metric-value">{{ payment_status_label }}</span>
+</div>
+
+<!-- Payment Overview -->
+<div data-latest-payment>
+    <strong>{{ latest_payment.payment_date }}</strong>
+</div>
+
+<div data-total-paid>
+    <strong>{{ summary.total_paid }}</strong>
+</div>
+
+<div data-remaining-balance>
+    <strong>{{ balance }}</strong>
+</div>
+```
+
+---
+
+## 📊 Dashboard Service Architecture
+
+### Data Flow
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Frontend      │    │   API Layer      │    │   Service       │
+│                 │    │                  │    │                 │
+│ JavaScript      │───▶│ api_views.py     │───▶│ DashboardService│
+│ Polling (10s)   │    │                  │    │                 │
+│ UI Updates      │    │ JSON Response    │    │ Cache Layer     │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+                                │                        │
+                                ▼                        ▼
+                       ┌──────────────────┐    ┌─────────────────┐
+                       │   URL Routing    │    │   Database      │
+                       │                  │    │                 │
+                       │ urls.py          │    │ Models:         │
+                       │                  │    │ - Bill          │
+                       └──────────────────┘    │ - Payment       │
+                                                │ - Tenant        │
+                                                └─────────────────┘
+```
+
+### Service Methods
+
+```python
+# Main data aggregation
+DashboardService.get_tenant_dashboard_data(user, force_refresh=False)
+
+# Cache management
+DashboardService.invalidate_user_cache(user_id)
+DashboardService.get_cache_key(user_id)
+
+# Data helpers
+DashboardService._calculate_balance(tenant)
+DashboardService._get_payment_summary(tenant)
+DashboardService._get_enhanced_status(tenant)
+```
+
+### Error Handling
+
+- **Network Errors**: Automatic retry with exponential backoff
+- **Server Errors**: Graceful degradation with cached data
+- **Authentication**: Proper login_required enforcement
+- **Data Validation**: Comprehensive error checking
+
+---
+
+## Notification System API
 
 ### NotificationService API
 
@@ -605,6 +877,17 @@ DB_USER=root
 DB_PASSWORD=
 DB_HOST=localhost
 DB_PORT=3306
+
+# Production-only (required when DEBUG=False)
+# IMPORTANT: ALLOWED_HOSTS must be hostnames only (no https://)
+ALLOWED_HOSTS=your-app.onrender.com
+
+# Public base URL used in password reset emails
+SITE_URL=https://your-app.onrender.com
+
+# Email Configuration
+SENDGRID_API_KEY=your_sendgrid_api_key_here
+FROM_EMAIL=your_verified_email@domain.com
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USE_TLS=True
@@ -614,6 +897,33 @@ DEFAULT_FROM_EMAIL=your_email@gmail.com
 ```
 
 ⚠️ **IMPORTANT**: Never commit `.env` to git. It should be in `.gitignore`
+
+### 🚀 Render Deployment Setup
+
+#### Email Configuration for Production
+1. **Go to Render Dashboard** → Your RENTS application → **Environment** tab
+2. **Add these environment variables**:
+   ```
+   DEBUG=False
+   SECRET_KEY=your_secret_key_here
+   ALLOWED_HOSTS=your-app.onrender.com
+   SITE_URL=https://your-app.onrender.com
+   SENDGRID_API_KEY=your_sendgrid_api_key_here
+   FROM_EMAIL=your_verified_email@domain.com
+   ```
+3. **Click "Save Changes"** and **"Manual Deploy"**
+
+#### Email Delivery Priority on Render
+- **Primary**: SendGrid API (most reliable)
+- **Fallback**: SendGrid SMTP (if API fails)
+- **Final**: Console backend (for debugging)
+
+#### Expected Behavior
+- ✅ **Password reset form works** without 500 errors
+- ✅ **Emails sent to user inboxes** via SendGrid API
+- ✅ **Robust fallback** if primary method fails
+- ✅ **Comprehensive logging** for debugging
+ - ✅ **Forgot password modal** returns accurate success/error (AJAX uses JSON)
 
 ### 4. Create MySQL database
 ```sql
@@ -642,7 +952,19 @@ python manage.py seed_inclusions_appliances
 ```
 This creates default inclusions (Water, Electricity, Internet, etc.) and appliances (Fan, Air Conditioner, Microwave, etc.)
 
-### 9. Test Notification System (Recommended)
+### 9. Test Real-Time Dashboard Synchronization (Recommended)
+```bash
+python manage.py test_dashboard_sync --verbose
+```
+This runs comprehensive tests for the real-time dashboard system including:
+- API endpoint functionality
+- Cache invalidation mechanisms
+- Data synchronization accuracy
+- Error handling and retry logic
+- Performance optimization testing
+- Cross-tab synchronization
+
+### 10. Test Notification System (Recommended)
 ```bash
 python manage.py test_notification_system --verbose
 ```
@@ -653,12 +975,12 @@ This runs comprehensive tests for the notification system including:
 - Security validation
 - Performance testing
 
-### 10. Run the server
+### 11. Run the server
 ```bash
 python manage.py runserver
 ```
 
-### 11. Open in browser
+### 12. Open in browser
 ```
 http://127.0.0.1:8000/
 ```
@@ -741,11 +1063,15 @@ git push origin dev
 |---|---|---|
 | `SECRET_KEY` | Django cryptographic key (keep secure!) | `3ot&+cue4i760gjrayixr!1a3tq_%h#...` |
 | `DEBUG` | True (local) / False (production) | `True` |
+| `ALLOWED_HOSTS` | Comma-separated hostnames allowed (required when DEBUG=False) | `your-app.onrender.com,www.example.com` |
+| `SITE_URL` | Public base URL for outbound links (password reset emails) | `https://your-app.onrender.com` |
 | `DB_NAME` | Database name | `rents_db` |
 | `DB_USER` | Database user | `root` |
 | `DB_PASSWORD` | Database password | (leave empty for local dev) |
 | `DB_HOST` | Database host | `localhost` |
 | `DB_PORT` | Database port | `3306` |
+| `SENDGRID_API_KEY` | SendGrid API key for production email delivery | (your SendGrid API key) |
+| `FROM_EMAIL` | Verified sender email used for outbound mail | `noreply@yourdomain.com` |
 | `EMAIL_HOST` | SMTP server for emails | `smtp.gmail.com` |
 | `EMAIL_PORT` | SMTP port | `587` |
 | `EMAIL_USE_TLS` | Use TLS encryption | `True` |

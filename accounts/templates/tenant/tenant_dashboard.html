@@ -1,0 +1,235 @@
+{% extends 'tenant/tenant_base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Tenant Dashboard{% endblock %}
+{% load static %}
+{% block extra_styles %}
+<style>
+    .tenant-dashboard {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        padding: 0;
+        max-width: 100%;
+    }
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.5fr) minmax(350px, 0.8fr);
+        gap: 24px;
+        align-items: start;
+    }
+    .dashboard-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+    .metric-card {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+        padding: 18px;
+        min-height: 132px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .metric-card.danger { border-left: 4px solid #dc2626; }
+    .metric-card.success { border-left: 4px solid #059669; }
+    .metric-card.warning { border-left: 4px solid #d97706; }
+    .metric-card.info { border-left: 4px solid #2563eb; }
+    .metric-label {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+    }
+    .metric-value {
+        font-size: 25px;
+        line-height: 1.15;
+        font-weight: 800;
+        color: var(--text);
+        overflow-wrap: anywhere;
+    }
+    .metric-sub {
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 8px;
+    }
+    .section-card {
+        background: #ffffff;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .section-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    .section-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid #e9ecef;
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        background: #f8f9fa;
+    }
+    .section-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 15px;
+        font-weight: 800;
+        margin: 0;
+    }
+    .section-body { 
+        padding: 24px; 
+        background: #ffffff;
+    }
+    .action-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+    .mobile-full { min-width: 0; }
+    .timeline-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .timeline-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border);
+    }
+    .timeline-item:last-child { border-bottom: 0; padding-bottom: 0; }
+    .muted-small {
+        color: var(--muted);
+        font-size: 12px;
+    }
+    @media (max-width: 1200px) {
+        .dashboard-grid { 
+            grid-template-columns: 1fr; 
+            gap: 20px;
+        }
+        .dashboard-stack {
+            max-width: 100%;
+        }
+    }
+    
+    @media (max-width: 992px) {
+        .tenant-dashboard {
+            gap: 20px;
+        }
+        .dashboard-grid { 
+            grid-template-columns: 1fr; 
+        }
+        .section-header {
+            padding: 18px 20px;
+        }
+        .section-body {
+            padding: 20px;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .tenant-dashboard {
+            gap: 16px;
+            padding: 0 8px;
+        }
+        .metric-value { 
+            font-size: 21px; 
+        }
+        .section-header {
+            padding: 16px 18px;
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .section-body {
+            padding: 18px;
+        }
+        .action-grid { 
+            grid-template-columns: 1fr; 
+            gap: 10px;
+        }
+        .mobile-full,
+        .mobile-full .t-btn,
+        .mobile-full a,
+        .mobile-full button {
+            width: 100%;
+            justify-content: center;
+        }
+        .dashboard-stack {
+            gap: 16px;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .tenant-dashboard {
+            gap: 12px;
+            padding: 0 4px;
+        }
+        .section-header {
+            padding: 14px 16px;
+        }
+        .section-body {
+            padding: 16px;
+        }
+        .dashboard-stack {
+            gap: 12px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid tenant-dashboard">
+    {% include 'tenant/components/summary_cards.html' %}
+
+    <div class="row g-3">
+        <!-- Main Content Column -->
+        <div class="col-lg-8 col-12">
+            <div class="dashboard-stack">
+                {% include 'tenant/components/payment_overview.html' %}
+                {% include 'tenant/components/upcoming_payment.html' with payment=payment %}
+            </div>
+        </div>
+
+        <!-- Sidebar Column -->
+        <div class="col-lg-4 col-12">
+            <div class="dashboard-stack">
+                {% include 'tenant/components/quick_actions.html' %}
+                {% include 'tenant/components/receipt_card_component.html' %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Real-time Dashboard Synchronization -->
+<script src="{% static 'tenant/components/real_time_sync.js' %}"></script>
+
+<div class="modal fade" id="contactAdminModal" tabindex="-1" aria-labelledby="contactAdminLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:8px;">
+            <div class="modal-header">
+                <h5 class="modal-title" id="contactAdminLabel">Contact Admin</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">For payment confirmation, receipt concerns, or billing corrections, contact the property admin and reference your latest bill number.</p>
+                {% if dashboard_data.current_bill %}
+                    <div class="alert alert-light border mb-0">
+                        Bill reference: <strong>{{ dashboard_data.current_bill.bill_number }}</strong>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,108 @@
+<!-- Maintenance Tracker Component -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="bi bi-tools me-2"></i>
+            Maintenance Tracker
+        </h5>
+        {% if maintenance.total > 0 %}
+            <span class="badge bg-light text-dark">{{ maintenance.total }} requests</span>
+        {% endif %}
+    </div>
+    
+    <div class="card-body">
+        <!-- Status Summary -->
+        <div class="row g-2 mb-4">
+            <div class="col-4">
+                <div class="text-center p-3 bg-light rounded">
+                    <div class="h4 text-danger mb-1">{{ maintenance.open }}</div>
+                    <small class="text-muted">Open</small>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="text-center p-3 bg-light rounded">
+                    <div class="h4 text-warning mb-1">{{ maintenance.in_progress }}</div>
+                    <small class="text-muted">In Progress</small>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="text-center p-3 bg-light rounded">
+                    <div class="h4 text-success mb-1">{{ maintenance.resolved }}</div>
+                    <small class="text-muted">Resolved</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Requests -->
+        {% if maintenance.latest %}
+            <h6 class="mb-3">Recent Requests</h6>
+            <div class="space-y-2">
+                {% for req in maintenance.latest %}
+                    <div class="d-flex justify-content-between align-items-start p-3 border rounded mb-2">
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold">{{ req.description|truncatechars:50 }}</div>
+                            <small class="text-muted">{{ req.created_at|date:"M d, Y" }}</small>
+                        </div>
+                        <span class="badge {% if req.status == 'open' %}bg-danger{% elif req.status == 'ongoing' %}bg-warning{% else %}bg-success{% endif %}">
+                            {{ req.get_status_display }}
+                        </span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-4">
+                <i class="bi bi-tools text-muted" style="font-size: 2rem;"></i>
+                <p class="text-muted mb-0">No maintenance requests yet</p>
+            </div>
+        {% endif %}
+
+        <!-- Action Button -->
+        <div class="mt-3 d-grid gap-2 d-md-flex">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#maintenanceModal">
+                <i class="bi bi-plus-circle me-1"></i>
+                New Request
+            </button>
+            {% if maintenance.total > 3 %}
+                <a href="{% url 'tenant_reports' %}" class="btn btn-outline-secondary">
+                    View All ({{ maintenance.total }})
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Maintenance Request Modal -->
+<div class="modal fade" id="maintenanceModal" tabindex="-1" aria-labelledby="maintenanceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="maintenanceModalLabel">
+                    <i class="bi bi-tools me-2"></i>New Maintenance Request
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'tenant_submit_maintenance' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Describe the issue</label>
+                        <textarea class="form-control" id="description" name="description" rows="4" required 
+                                  placeholder="Please describe the maintenance issue in detail..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-send me-1"></i>Submit Request
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.space-y-2 > * + * {
+    margin-top: 0.5rem;
+}
+</style>

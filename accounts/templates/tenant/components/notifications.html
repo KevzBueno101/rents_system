@@ -1,0 +1,104 @@
+<section class="section-card">
+    <div class="section-header">
+        <h2 class="section-title"><i class="bi bi-bell text-warning"></i> Notifications</h2>
+        {% if data.unread_notifications %}
+            <span class="t-badge t-badge-warning">{{ data.unread_notifications }} unread</span>
+        {% endif %}
+    </div>
+    <div class="section-body">
+        {% if data.notifications %}
+            <div class="d-flex flex-column gap-2">
+                {% for notice in data.notifications %}
+                    <div class="alert alert-{{ notice.level }} mb-0 py-2 px-3 notification-item {% if not notice.is_read %}unread-notification{% endif %}" 
+                         style="cursor: pointer; transition: background-color 0.2s;"
+                         data-notification-id="{{ notice.id }}"
+                         data-link="{{ notice.get_absolute_url }}">
+                        <div class="d-flex gap-2">
+                            <i class="bi {{ notice.icon }}"></i>
+                            <div class="flex-grow-1">
+                                <strong>{{ notice.title }}</strong>
+                                <div class="small">{{ notice.message }}</div>
+                            </div>
+                            {% if not notice.is_read %}
+                                <span class="badge bg-primary rounded-pill" style="font-size: 0.7rem;">New</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="t-empty py-4">
+                <i class="bi bi-bell-slash"></i>
+                <p>No alerts right now.</p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<style>
+.notification-item:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+.unread-notification {
+    border-left: 4px solid #007bff;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click handlers to notification items
+    const notificationItems = document.querySelectorAll('.notification-item');
+    
+    notificationItems.forEach(function(item) {
+        item.addEventListener('click', function() {
+            const link = this.dataset.link;
+            const notificationId = this.dataset.notificationId;
+            
+            // Mark as read via AJAX
+            if (notificationId) {
+                fetch(`/accounts/mark-notification-read/${notificationId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                }).then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Remove unread styling
+                        this.classList.remove('unread-notification');
+                        const newBadge = this.querySelector('.badge.bg-primary');
+                        if (newBadge) {
+                            newBadge.remove();
+                        }
+                    }
+                }).catch(error => {
+                    console.error('Error marking notification as read:', error);
+                });
+            }
+            
+            // Redirect to the link
+            if (link && link !== 'None') {
+                window.location.href = link;
+            }
+        });
+    });
+    
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>

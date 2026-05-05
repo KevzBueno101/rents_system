@@ -19,14 +19,15 @@
 
 <body>
 
-<!-- OVERLAY -->
-<div id="t-overlay" onclick="closeSidebar()"></div>
+<!-- REMOVED: Mobile overlay (hamburger removed) -->
 
 <!-- SIDEBAR -->
 <div id="t-sidebar">
     <div class="t-brand">
-        <div class="t-brand-logo">🏠 RENTS</div>
-        <div class="t-brand-sub">Resident Portal</div>
+        <a href="{% url 'tenant_dashboard' %}" class="t-brand-logo-link">
+            <div class="t-brand-logo"><i class="bi bi-house-fill"></i> RENTS</div>
+            <div class="t-brand-sub">Resident Portal</div>
+        </a>
     </div>
 
     <nav class="t-nav">
@@ -61,7 +62,7 @@
     </nav>
 
     <div class="t-sidebar-footer">
-        <div class="t-user-pill">
+        <a href="{% url 'edit_profile' %}" class="t-user-pill t-user-pill-link">
             {% if user_profile and user_profile.photo %}
                 <img src="{{ user_profile.photo.url }}" class="t-avatar" alt="{{ user_profile.full_name }}">
             {% else %}
@@ -71,7 +72,7 @@
                 <div class="t-user-name">{{ user_profile.full_name|truncatechars:18|default:"Tenant" }}</div>
                 <div class="t-user-role">@{{ user_profile.user.username }} • {{ user_profile.get_room_display|default:"No Room" }}</div>
             </div>
-        </div>
+        </a>
         {% if profile_completion < 100 %}
         <div style="margin-top:8px; padding:4px 8px; background:#fef3c7; border-radius:4px; font-size:10px; color:#92400e; text-align:center;">
             <i class="bi bi-exclamation-circle" style="margin-right:2px;"></i>
@@ -95,6 +96,10 @@
         <i class="bi bi-receipt"></i>
         <span>Billing</span>
     </a>
+    <a href="{% url 'tenant_reports' %}" class="t-bottom-link {% if request.resolver_match.url_name == 'tenant_reports' %}active{% endif %}">
+        <i class="bi bi-flag"></i>
+        <span>Reports</span>
+    </a>
     <a href="{% url 'edit_profile' %}" class="t-bottom-link {% if request.resolver_match.url_name == 'edit_profile' %}active{% endif %}">
         <i class="bi bi-person-circle"></i>
         <span>Profile</span>
@@ -106,24 +111,23 @@
 
     <!-- TOPBAR -->
     <div id="t-topbar">
-        <div style="display:flex; align-items:center; gap:10px;">
-            <button class="t-btn t-btn-outline t-btn-sm d-md-none" onclick="openSidebar()" style="padding:6px 10px;">
-                <i class="bi bi-list"></i>
-            </button>
-            <span class="t-page-title">{% block page_title %}Dashboard{% endblock %}</span>
-        </div>
+<span class="t-page-title">{% block page_title %}Dashboard{% endblock %}</span>
         <div class="t-topbar-right">
             <span class="t-date-chip d-none d-sm-block" id="t-date"></span>
             
             <!-- Notification Bell -->
             <div class="position-relative me-2">
-                <button class="t-btn t-btn-light position-relative" id="notifBtn" style="background: #f8f9fa; border: 1px solid #dee2e6; min-width: 40px; padding: 6px 10px;">
-                    <i class="bi bi-bell-fill"></i>
-                    {% if unread_count and unread_count > 0 %}
-                    <span class="t-badge t-badge-danger position-absolute top-0 start-100 translate-middle rounded-pill" style="font-size: 10px; padding: 2px 5px; background: #dc2626; color: white; border-radius: 10px; min-width: 18px; text-align: center;">
-                        {{ unread_count }}
-                    </span>
-                    {% endif %}
+                <button class="t-btn t-btn-light position-relative" id="notifBtn" 
+                    style="background: #f8f9fa; border: 1px solid #dee2e6; min-width: 40px; padding: 6px 10px;">
+                <i class="bi bi-bell-fill"></i>
+                {% if unread_count and unread_count > 0 %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                    style="font-size: 10px; padding: 2px 5px;"
+                    id="notification-count"
+                    data-notification-count>
+                    {{ unread_count }}
+                </span>
+                {% endif %}
                 </button>
             </div>
             
@@ -145,16 +149,29 @@
         <hr class="my-2">
         
         {% for notif in notifications %}
-            <a href="{% url 'mark_notification' notif.id %}" class="dropdown-item {% if not notif.is_read %}fw-bold text-primary{% endif %} text-decoration-none">
-                <div class="d-flex align-items-start">
-                    <i class="bi bi-bell-fill me-2 mt-1 {% if not notif.is_read %}text-primary{% else %}text-muted{% endif %}"></i>
-                    <div class="flex-grow-1">
-                        <div class="fw-semibold">{{ notif.title }}</div>
-                        <div class="small text-muted">{{ notif.message|truncatechars:50 }}</div>
-                        <small class="text-muted">{{ notif.created_at|timesince }} ago</small>
+            {% if notif.id %}
+                <a href="{% url 'mark_notification_read' notif.id %}" class="dropdown-item {% if not notif.is_read %}fw-bold text-primary{% endif %} text-decoration-none">
+                    <div class="d-flex align-items-start">
+                        <i class="bi bi-bell-fill me-2 mt-1 {% if not notif.is_read %}text-primary{% else %}text-muted{% endif %}"></i>
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold">{{ notif.title }}</div>
+                            <div class="small text-muted">{{ notif.message|truncatechars:50 }}</div>
+                            <small class="text-muted">{{ notif.created_at|timesince }} ago</small>
+                        </div>
+                    </div>
+                </a>
+            {% else %}
+                <div class="dropdown-item {% if not notif.is_read %}fw-bold text-primary{% endif %}">
+                    <div class="d-flex align-items-start">
+                        <i class="bi bi-bell-fill me-2 mt-1 {% if not notif.is_read %}text-primary{% else %}text-muted{% endif %}"></i>
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold">{{ notif.title }}</div>
+                            <div class="small text-muted">{{ notif.message|truncatechars:50 }}</div>
+                            <small class="text-muted">{{ notif.created_at|timesince }} ago</small>
+                        </div>
                     </div>
                 </div>
-            </a>
+            {% endif %}
             {% if not forloop.last %}<hr class="my-1">{% endif %}
         {% empty %}
             <div class="dropdown-item text-muted text-center py-3">
@@ -205,19 +222,30 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/phone-validation.js' %}"></script>
 <script>
+    // Error handler for message channel and other async errors
+    window.addEventListener('error', function(e) {
+        // Ignore service worker and message channel errors
+        if (e.message && e.message.includes('message channel')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    window.addEventListener('unhandledrejection', function(e) {
+        // Ignore promise rejections related to message channels
+        if (e.reason && e.reason.message && e.reason.message.includes('message channel')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
     // Date display
     const d = new Date();
     document.getElementById('t-date').textContent = d.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric', year:'numeric'});
 
-    function openSidebar() {
-        document.getElementById('t-sidebar').classList.add('open');
-        document.getElementById('t-overlay').classList.add('show');
-    }
-    function closeSidebar() {
-        document.getElementById('t-sidebar').classList.remove('open');
-        document.getElementById('t-overlay').classList.remove('show');
-    }
+    // openSidebar/closeSidebar removed - hamburger deleted
 
     // Add hover effects to alert close buttons
     document.querySelectorAll('.t-alert-close').forEach(btn => {

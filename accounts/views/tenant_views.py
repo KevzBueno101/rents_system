@@ -6,8 +6,6 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db.models import Q, Sum
-from tenant.services.dashboard_service import get_tenant_dashboard_data
-from maintenance.services.maintenance_service import get_dashboard_summary
 from ..models import Bill, MaintenanceReport, Room, TenantProfile, Violation
 from ..activity_utils import log_activity
 from .helpers import parse_phone, get_available_rooms
@@ -15,23 +13,22 @@ from .helpers import parse_phone, get_available_rooms
 
 @login_required(login_url='/')
 def tenant_dashboard(request):
-    """Tenant-only dashboard with actionable billing, receipt, and alert data."""
+    """Tenant-only dashboard."""
     if request.user.is_staff:
         return redirect('admin_dashboard')
     
-    # Get existing dashboard data
-    dashboard_data = get_tenant_dashboard_data(request.user)
-    
-    # Get new dashboard components data
-    dashboard_components = get_dashboard_summary(request.user)
-    
-    return render(request, 'tenant/tenant_dashboard.html', {
-        'dashboard_data': dashboard_data,
-        'maintenance': dashboard_components['maintenance'],
-        'payment': dashboard_components['payment'],
-        'activities': dashboard_components['activities'],
-    })
-
+    try:
+        from tenant.services.dashboard_service import get_tenant_dashboard_data
+        from maintenance.services.maintenance_service import get_upcoming_payment  # ← ADD THIS
+        
+        data = get_tenant_dashboard_data(request.user)
+        data['profile'] = data.get('tenant')
+        data['payment'] = get_upcoming_payment(request.user)
+        
+        return render(request, 'tenant/tenant_dashboard.html', data)
+    except TenantProfile.DoesNotExist:
+        messages.error(request, 'Tenant profile not found.')
+        return redirect('login')
 
 @login_required(login_url='/')
 def tenant_bills(request):
@@ -39,10 +36,14 @@ def tenant_bills(request):
     if request.user.is_staff:
         return redirect('admin_dashboard')
 
-    profile = TenantProfile.objects.select_related('user', 'room').get(user=request.user)
+    # Use enhanced dashboard service for consistent data and real-time sync
+    from tenant.services.dashboard_service import get_tenant_dashboard_data
+    dashboard_data = get_tenant_dashboard_data(request.user)
+    
+    # Get additional bills data for detailed view
     status_filter = request.GET.get('status', '')
     bills = (
-        Bill.objects.filter(tenant=profile)
+        Bill.objects.filter(tenant=dashboard_data['tenant'])
         .select_related('tenant', 'room')
         .prefetch_related('payments', 'items')
         .order_by('-created_at')
@@ -50,10 +51,12 @@ def tenant_bills(request):
     if status_filter:
         bills = bills.filter(status=status_filter)
 
-    all_bills = Bill.objects.filter(tenant=profile)
+    # Calculate additional stats using enhanced service data
+    all_bills = Bill.objects.filter(tenant=dashboard_data['tenant'])
     total_billed = all_bills.aggregate(total=Sum('total_amount'))['total'] or 0
-    total_paid = sum(bill.paid_amount for bill in all_bills)
-
+    total_paid = all_bills.aggregate(
+    total=Sum('payments__amount')
+)['total'] or 0
     # Calculate additional stats
     from datetime import datetime
     current_month = datetime.now().month
@@ -68,7 +71,7 @@ def tenant_bills(request):
     # Calculate average bill amount
     bill_count = all_bills.count()
     average_bill = total_billed / bill_count if bill_count > 0 else 0
-
+    
     # Detect mobile device
     user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
     is_mobile = any(mobile in user_agent for mobile in ['mobile', 'android', 'iphone', 'ipad', 'tablet'])
@@ -76,8 +79,11 @@ def tenant_bills(request):
     # Choose template based on device
     template_name = 'tenant/tenant_bills_mobile.html' if is_mobile else 'tenant/tenant_bills.html'
     
-    return render(request, template_name, {
-        'profile': profile,
+    # Merge enhanced dashboard data with bills-specific data
+    context = {
+        # Enhanced dashboard data for real-time sync
+        **dashboard_data,
+        # Bills-specific data for detailed view
         'bills': bills,
         'status_filter': status_filter,
         'total_billed': total_billed,
@@ -88,7 +94,9 @@ def tenant_bills(request):
         'this_month_billed': this_month_billed,
         'average_bill': average_bill,
         'is_mobile': is_mobile,
-    })
+    }
+    
+    return render(request, template_name, context)
 
 
 @login_required(login_url='/')

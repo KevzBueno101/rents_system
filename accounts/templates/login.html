@@ -123,7 +123,9 @@
             <!-- PHONE -->
             <div class="input-group mb-2">
               <span class="input-group-text"><i class="bi bi-phone"></i></span>
-              <input type="text" name="phone" class="form-control" placeholder="Phone Number" required>
+              <input type="tel" name="phone" class="form-control phone-input" placeholder="Phone Number (10-15 digits)" 
+                       pattern="[0-9]{10,15}" title="Phone number must contain only digits (10-15 numbers)" 
+                       maxlength="15" required>
             </div>
 
             <!-- ROOM NUMBER -->
@@ -328,17 +330,53 @@
       fetch('{% url "password_reset" %}', {
         method: 'POST',
         body: formData,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
+        },
+        redirect: 'manual'
       })
-      .then(response => {
-        if (!response.ok) throw new Error('Network response was not ok');
-        return response.text();
+      .then(async (response) => {
+        const contentType = (response.headers.get('Content-Type') || '').toLowerCase();
+        if (contentType.includes('application/json')) {
+          const data = await response.json();
+          if (!response.ok || !data.ok) {
+            const msg =
+              data.error ||
+              (data.errors && JSON.stringify(data.errors)) ||
+              ('HTTP ' + response.status);
+            throw new Error(msg);
+          }
+          return { mode: 'json', data };
+        }
+        if (response.status === 302 || response.status === 0 || response.redirected) {
+          return { mode: 'redirect' };
+        }
+        if (!response.ok) {
+          throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+        }
+        const txt = await response.text();
+        if (txt.includes('error') || txt.includes('errorlist')) {
+          throw new Error('Please check the email address and try again.');
+        }
+        return { mode: 'htmlFallback' };
       })
-      .then(html => {
+      .then((result) => {
         const modalBody = document.querySelector('#forgotPasswordModal .modal-body');
         const formElement = modalBody.querySelector('form');
         if (formElement) formElement.style.display = 'none';
         modalBody.querySelectorAll('.alert').forEach(alert => alert.remove());
+
+        const message =
+          (result.data && result.data.message) ||
+          'If an account with that email exists, a password reset link has been sent.';
+
+        const consoleHint =
+          {% if DEBUG %}
+          `<p class="text-muted small">If you use the console email backend, check the Django console for the reset link.</p>`
+          {% else %}
+          `<p class="text-muted small">Check your inbox and spam folder.</p>`
+          {% endif %}
 
         const successDiv = document.createElement('div');
         successDiv.className = 'text-center';
@@ -346,9 +384,9 @@
           <div class="mb-3">
             <i class="bi bi-envelope-check text-success" style="font-size: 3rem;"></i>
           </div>
-          <h5>Email Sent!</h5>
-          <p class="text-muted">If an account with that email exists, a password reset link has been sent.</p>
-          <p class="text-muted small">Check the Django console for the reset link.</p>
+          <h5>Request received</h5>
+          <p class="text-muted">${message}</p>
+          ${consoleHint}
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         `;
         modalBody.appendChild(successDiv);
@@ -359,9 +397,18 @@
       .catch(error => {
         console.error('Error:', error);
         const modalBody = document.querySelector('#forgotPasswordModal .modal-body');
+        
+        // Remove existing error messages
+        modalBody.querySelectorAll('.alert-danger').forEach(alert => alert.remove());
+        
         const errorDiv = document.createElement('div');
-        errorDiv.className = 'alert alert-danger';
-        errorDiv.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>An error occurred. Please try again.';
+        errorDiv.className = 'alert alert-danger alert-dismissible fade show';
+        errorDiv.innerHTML = `
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          <strong>Error:</strong> ${error.message || 'An error occurred. Please try again.'}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
         const formElement = modalBody.querySelector('form');
         if (formElement) modalBody.insertBefore(errorDiv, formElement);
         else modalBody.appendChild(errorDiv);
@@ -379,12 +426,13 @@
       }
     });
 
+    
     document.getElementById('forgotPasswordModal').addEventListener('hidden.bs.modal', function () {
       const modalBody = this.querySelector('.modal-body');
       const form = modalBody.querySelector('form');
       modalBody.querySelectorAll('.alert').forEach(alert => alert.remove());
       const successDiv = modalBody.querySelector('.text-center');
-      if (successDiv && successDiv.innerHTML.includes('Email Sent!')) successDiv.remove();
+      if (successDiv && successDiv.innerHTML.includes('Request received')) successDiv.remove();
       if (form) { form.style.display = 'block'; form.reset(); }
       const modalFooter = this.querySelector('.modal-footer');
       if (modalFooter) modalFooter.style.display = 'flex';

@@ -1,0 +1,75 @@
+<section aria-label="Critical billing summary">
+    <div class="row g-3">
+
+        <!-- CURRENT BALANCE -->
+        <div class="col-6 col-md-6 col-lg-3">
+            <div class="metric-card {% if summary.has_overdue %}danger{% elif balance > 0 %}warning{% else %}success{% endif %}" data-balance="current">
+                <div class="metric-label">Current Balance</div>
+                <div>
+                    <div class="metric-value">PHP {{ balance|floatformat:2 }}</div>
+                    <div class="metric-sub">
+                        {% if balance > 0 %}Payment needed{% else %}No outstanding balance{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEXT DUE DATE -->
+        <div class="col-6 col-md-6 col-lg-3">
+            <div class="metric-card {% if payment_status == 'overdue' %}danger{% else %}warning{% endif %}" data-balance="due-date">
+                <div class="metric-label">Next Due Date</div>
+                <div>
+                    <div class="metric-value">
+                        {% if due_date %}{{ due_date|date:"M d, Y" }}{% else %}No bill{% endif %}
+                    </div>
+                    <div class="metric-sub">
+                        {% if current_bill %}{{ current_bill.bill_number }}{% else %}Nothing due right now{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAYMENT STATUS -->
+        <div class="col-6 col-md-6 col-lg-3">
+            <div class="metric-card {% if payment_status == 'paid' %}success{% elif payment_status == 'overdue' %}danger{% else %}warning{% endif %}" data-balance="payment-status">
+                <div class="metric-label">Payment Status</div>
+                <div>
+                    <div class="metric-value">{{ payment_status_label }}</div>
+                    <div class="metric-sub">
+                        {% if payment_status == 'paid' %}Account is current{% elif payment_status == 'no_bill' %}No active billing yet{% else %}Review billing details{% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROOM INFO -->
+        <div class="col-6 col-md-6 col-lg-3">
+            <div class="metric-card info" data-balance="room-info">
+                <div class="metric-label">Room Info</div>
+                <div>
+                    <div class="metric-value">
+                        {% if room %}
+                            {{ room.room_code }}
+                        {% elif profile.room %}
+                            {{ profile.room.room_code }}
+                        {% elif profile.room_number %}
+                            {{ profile.room_number }}
+                        {% else %}
+                            Unassigned
+                        {% endif %}
+                    </div>
+                    <div class="metric-sub">
+                        {% if room %}
+                            Monthly rent PHP {{ room.monthly_rate|floatformat:2 }}
+                        {% elif profile.room %}
+                            Monthly rent PHP {{ profile.room.monthly_rate|floatformat:2 }}
+                        {% else %}
+                            Contact admin for assignment
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>

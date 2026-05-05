@@ -1,0 +1,72 @@
+<section class="section-card" id="payment-history">
+    <div class="section-header">
+        <h2 class="section-title"><i class="bi bi-cash-stack text-success"></i> Payment Overview</h2>
+        <a href="{% url 'tenant_bills' %}" class="t-btn t-btn-outline t-btn-sm">View Full History</a>
+    </div>
+    <div class="section-body">
+        <div class="row g-3 mb-3">
+
+            <!-- LATEST PAYMENT -->
+            <div class="col-12 col-md-4">
+                <div class="border rounded p-3 h-100">
+                    <div class="muted-small">Latest Payment</div>
+                    <strong data-latest-payment>
+                        {% if latest_payment %}
+                            {{ latest_payment.payment_date|date:"M d, Y" }}
+                        {% else %}
+                            No payment yet
+                        {% endif %}
+                    </strong>
+                </div>
+            </div>
+
+            <!-- AMOUNT PAID -->
+            <div class="col-12 col-md-4">
+                <div class="border rounded p-3 h-100">
+                    <div class="muted-small">Amount Paid</div>
+                    <strong class="text-success">PHP {{ summary.total_paid|floatformat:2 }}</strong>
+                </div>
+            </div>
+
+            <!-- REMAINING BALANCE -->
+            <div class="col-12 col-md-4">
+                <div class="border rounded p-3 h-100">
+                    <div class="muted-small">Remaining Balance</div>
+                    <strong data-remaining-balance 
+                            class="{% if balance > 0 %}text-danger{% else %}text-success{% endif %}">
+                        PHP {{ balance|floatformat:2 }}
+                    </strong>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- PAYMENT HISTORY LIST -->
+        {% if payment_history %}
+            <div class="timeline-list">
+                {% for payment in payment_history %}
+                    <div class="timeline-item">
+                        <div>
+                            <strong>PHP {{ payment.amount|floatformat:2 }}</strong>
+                            <div class="muted-small">
+                                {{ payment.bill.bill_number }} - {{ payment.get_payment_method_display }}
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div>{{ payment.payment_date|date:"M d, Y" }}</div>
+                            {% if payment.reference_number %}
+                                <div class="muted-small">{{ payment.reference_number }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="t-empty py-4">
+                <i class="bi bi-wallet2"></i>
+                <p>No payments recorded yet.</p>
+            </div>
+        {% endif %}
+
+    </div>
+</section>

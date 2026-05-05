@@ -10,7 +10,7 @@ from .auth_views import (
     logout_view,
     edit_profile,
     CustomPasswordResetView,
-    CustomPasswordResetConfirmView,
+    custom_password_reset_confirm,
 )
 
 # Import from admin_views
@@ -25,6 +25,9 @@ from .admin_views import (
 # Import from tenant_views
 from .tenant_views import (
     tenant_dashboard,
+    tenant_bills,
+    tenant_reports,
+    tenant_submit_maintenance,
     tenant_list,
     add_tenant,
     edit_tenant,
@@ -34,6 +37,7 @@ from .tenant_views import (
 # Import from room_views
 from .room_views import (
     room_list,
+    tenant_show_rooms,
     add_room,
     edit_room,
     delete_room,
@@ -60,6 +64,9 @@ from .billing_views import (
     view_bill,
     delete_bill,
     record_payment,
+    generate_payment_receipt,
+    download_payment_receipt,
+    send_payment_receipt,
     delete_payment,
     mark_as_sent,
 )
@@ -101,7 +108,7 @@ __all__ = [
     'logout_view',
     'edit_profile',
     'CustomPasswordResetView',
-    'CustomPasswordResetConfirmView',
+    'custom_password_reset_confirm',
     # Admin views
     'admin_dashboard',
     'admin_list',
@@ -110,12 +117,16 @@ __all__ = [
     'delete_admin',
     # Tenant views
     'tenant_dashboard',
+    'tenant_bills',
+    'tenant_reports',
+    'tenant_submit_maintenance',
     'tenant_list',
     'add_tenant',
     'edit_tenant',
     'delete_tenant',
     # Room views
     'room_list',
+    'tenant_show_rooms',
     'add_room',
     'edit_room',
     'delete_room',
@@ -139,6 +150,9 @@ __all__ = [
     'view_bill',
     'delete_bill',
     'record_payment',
+    'generate_payment_receipt',
+    'download_payment_receipt',
+    'send_payment_receipt',
     'delete_payment',
     'mark_as_sent',
     # Maintenance views

@@ -1,0 +1,27 @@
+<div class="d-flex flex-wrap gap-1 align-items-center">
+    {% if payment.receipt_image %}
+        <a href="{{ payment.receipt_image.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-eye"></i> View Receipt
+        </a>
+        <a href="{% url 'download_payment_receipt' payment.id %}" class="btn btn-sm btn-outline-success">
+            <i class="bi bi-download"></i> Download
+        </a>
+        {% if request.user.is_staff %}
+        <form method="POST" action="{% url 'send_payment_receipt' payment.id %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-send"></i> Send
+            </button>
+        </form>
+        {% endif %}
+    {% elif request.user.is_staff %}
+        <form method="POST" action="{% url 'generate_payment_receipt' payment.id %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-dark">
+                <i class="bi bi-receipt"></i> Generate
+            </button>
+        </form>
+    {% else %}
+        <span class="text-muted">No receipt yet</span>
+    {% endif %}
+</div>

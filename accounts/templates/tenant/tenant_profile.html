@@ -1,0 +1,504 @@
+{% extends 'tenant/tenant_base.html' %}
+
+{% block title %}My Profile{% endblock %}
+{% block page_title %}Profile{% endblock %}
+
+{% block content %}
+
+<div style="display:grid; grid-template-columns:300px 1fr; gap:20px; align-items:start;">
+
+    <!-- LEFT: Profile Card -->
+    <div>
+        <div class="t-card" style="text-align:center; padding:32px 20px;">
+            <!-- Avatar -->
+            <div style="position:relative; display:inline-block; margin-bottom:16px;">
+                {% if profile.photo %}
+                <img src="{{ profile.photo.url }}"
+                     style="width:96px; height:96px; border-radius:50%; object-fit:cover; border:3px solid #e8e6e1;">
+                {% else %}
+                <div style="width:96px; height:96px; border-radius:50%; background:linear-gradient(135deg,#2d6a4f,#52b788); display:flex; align-items:center; justify-content:center; font-size:36px; font-weight:800; color:#fff; margin:0 auto;">
+                    {{ profile.full_name|first|upper }}
+                </div>
+                {% endif %}
+                <label for="photoUpload" style="position:absolute; bottom:2px; right:2px; width:28px; height:28px; background:#1a1a1a; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; border:2px solid #fff;">
+                    <i class="bi bi-camera-fill" style="font-size:12px; color:#fff;"></i>
+                </label>
+            </div>
+
+            <h5 style="font-weight:700; margin:0 0 4px;">{{ profile.full_name }}</h5>
+            <div style="font-size:13px; color:#888; margin-bottom:16px;">{{ profile.get_room_display }}</div>
+
+            <div style="display:flex; flex-direction:column; gap:8px; text-align:left; font-size:13.5px;">
+                <div style="padding:10px 12px; background:#fafaf8; border-radius:8px; border:1px solid #f0ede8; display:flex; align-items:center; gap:10px;">
+                    <i class="bi bi-envelope" style="color:#888; flex-shrink:0;"></i>
+                    <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ profile.user.email|default:"—" }}</span>
+                </div>
+                <div style="padding:10px 12px; background:#fafaf8; border-radius:8px; border:1px solid #f0ede8; display:flex; align-items:center; gap:10px;">
+                    <i class="bi bi-phone" style="color:#888; flex-shrink:0;"></i>
+                    <span>{{ profile.phone|default:"—" }}</span>
+                </div>
+                <div style="padding:10px 12px; background:#fafaf8; border-radius:8px; border:1px solid #f0ede8; display:flex; align-items:center; gap:10px;">
+                    <i class="bi bi-person" style="color:#888; flex-shrink:0;"></i>
+                    <span style="font-family:'DM Mono',monospace; font-size:12px;">{{ profile.user.username }}</span>
+                </div>
+                <div style="padding:10px 12px; background:#fafaf8; border-radius:8px; border:1px solid #f0ede8; display:flex; align-items:center; gap:10px;">
+                    <i class="bi bi-calendar3" style="color:#888; flex-shrink:0;"></i>
+                    <span style="font-size:12.5px;">Joined {{ profile.created_at|date:"M d, Y" }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT: Edit Form -->
+    <div>
+        <div class="t-card">
+            <div class="t-card-header">
+                <div class="t-card-title"><i class="bi bi-pencil-square" style="color:#2d6a4f;"></i> Edit Profile</div>
+            </div>
+            <div class="t-card-body">
+                {% if profile_errors %}
+                    <div class="t-alert t-alert-danger">
+                        <i class="bi bi-exclamation-triangle" style="flex-shrink:0; margin-top:1px;"></i>
+                        <div>
+                            {% for error in profile_errors %}
+                                <div>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <form method="POST" action="{% url 'edit_profile' %}" enctype="multipart/form-data" id="profileForm">
+                    {% csrf_token %}
+
+                    <!-- Hidden photo input -->
+                    <input type="file" id="photoUpload" name="photo" accept="image/*" style="display:none;" onchange="previewPhoto(event)">
+
+                    <div style="margin-bottom:16px;">
+                        <label style="font-size:12.5px; font-weight:600; color:#555; display:block; margin-bottom:6px;">Username</label>
+                        {{ form.username }}
+                        {% if form.username.errors %}
+                            <div style="color:#dc3545; font-size:12px; margin-top:4px;">
+                                {{ form.username.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <small style="color:#6b7280; font-size:11px; margin-top:4px; display:block;">Choose a unique username for your account</small>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+                        <div>
+                            <label style="font-size:12.5px; font-weight:600; color:#555; display:block; margin-bottom:6px;">Full Name</label>
+                            <input type="text" name="full_name" class="t-input" value="{{ profile.full_name }}" required>
+                        </div>
+                        <div>
+                            <label style="font-size:12.5px; font-weight:600; color:#555; display:block; margin-bottom:6px;">Phone</label>
+                            <input type="tel" 
+                                   name="phone" 
+                                   class="t-input phone-input" 
+                                   value="{{ profile.phone|default:'' }}"
+                                   pattern="[0-9]{10,15}"
+                                   title="Phone number must contain only digits (10-15 numbers)"
+                                   placeholder="Enter phone number (10-15 digits)"
+                                   maxlength="15">
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:16px;">
+                        <label style="font-size:12.5px; font-weight:600; color:#555; display:block; margin-bottom:6px;">Email</label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                            <div style="color:#dc3545; font-size:12px; margin-top:4px;">
+                                {{ form.email.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="t-sep"></div>
+                    <div style="font-size:12.5px; font-weight:700; color:#555; margin-bottom:14px; display:flex; align-items:center; gap:6px;">
+                        <i class="bi bi-lock"></i> Change Password <span style="font-weight:400; color:#aaa;">(leave blank to keep current)</span>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:20px;">
+                        <div>
+                            <label style="font-size:12.5px; font-weight:600; color:#555; display:block; margin-bottom:6px;">Current Password</label>
+                            <input type="password" name="current_password" class="t-input" placeholder="Current">
+                        </div>
+                        <div>
+                            <label style="font-size:12.5px; font-weight:600; color:#555; display:block; margin-bottom:6px;">New Password</label>
+                            <input type="password" name="new_password" class="t-input" placeholder="New">
+                        </div>
+                        <div>
+                            <label style="font-size:12.5px; font-weight:600; color:#555; display:block; margin-bottom:6px;">Confirm Password</label>
+                            <input type="password" name="confirm_password" class="t-input" placeholder="Confirm">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="t-btn t-btn-primary">
+                        <i class="bi bi-check-circle"></i> Save Changes
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Profile Completion -->
+        <div class="t-card" style="margin-top:20px;">
+            <div class="t-card-header">
+                <div class="t-card-title"><i class="bi bi-trophy" style="color:#f59e0b;"></i> Profile Completion</div>
+            </div>
+            <div class="t-card-body">
+                <div style="margin-bottom:16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <span style="font-size:14px; font-weight:600;">{{ completion_percentage|floatformat:0 }}% Complete</span>
+                        <span style="font-size:12px; color:#888;">{{ filled_fields_count }}/{{ completion_fields|length }} fields filled</span>
+                    </div>
+                    <div style="width:100%; height:8px; background:#f3f4f6; border-radius:4px; overflow:hidden;">
+                        <div style="width:{{ completion_percentage }}%; height:100%; background:linear-gradient(90deg, #10b981, #059669); border-radius:4px; transition:width 0.3s ease;"></div>
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:12px;">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        {% if completion_fields.full_name %}
+                            <i class="bi bi-check-circle-fill" style="color:#10b981;"></i>
+                            <span>Full Name</span>
+                        {% else %}
+                            <i class="bi bi-circle" style="color:#d1d5db;"></i>
+                            <span style="color:#888;">Full Name</span>
+                        {% endif %}
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        {% if completion_fields.email %}
+                            <i class="bi bi-check-circle-fill" style="color:#10b981;"></i>
+                            <span>Email</span>
+                        {% else %}
+                            <i class="bi bi-circle" style="color:#d1d5db;"></i>
+                            <span style="color:#888;">Email</span>
+                        {% endif %}
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        {% if completion_fields.phone %}
+                            <i class="bi bi-check-circle-fill" style="color:#10b981;"></i>
+                            <span>Phone</span>
+                        {% else %}
+                            <i class="bi bi-circle" style="color:#d1d5db;"></i>
+                            <span style="color:#888;">Phone</span>
+                        {% endif %}
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        {% if completion_fields.photo %}
+                            <i class="bi bi-check-circle-fill" style="color:#10b981;"></i>
+                            <span>Photo</span>
+                        {% else %}
+                            <i class="bi bi-circle" style="color:#d1d5db;"></i>
+                            <span style="color:#888;">Photo</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if completion_percentage < 100 %}
+                    <div style="margin-top:12px; padding:8px 12px; background:#fef3c7; border:1px solid #fbbf24; border-radius:6px; font-size:12px; color:#92400e;">
+                        <i class="bi bi-info-circle" style="margin-right:4px;"></i>
+                        Complete your profile to get the most out of your account!
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Account info read-only -->
+        <div class="t-card" style="margin-top:20px;">
+            <div class="t-card-header">
+                <div class="t-card-title"><i class="bi bi-info-circle" style="color:#888;"></i> Account Information</div>
+            </div>
+            <div class="t-card-body">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; font-size:13.5px;">
+                    <div>
+                        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#aaa; margin-bottom:4px;">Username</div>
+                        <div style="font-family:'DM Mono',monospace; font-size:13px;">{{ profile.user.username }}</div>
+                    </div>
+                    <div>
+                        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#aaa; margin-bottom:4px;">Account Status</div>
+                        <span class="t-badge t-badge-success"><i class="bi bi-check-circle"></i> Active</span>
+                    </div>
+                    <div>
+                        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#aaa; margin-bottom:4px;">Member Since</div>
+                        <div>{{ profile.created_at|date:"F d, Y" }}</div>
+                    </div>
+                    <div>
+                        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#aaa; margin-bottom:4px;">Assigned Room</div>
+                        <div>{{ profile.get_room_display }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function previewPhoto(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        // Update avatar preview
+        const avatarEl = document.querySelector('.t-sidebar-footer .t-avatar');
+        if (avatarEl && avatarEl.tagName === 'IMG') avatarEl.src = e.target.result;
+        
+        // Update profile card avatar
+        const profileAvatar = document.querySelector('.t-card img[src*="{{ profile.photo.url }}"]');
+        if (profileAvatar) profileAvatar.src = e.target.result;
+        
+        // Update avatar placeholder
+        const avatarPlaceholder = document.querySelector('.t-card div[style*="background:linear-gradient"]');
+        if (avatarPlaceholder) {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.style.cssText = 'width:96px; height:96px; border-radius:50%; object-fit:cover; border:3px solid #e8e6e1;';
+            avatarPlaceholder.parentNode.replaceChild(img, avatarPlaceholder);
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+function validateField(field) {
+    const value = field.value.trim();
+    const fieldName = field.name;
+    let error = '';
+    
+    switch(fieldName) {
+        case 'username':
+            if (!value || value.length < 3) {
+                error = 'Username must be at least 3 characters long.';
+            } else if (!value.replace('_', '').replace('-', '').match(/^[a-zA-Z0-9]+$/)) {
+                error = 'Username can only contain letters, numbers, underscores, and hyphens.';
+            } else {
+                // Real-time username availability check
+                checkUsernameAvailability(value, field);
+                return; // Skip immediate validation for username
+            }
+            break;
+        case 'full_name':
+            if (!value || value.length < 2) {
+                error = 'Full name must be at least 2 characters long.';
+            }
+            break;
+        case 'email':
+            if (value && (!value.includes('@') || !value.split('@')[1].includes('.'))) {
+                error = 'Please enter a valid email address.';
+            }
+            break;
+        case 'phone':
+            if (value) {
+                const cleanPhone = value.replace(/\D/g, '');
+                if (cleanPhone.length < 10) {
+                    error = 'Please enter a valid phone number.';
+                }
+            }
+            break;
+        case 'new_password':
+            if (value && value.length < 8) {
+                error = 'New password must be at least 8 characters long.';
+            }
+            break;
+        case 'confirm_password':
+            const newPassword = document.querySelector('input[name="new_password"]').value;
+            if (value && value !== newPassword) {
+                error = 'New passwords do not match.';
+            }
+            break;
+    }
+    
+    // Remove existing error message
+    const existingError = field.parentNode.querySelector('.field-error');
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    // Add error message if there is one
+    if (error) {
+        const errorEl = document.createElement('div');
+        errorEl.className = 'field-error';
+        errorEl.style.cssText = 'color: #dc2626; font-size: 12px; margin-top: 4px;';
+        errorEl.textContent = error;
+        field.parentNode.appendChild(errorEl);
+        field.style.borderColor = '#dc2626';
+    } else {
+        field.style.borderColor = '';
+    }
+}
+
+// Add real-time validation to form fields
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('profileForm');
+    if (!form) return;
+    
+    // Add validation to input fields
+    const fields = ['username', 'full_name', 'email', 'phone', 'new_password', 'confirm_password'];
+    fields.forEach(fieldName => {
+        const field = form.querySelector(`input[name="${fieldName}"]`);
+        if (field) {
+            field.addEventListener('blur', () => validateField(field));
+            field.addEventListener('input', () => {
+                // Clear error on input
+                const existingError = field.parentNode.querySelector('.field-error');
+                if (existingError) {
+                    existingError.remove();
+                    field.style.borderColor = '';
+                }
+            });
+        }
+    });
+    
+    // Add form submission validation
+    form.addEventListener('submit', function(e) {
+        let hasErrors = false;
+        
+        fields.forEach(fieldName => {
+            const field = form.querySelector(`input[name="${fieldName}"]`);
+            if (field) {
+                validateField(field);
+                if (field.parentNode.querySelector('.field-error')) {
+                    hasErrors = true;
+                }
+            }
+        });
+        
+        if (hasErrors) {
+            e.preventDefault();
+            // Scroll to first error
+            const firstError = form.querySelector('.field-error');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    });
+});
+
+function checkUsernameAvailability(username, field) {
+    // Show loading state
+    const existingError = field.parentNode.querySelector('.field-error');
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    field.style.borderColor = '#f59e0b';
+    
+    // Simulate API call (replace with actual AJAX call)
+    setTimeout(() => {
+        // This would be an actual API call in production
+        fetch(`/api/check-username/?username=${encodeURIComponent(username)}`, {
+            method: 'GET',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.available) {
+                field.style.borderColor = '#10b981';
+                showFieldMessage(field, 'Username is available', 'success');
+            } else {
+                field.style.borderColor = '#dc2626';
+                showFieldMessage(field, 'Username is already taken', 'error');
+            }
+        })
+        .catch(() => {
+            // Fallback validation for demo
+            const currentUsername = '{{ profile.user.username }}';
+            if (username.toLowerCase() === currentUsername.toLowerCase()) {
+                field.style.borderColor = '#10b981';
+                showFieldMessage(field, 'Username is available', 'success');
+            } else {
+                field.style.borderColor = '#dc2626';
+                showFieldMessage(field, 'Username is already taken', 'error');
+            }
+        });
+    }, 500);
+}
+
+function showFieldMessage(field, message, type) {
+    // Remove existing message
+    const existingMessage = field.parentNode.querySelector('.field-message');
+    if (existingMessage) {
+        existingMessage.remove();
+    }
+    
+    // Create message element
+    const messageEl = document.createElement('div');
+    messageEl.className = 'field-message';
+    messageEl.style.cssText = `
+        font-size: 11px;
+        margin-top: 4px;
+        color: ${type === 'success' ? '#10b981' : '#dc2626'};
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    `;
+    messageEl.innerHTML = `
+        <i class="bi bi-${type === 'success' ? 'check-circle' : 'x-circle'}"></i>
+        ${message}
+    `;
+    
+    field.parentNode.appendChild(messageEl);
+    
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+        if (messageEl.parentNode) {
+            messageEl.remove();
+        }
+    }, 3000);
+}
+
+function showMessage(message, type) {
+    // Create message element
+    const messageEl = document.createElement('div');
+    messageEl.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 16px;
+        background: ${type === 'success' ? '#10b981' : '#dc2626'};
+        color: white;
+        border-radius: 6px;
+        font-size: 14px;
+        z-index: 9999;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        animation: slideIn 0.3s ease;
+    `;
+    messageEl.textContent = message;
+    
+    // Add animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    document.body.appendChild(messageEl);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        messageEl.style.animation = 'slideIn 0.3s ease reverse';
+        setTimeout(() => {
+            document.body.removeChild(messageEl);
+            document.head.removeChild(style);
+        }, 300);
+    }, 3000);
+}
+</script>
+
+{% block extra_styles %}
+<style>
+@media (max-width:768px) {
+    .t-card-body > form > div[style*="grid-template-columns:1fr 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+    }
+    div[style*="grid-template-columns:300px 1fr"] {
+        grid-template-columns: 1fr !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% endblock %}

@@ -1,0 +1,305 @@
+{% extends 'tenant/tenant_base.html' %}
+{% load static %}
+
+{% block title %}Notifications - RENTS{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{% url 'tenant_dashboard' %}">Dashboard</a>
+        </li>
+        <li class="breadcrumb-item active" aria-current="page">Notifications</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-bell"></i> Notifications</h2>
+                <div>
+                    {% if unread_count > 0 %}
+                        <span class="badge bg-primary">{{ unread_count }} unread</span>
+                    {% endif %}
+                    {% if notifications %}
+                        <a href="{% url 'mark_all_notifications_read' %}" class="btn btn-sm btn-outline-secondary">Mark All Read</a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if notifications %}
+                <div class="list-group">
+                    {% for notif in notifications %}
+                        <div class="list-group-item {% if not notif.is_read %}list-group-item-primary{% endif %} {% if not notif.is_read %}border-start border-4 border-primary{% endif %}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-start">
+                                        <div class="me-3">
+                                            <i class="bi bi-bell-fill {% if not notif.is_read %}text-primary{% else %}text-muted{% endif %}"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1 {% if not notif.is_read %}fw-bold{% endif %}">
+                                                {{ notif.title }}
+                                            </h6>
+                                            <p class="mb-1">{{ notif.message }}</p>
+                                            <small class="text-muted">
+                                                <i class="bi bi-clock"></i> {{ notif.created_at|timesince }} ago
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ms-2 d-flex flex-column align-items-end">
+                                    {% if not notif.is_read %}
+                                        <a href="{% url 'mark_notification_read' notif.id %}" class="btn btn-sm btn-outline-primary mb-1">Mark Read</a>
+                                    {% endif %}
+                                    {% if notif.link and notif.link != '/tenant/dashboard/' %}
+                                        <a href="{{ notif.link }}" class="btn btn-sm btn-primary">View</a>
+                                    {% endif %}
+                                    {% if notif.is_read %}
+                                        <span class="badge bg-success">Read</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Pagination for future enhancement -->
+                {% if notifications|length > 10 %}
+                <nav aria-label="Notification pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1">Previous</a>
+                        </li>
+                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">Next</a></li>
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-bell-slash fs-1 text-muted"></i>
+                    <h4 class="text-muted mt-3">No Notifications</h4>
+                    <p class="text-muted">You don't have any notifications yet.</p>
+                    <a href="{% url 'tenant_dashboard' %}" class="btn btn-primary mt-3">
+                        <i class="bi bi-house"></i> Back to Dashboard
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.list-group-item {
+    transition: all 0.2s ease-in-out;
+}
+
+.list-group-item:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.list-group-item-primary {
+    background-color: rgba(13, 110, 253, 0.1);
+    border-color: rgba(13, 110, 253, 0.3);
+}
+
+.btn-sm {
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-sm:hover {
+    transform: translateY(-1px);
+}
+
+.breadcrumb {
+    background-color: transparent;
+    padding: 0;
+    margin-bottom: 1rem;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: ">";
+    color: #6c757d;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click handlers for "Mark Read" buttons
+    const markReadButtons = document.querySelectorAll('a[href*="mark_notification_read"]');
+    
+    markReadButtons.forEach(function(button) {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const url = this.href;
+            const notificationItem = this.closest('.list-group-item');
+            
+            // Show loading state
+            this.innerHTML = '<i class="bi bi-hourglass-split"></i> Marking...';
+            this.classList.add('disabled');
+            
+            // Send AJAX request
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update UI
+                    notificationItem.classList.remove('list-group-item-primary', 'border-start', 'border-4', 'border-primary');
+                    notificationItem.classList.add('list-group-item-light');
+                    
+                    // Update title to normal weight
+                    const title = notificationItem.querySelector('h6');
+                    title.classList.remove('fw-bold');
+                    
+                    // Update icon
+                    const icon = notificationItem.querySelector('.bi-bell-fill');
+                    icon.classList.remove('text-primary');
+                    icon.classList.add('text-muted');
+                    
+                    // Replace button with "Read" badge
+                    const buttonContainer = this.closest('.d-flex');
+                    this.remove();
+                    const readBadge = document.createElement('span');
+                    readBadge.className = 'badge bg-success';
+                    readBadge.textContent = 'Read';
+                    buttonContainer.appendChild(readBadge);
+                    
+                    // Update unread count
+                    const unreadBadge = document.querySelector('.badge.bg-primary');
+                    if (unreadBadge) {
+                        const currentCount = parseInt(unreadBadge.textContent);
+                        if (currentCount > 1) {
+                            unreadBadge.textContent = (currentCount - 1) + ' unread';
+                        } else {
+                            unreadBadge.remove();
+                        }
+                    }
+                } else {
+                    // Show error
+                    this.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Error';
+                    setTimeout(() => {
+                        this.innerHTML = 'Mark Read';
+                        this.classList.remove('disabled');
+                    }, 2000);
+                }
+            })
+            .catch(error => {
+                console.error('Error marking notification as read:', error);
+                this.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Error';
+                setTimeout(() => {
+                    this.innerHTML = 'Mark Read';
+                    this.classList.remove('disabled');
+                }, 2000);
+            });
+        });
+    });
+    
+    // Handle "Mark All Read" button
+    const markAllReadBtn = document.querySelector('a[href*="mark_all_notifications_read"]');
+    if (markAllReadBtn) {
+        markAllReadBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const url = this.href;
+            
+            // Show loading state
+            this.innerHTML = '<i class="bi bi-hourglass-split"></i> Marking All...';
+            this.classList.add('disabled');
+            
+            // Send AJAX request
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update all notifications
+                    const notificationItems = document.querySelectorAll('.list-group-item');
+                    notificationItems.forEach(function(item) {
+                        item.classList.remove('list-group-item-primary', 'border-start', 'border-4', 'border-primary');
+                        item.classList.add('list-group-item-light');
+                        
+                        const title = item.querySelector('h6');
+                        if (title) title.classList.remove('fw-bold');
+                        
+                        const icon = item.querySelector('.bi-bell-fill');
+                        if (icon) {
+                            icon.classList.remove('text-primary');
+                            icon.classList.add('text-muted');
+                        }
+                        
+                        // Remove "Mark Read" buttons and add "Read" badges
+                        const markReadBtns = item.querySelectorAll('a[href*="mark_notification_read"]');
+                        markReadBtns.forEach(function(btn) {
+                            const buttonContainer = btn.closest('.d-flex');
+                            btn.remove();
+                            const readBadge = document.createElement('span');
+                            readBadge.className = 'badge bg-success';
+                            readBadge.textContent = 'Read';
+                            buttonContainer.appendChild(readBadge);
+                        });
+                    });
+                    
+                    // Remove unread count badge
+                    const unreadBadge = document.querySelector('.badge.bg-primary');
+                    if (unreadBadge) unreadBadge.remove();
+                    
+                    // Hide "Mark All Read" button
+                    this.style.display = 'none';
+                } else {
+                    this.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Error';
+                    setTimeout(() => {
+                        this.innerHTML = 'Mark All Read';
+                        this.classList.remove('disabled');
+                    }, 2000);
+                }
+            })
+            .catch(error => {
+                console.error('Error marking all notifications as read:', error);
+                this.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Error';
+                setTimeout(() => {
+                    this.innerHTML = 'Mark All Read';
+                    this.classList.remove('disabled');
+                }, 2000);
+            });
+        });
+    }
+    
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %}

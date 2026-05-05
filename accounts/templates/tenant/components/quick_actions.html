@@ -1,0 +1,27 @@
+<section class="section-card" id="quick-actions">
+    <div class="section-header">
+        <h2 class="section-title"><i class="bi bi-lightning-charge text-warning"></i> Quick Actions</h2>
+    </div>
+    <div class="section-body">
+        <div class="d-grid gap-2">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#contactAdminModal">
+                <i class="bi bi-credit-card"></i> Pay Now
+            </button>
+            <a href="{% url 'tenant_bills' %}" class="btn btn-outline-primary">
+                <i class="bi bi-list-check"></i> View Billing
+            </a>
+            {% if latest_receipt %}
+                <a href="{% url 'download_payment_receipt' latest_receipt.id %}" class="btn btn-outline-primary">
+                    <i class="bi bi-download"></i> Download Receipt
+                </a>
+            {% else %}
+                <button type="button" class="btn btn-outline-secondary" disabled>
+                    <i class="bi bi-download"></i> Download Receipt
+                </button>
+            {% endif %}
+            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#contactAdminModal">
+                <i class="bi bi-chat-dots"></i> Contact Admin
+            </button>
+        </div>
+    </div>
+</section>

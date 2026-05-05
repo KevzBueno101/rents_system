@@ -1,0 +1,164 @@
+{% extends 'tenant/tenant_base.html' %}
+
+{% block title %}My Reports{% endblock %}
+{% block page_title %}Reports{% endblock %}
+
+{% block content %}
+
+<!-- SUBMIT MAINTENANCE MODAL -->
+<div class="modal fade" id="newMaintenanceModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:14px; border:none; box-shadow:0 20px 60px rgba(0,0,0,.15);">
+            <div class="modal-header" style="border-bottom:1px solid #f0ede8; padding:20px 24px 16px;">
+                <h6 style="font-weight:700; margin:0; display:flex; align-items:center; gap:8px;">
+                    <i class="bi bi-tools" style="color:#6366f1;"></i> Submit Maintenance Request
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:20px 24px 24px;">
+                <form method="POST" action="{% url 'tenant_submit_maintenance' %}">
+                    {% csrf_token %}
+                    <div style="margin-bottom:16px;">
+                        <label style="font-size:12.5px; font-weight:600; color:#555; display:block; margin-bottom:6px;">Description <span style="color:#dc2626;">*</span></label>
+                        <textarea name="description" class="t-input" rows="4" placeholder="Describe the issue (e.g. leaking faucet, broken window, faulty lights...)" required></textarea>
+                    </div>
+                    <button type="submit" class="t-btn t-btn-primary" style="width:100%; justify-content:center;">
+                        <i class="bi bi-send"></i> Submit Request
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TABS HEADER -->
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+    <div style="display:flex; gap:6px;">
+        <button class="t-btn {% if active_tab == 'maintenance' or not active_tab %}t-btn-primary{% else %}t-btn-outline{% endif %}"
+                onclick="switchTab('maintenance')" id="tab-maintenance">
+            <i class="bi bi-tools"></i> Maintenance
+            {% if maintenance_open_count %}<span style="background:rgba(255,255,255,.25); padding:1px 7px; border-radius:99px; font-size:11px;">{{ maintenance_open_count }}</span>{% endif %}
+        </button>
+        <button class="t-btn {% if active_tab == 'violations' %}t-btn-primary{% else %}t-btn-outline{% endif %}"
+                onclick="switchTab('violations')" id="tab-violations">
+            <i class="bi bi-exclamation-triangle"></i> Violations
+        </button>
+    </div>
+    <button class="t-btn t-btn-primary" data-bs-toggle="modal" data-bs-target="#newMaintenanceModal">
+        <i class="bi bi-plus"></i> New Request
+    </button>
+</div>
+
+<!-- MAINTENANCE TAB -->
+<div id="panel-maintenance">
+    <div class="t-card">
+        <div class="t-card-header">
+            <div class="t-card-title"><i class="bi bi-tools" style="color:#6366f1;"></i> Maintenance Requests</div>
+        </div>
+        <div style="overflow-x:auto;">
+            <table class="t-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for report in maintenance_reports %}
+                    <tr>
+                        <td>
+                            <span style="font-size:13px; font-family:'DM Mono',monospace; color:#888;">{{ report.created_at|date:"M d, Y" }}</span>
+                        </td>
+                        <td>
+                            <span style="font-size:13.5px;">{{ report.description }}</span>
+                        </td>
+                        <td>
+                            {% if report.status == 'completed' %}
+                                <span class="t-badge t-badge-success"><i class="bi bi-check-circle"></i> Completed</span>
+                            {% elif report.status == 'ongoing' %}
+                                <span class="t-badge t-badge-warning"><i class="bi bi-arrow-clockwise"></i> Ongoing</span>
+                            {% else %}
+                                <span class="t-badge t-badge-muted"><i class="bi bi-hourglass"></i> Open</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3">
+                            <div class="t-empty">
+                                <i class="bi bi-tools"></i>
+                                <p>No maintenance requests yet</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- VIOLATIONS TAB -->
+<div id="panel-violations" style="display:none;">
+    <div class="t-card">
+        <div class="t-card-header">
+            <div class="t-card-title"><i class="bi bi-exclamation-triangle" style="color:#ef4444;"></i> Recorded Violations</div>
+        </div>
+        {% if violations %}
+        <div style="overflow-x:auto;">
+            <table class="t-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for v in violations %}
+                    <tr>
+                        <td>
+                            <span style="font-size:13px; font-family:'DM Mono',monospace; color:#888;">{{ v.date|date:"M d, Y" }}</span>
+                        </td>
+                        <td>
+                            <span style="font-size:13.5px;">{{ v.description }}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="t-card-body">
+            <div class="t-empty">
+                <i class="bi bi-shield-check" style="color:#52b788; opacity:.6;"></i>
+                <p>No violations on record — keep it up! 🎉</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function switchTab(tab) {
+    document.getElementById('panel-maintenance').style.display = tab === 'maintenance' ? 'block' : 'none';
+    document.getElementById('panel-violations').style.display  = tab === 'violations'  ? 'block' : 'none';
+
+    ['maintenance','violations'].forEach(t => {
+        const btn = document.getElementById('tab-' + t);
+        if (t === tab) {
+            btn.classList.remove('t-btn-outline');
+            btn.classList.add('t-btn-primary');
+        } else {
+            btn.classList.add('t-btn-outline');
+            btn.classList.remove('t-btn-primary');
+        }
+    });
+}
+
+// Auto-switch if URL has ?tab=violations
+const urlTab = new URLSearchParams(location.search).get('tab');
+if (urlTab === 'violations') switchTab('violations');
+</script>
+
+{% endblock %}

@@ -1,12 +1,15 @@
 """
 Authentication-related views: login, signup, logout, profile management.
 """
+import json
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.contrib.auth.views import PasswordResetView, PasswordResetConfirmView
+from django.contrib.auth.views import PasswordResetView
 from django.contrib.auth.forms import PasswordResetForm
+from django.contrib.auth.tokens import default_token_generator
+from django.http import JsonResponse, HttpResponseRedirect
 from django.contrib import messages
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
@@ -16,7 +19,9 @@ from ..services.notification_service import NotificationService
 from ..activity_utils import log_activity
 from .helpers import parse_phone, get_available_rooms, get_dashboard_context
 from accounts.services.user_service import UserService
-from accounts.forms import ProfileUpdateForm, UsernameUpdateForm
+from accounts.forms import ProfileUpdateForm
+
+
 
 
 def login_view(request):
@@ -62,7 +67,16 @@ def signup_view(request):
         password  = request.POST.get('password')
         email     = request.POST.get('email')
         full_name = request.POST.get('full_name')
-        phone     = parse_phone(request.POST.get('phone'))
+        phone_raw = request.POST.get('phone')
+        phone     = parse_phone(phone_raw)
+        
+        # Validate phone number
+        if phone_raw and not phone:
+            return render(request, 'login.html', {
+                'signup_error'   : 'Phone number must contain 10-15 digits only.',
+                'available_rooms': get_available_rooms(),
+            })
+        
         room_id   = request.POST.get('room_id')
         photo     = request.FILES.get('photo')
 
@@ -193,13 +207,10 @@ def _edit_tenant_profile(request):
         messages.error(request, 'Tenant profile not found.')
         return redirect('tenant_dashboard')
 
+    form = ProfileUpdateForm(request.POST or None, instance=request.user)
+
     if request.method == 'POST':
-        # Initialize form with POST data and instance binding (CRITICAL for updates)
-        form = ProfileUpdateForm(request.POST, instance=request.user)
-        
-        # Get non-form profile fields
         full_name        = request.POST.get('full_name', '').strip()
-        phone_raw        = request.POST.get('phone', '').strip()
         current_password = request.POST.get('current_password')
         new_password     = request.POST.get('new_password') or request.POST.get('password')
         confirm_password = request.POST.get('confirm_password')
@@ -207,20 +218,13 @@ def _edit_tenant_profile(request):
 
         errors = []
 
-        # STEP 1: Validate ModelForm (username + email)
+        # Validate form (username, email, phone)
         if not form.is_valid():
-            errors.extend(form.errors.get('username', []))
-            errors.extend(form.errors.get('email', []))
+            errors.extend([err for field_errors in form.errors.values() for err in field_errors])
 
-        # STEP 2: Validate profile fields
         if not full_name or len(full_name) < 2:
             errors.append('Full name must be at least 2 characters long.')
 
-        phone = parse_phone(phone_raw) if phone_raw else None
-        if phone_raw and (not phone or len(phone) < 10):
-            errors.append('Please enter a valid phone number.')
-
-        # STEP 3: Validate password
         if new_password:
             if not current_password:
                 errors.append('Current password is required to change your password.')
@@ -231,7 +235,6 @@ def _edit_tenant_profile(request):
             elif new_password != confirm_password:
                 errors.append('New passwords do not match.')
 
-        # If any validation errors, return early
         if errors:
             return render(request, 'tenant/tenant_profile.html', {
                 'profile': profile,
@@ -239,66 +242,34 @@ def _edit_tenant_profile(request):
                 'profile_errors': errors,
             })
 
-        try:
-            # DEBUG: Check form state before save
-            print("[DEBUG] Form valid:", form.is_valid())
-            print("[DEBUG] Form cleaned_data:", form.cleaned_data)
-            print("[DEBUG] Old username:", request.user.username)
-            print("[DEBUG] New username from form:", form.cleaned_data.get('username'))
-            
-            # STEP 4: Save ModelForm (username + email)
-            # This calls form.save() which properly updates User model
-            form.save()
-            
-            print("[DEBUG] After form.save(), username in DB:", request.user.username)
-            
-            # STEP 5: Update password if provided
-            if new_password:
-                request.user.set_password(new_password)
-                request.user.save()
-                update_session_auth_hash(request, request.user)
+        # Save user fields (username, email)
+        user = form.save(commit=False)
+        if new_password:
+            user.set_password(new_password)
+        user.save()
+        if new_password:
+            update_session_auth_hash(request, user)
 
-            # STEP 6: Refresh request.user to get latest from DB
-            request.user.refresh_from_db()
-            print("[DEBUG] After refresh_from_db(), username:", request.user.username)
+        # Save tenant profile fields
+        profile.full_name = full_name
+        # Get validated phone from form
+        if 'phone' in form.cleaned_data:
+            profile.phone = form.cleaned_data['phone']
+        if photo:
+            profile.photo = photo
+        profile.save()
 
-            # STEP 7: Update profile info (TenantProfile model)
-            profile.full_name = full_name or profile.full_name
-            if phone_raw:
-                profile.phone = phone
-            if photo:
-                profile.photo = photo
-            profile.save()
+        log_activity(
+            user=request.user,
+            action='tenant_updated',
+            description='Updated profile information',
+            content_type='TenantProfile',
+            object_id=profile.id
+        )
 
-            # STEP 8: Log activity
-            log_activity(
-                user=request.user,
-                action='profile_updated',
-                description=f'Updated profile information',
-                content_type='TenantProfile',
-                object_id=profile.id
-            )
+        messages.success(request, 'Profile updated successfully.')
+        return redirect('edit_profile')
 
-            messages.success(request, 'Profile updated successfully.')
-            print("[DEBUG] Redirecting with username:", request.user.username)
-            return redirect('edit_profile')
-
-        except ValidationError as e:
-            print("[DEBUG] ValidationError caught:", str(e))
-            return render(request, 'tenant/tenant_profile.html', {
-                'profile': profile,
-                'form': form,
-                'profile_errors': [str(e)],
-            })
-        except Exception as e:
-            print("[DEBUG] Unexpected error:", str(e))
-            return render(request, 'tenant/tenant_profile.html', {
-                'profile': profile,
-                'form': form,
-                'profile_errors': ['An unexpected error occurred. Please try again.'],
-            })
-
-    # Calculate profile completion percentage
     completion_fields = {
         'full_name': bool(profile.full_name),
         'email': bool(profile.user.email),
@@ -307,104 +278,290 @@ def _edit_tenant_profile(request):
         'room': bool(profile.room)
     }
     completion_percentage = (sum(completion_fields.values()) / len(completion_fields)) * 100
-    filled_fields_count = sum(completion_fields.values())
 
     return render(request, 'tenant/tenant_profile.html', {
         'profile': profile,
         'form': ProfileUpdateForm(instance=request.user),
         'completion_percentage': completion_percentage,
         'completion_fields': completion_fields,
-        'filled_fields_count': filled_fields_count,
+        'filled_fields_count': sum(completion_fields.values()),
     })
 
 
+class CustomPasswordResetForm(PasswordResetForm):
+    """PasswordResetForm whose send_mail is actually invoked by form.save(); tracks delivery failures."""
+
+    mail_delivery_failed = False
+
+    def save(
+        self,
+        domain_override=None,
+        subject_template_name='registration/password_reset_subject.txt',
+        email_template_name='registration/password_reset_email.html',
+        use_https=False,
+        token_generator=default_token_generator,
+        from_email=None,
+        request=None,
+        html_email_template_name=None,
+        extra_email_context=None,
+    ):
+        self.mail_delivery_failed = False
+        return super().save(
+            domain_override=domain_override,
+            subject_template_name=subject_template_name,
+            email_template_name=email_template_name,
+            use_https=use_https,
+            token_generator=token_generator,
+            from_email=from_email,
+            request=request,
+            html_email_template_name=html_email_template_name,
+            extra_email_context=extra_email_context,
+        )
+
+    def send_mail(
+        self,
+        subject_template_name,
+        email_template_name,
+        context,
+        from_email,
+        to_email,
+        html_email_template_name=None,
+    ):
+        """Send mail with SendGrid API, SMTP fallback, console fallback for DEBUG; marks mail_delivery_failed."""
+        import logging
+
+        from django.conf import settings
+        from django.core.mail import send_mail as django_send_mail
+
+        logger = logging.getLogger(__name__)
+
+        # Try SendGrid HTTP API first when configured (not SMTP)
+        try:
+            sg_key = getattr(settings, 'SENDGRID_API_KEY', '') or ''
+            if sg_key:
+                import sendgrid
+                from sendgrid.helpers.mail import Mail
+
+                subject = render_to_string(subject_template_name, context)
+                subject = ''.join(subject.splitlines())
+
+                message = Mail(
+                    from_email=from_email,
+                    to_emails=to_email,
+                    subject=subject,
+                    html_content=(
+                        render_to_string(html_email_template_name, context) if html_email_template_name else None
+                    ),
+                    plain_text_content=render_to_string(email_template_name, context),
+                )
+
+                sg = sendgrid.SendGridAPIClient(sg_key)
+                response = sg.send(message)
+
+                logger.info('SendGrid API email sent: %s to %s', response.status_code, to_email)
+                return
+
+        except Exception:
+            logger.exception('SendGrid API failed for %s', to_email)
+            # In production, don't block the request with SMTP fallbacks that may hang
+            # (e.g. outbound SMTP restrictions) — fail fast and let the view return 503/JSON.
+            if not settings.DEBUG:
+                self.mail_delivery_failed = True
+                return
+
+        try:
+            return PasswordResetForm.send_mail(
+                self,
+                subject_template_name,
+                email_template_name,
+                context,
+                from_email,
+                to_email,
+                html_email_template_name=html_email_template_name,
+            )
+
+        except Exception as smtp_error:
+            logger.error('SMTP send failed for %s: %s', to_email, smtp_error, exc_info=True)
+
+            try:
+                from django.core.mail import get_connection
+
+                connection = get_connection('django.core.mail.backends.console.EmailBackend')
+                subject = render_to_string(subject_template_name, context)
+                subject = ''.join(subject.splitlines())
+
+                if html_email_template_name:
+                    html_body = render_to_string(html_email_template_name, context)
+                    email_message = EmailMultiAlternatives(subject, '', from_email, [to_email], connection=connection)
+                    email_message.attach_alternative(html_body, 'text/html')
+                    email_message.send()
+                else:
+                    plain_text = render_to_string(email_template_name, context)
+                    django_send_mail(subject, plain_text, from_email, [to_email], connection=connection)
+
+                logger.info('Console fallback email sent to %s', to_email)
+
+            except Exception as console_error:
+                logger.error('Console email fallback failed for %s: %s', to_email, console_error)
+                logger.warning('All email methods failed for %s', to_email)
+                self.mail_delivery_failed = True
+
+
 class CustomPasswordResetView(PasswordResetView):
-    """Custom password reset view with security improvements."""
+    """Password reset: SITE_URL in emails (domain_override), JSON for AJAX from login modal."""
+
     template_name = 'registration/password_reset_form.html'
-    email_template_name = 'registration/password_reset_email.html'
+    email_template_name = 'registration/password_reset_email.txt'
+    html_email_template_name = 'registration/password_reset_email.html'
     subject_template_name = 'registration/password_reset_subject.txt'
     success_url = '/password-reset/done/'
-    form_class = PasswordResetForm
-    
+    form_class = CustomPasswordResetForm
+
+    @staticmethod
+    def _expects_json(request):
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return True
+        accept = (request.headers.get('Accept') or '').lower()
+        return 'application/json' in accept
+
+    def form_invalid(self, form):
+        if self._expects_json(self.request):
+            return JsonResponse(
+                {'ok': False, 'email_sent': False, 'errors': form.errors.as_json()},
+                status=400,
+            )
+        return super().form_invalid(form)
+
     def form_valid(self, form):
-        # Check if user exists before sending email
-        email = form.cleaned_data['email']
-        users = User.objects.filter(email=email)
-        
-        if not users.exists():
-            # Don't reveal if email exists or not for security
-            messages.info(self.request, 'If an account with that email exists, a password reset link has been sent.')
-            return super().form_valid(form)
-        
-        return super().form_valid(form)
-    
-    def send_mail(self, subject_template_name, email_template_name, context, from_email, to_email, html_email_template_name=None):
-        """
-        Override send_mail to properly handle HTML emails
-        """
-        subject = render_to_string(subject_template_name, context)
-        subject = ''.join(subject.splitlines())
-        
-        # Render HTML email
-        html_email = render_to_string(email_template_name, context)
-        
-        # Create email with HTML content
-        email_message = EmailMultiAlternatives(subject, '', from_email, [to_email])
-        email_message.attach_alternative(html_email, "text/html")
-        email_message.send()
+        from django.conf import settings
 
+        site_url = (getattr(settings, 'SITE_URL', '') or '').strip().rstrip('/')
+        domain_only = (
+            site_url.replace('http://', '', 1).replace('https://', '', 1)
+            if site_url
+            else ''
+        )
+        use_https = site_url.startswith('https://')
 
-@login_required
-def mark_notification(request, notif_id):
+        extra = {'site_name': 'RENTS System'}
+        if self.extra_email_context:
+            extra.update(self.extra_email_context)
+
+        opts = {
+            'use_https': use_https,
+            'domain_override': domain_only or None,
+            'token_generator': self.token_generator,
+            'from_email': (
+                self.from_email
+                or getattr(settings, 'DEFAULT_FROM_EMAIL', None)
+                or getattr(settings, 'FROM_EMAIL', None)
+            ),
+            'email_template_name': self.email_template_name,
+            'subject_template_name': self.subject_template_name,
+            'request': self.request,
+            'html_email_template_name': self.html_email_template_name,
+            'extra_email_context': extra,
+        }
+
+        try:
+            form.save(**opts)
+        except Exception as exc:
+            if self._expects_json(self.request):
+                return JsonResponse(
+                    {'ok': False, 'email_sent': False, 'error': str(exc)},
+                    status=503,
+                )
+            messages.error(
+                self.request,
+                'We could not send the password reset email. Try again later or contact support.',
+            )
+            return HttpResponseRedirect(self.get_success_url())
+
+        failed = getattr(form, 'mail_delivery_failed', False)
+        if failed:
+            if self._expects_json(self.request):
+                return JsonResponse(
+                    {
+                        'ok': False,
+                        'email_sent': False,
+                        'error': 'We could not send the password reset email. Try again later or contact support.',
+                    },
+                    status=503,
+                )
+            messages.error(
+                self.request,
+                'We could not send the password reset email. Try again later or contact support.',
+            )
+            return HttpResponseRedirect(self.get_success_url())
+
+        if self._expects_json(self.request):
+            return JsonResponse(
+                {
+                    'ok': True,
+                    'email_sent': True,
+                    'message': 'If an account with that email exists, a password reset link has been sent.',
+                }
+            )
+
+        messages.info(
+            self.request,
+            'If an account with that email exists, a password reset link has been sent.',
+        )
+        return HttpResponseRedirect(self.get_success_url())
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from django.conf import settings
+
+        su = (getattr(settings, 'SITE_URL', '') or '').strip().rstrip('/')
+        context['domain'] = su.replace('http://', '').replace('https://', '')
+        context['protocol'] = 'https' if su.startswith('https://') else 'http'
+        return context
+
+def custom_password_reset_confirm(request, uidb64, token):
     """
-    Enhanced notification handler with security and logging.
+    Simple password reset confirm view that bypasses Django's authentication middleware.
+    """
+    from django.contrib.auth import get_user_model
+    from django.contrib.auth.tokens import default_token_generator
+    from django.utils.http import urlsafe_base64_decode
+    from django.contrib.auth.forms import SetPasswordForm
+    from django.shortcuts import render, redirect
+    from django.contrib import messages
     
-    Security: Ensures users can only access their own notifications
-    Performance: Uses NotificationService for optimized operations
-    Logging: Tracks notification interactions for audit trail
-    """
+    User = get_user_model()
+    
+    # Try to decode the user ID
     try:
-        # Use NotificationService for secure notification access
-        success = NotificationService.mark_as_read(
-            notification_id=notif_id,
-            user=request.user
-        )
-        
-        if not success:
-            messages.error(request, 'Notification not found or access denied.')
-            return redirect('admin_dashboard' if request.user.is_staff else 'tenant_dashboard')
-        
-        # Get the notification for redirect (already verified as belonging to user)
-        notification = Notification.objects.get(id=notif_id, user=request.user)
-        
-        # Log the notification interaction for audit trail
-        log_activity(
-            user=request.user,
-            action='notification_read',
-            description=f'Read notification: {notification.title}',
-            content_type='Notification',
-            object_id=notification.id
-        )
-        
-        # Dynamic redirect based on notification link or fallback
-        redirect_url = notification.get_absolute_url()
-        return redirect(redirect_url)
-                
-    except Exception as e:
-        # Log unexpected errors but don't expose them to user
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error processing notification {notif_id}: {e}")
-        
-        messages.error(request, 'An error occurred while processing the notification.')
-        return redirect('admin_dashboard' if request.user.is_staff else 'tenant_dashboard')
-
-
-class CustomPasswordResetConfirmView(PasswordResetConfirmView):
-    """Custom password reset confirm view."""
-    template_name = 'registration/password_reset_confirm.html'
-    success_url = '/password-reset/complete/'
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
     
-    def form_valid(self, form):
-        messages.success(self.request, 'Your password has been reset successfully. You can now log in with your new password.')
-        return super().form_valid(form)
+    # Check if the token is valid
+    validlink = user is not None and default_token_generator.check_token(user, token)
+    
+    if request.method == 'POST':
+        if validlink:
+            form = SetPasswordForm(user, request.POST)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Your password has been reset successfully. You can now log in with your new password.')
+                return redirect('password_reset_complete')
+        else:
+            # Invalid token - show error
+            return render(request, 'registration/password_reset_confirm.html', {
+                'validlink': False,
+                'form': None
+            })
+    else:
+        if validlink:
+            form = SetPasswordForm(user)
+        else:
+            form = None
+    
+    return render(request, 'registration/password_reset_confirm.html', {
+        'validlink': validlink,
+        'form': form,
+        'user': user
+    })

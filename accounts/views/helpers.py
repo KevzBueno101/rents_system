@@ -8,11 +8,18 @@ from ..activity_utils import get_recent_activities
 
 
 def parse_phone(raw):
-    """Clean phone number to digits only."""
+    """Clean phone number to digits only with validation."""
     if not raw:
         return None
+    
+    # Remove all non-digit characters
     digits = re.sub(r"\D", "", str(raw))
-    return int(digits) if digits else None
+    
+    # Validate length (10-15 digits for phone numbers)
+    if len(digits) < 10 or len(digits) > 15:
+        return None
+    
+    return digits if digits else None
 
 
 def get_available_rooms():
