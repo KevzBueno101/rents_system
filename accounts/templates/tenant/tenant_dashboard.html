@@ -2,7 +2,7 @@
 
 {% block title %}Dashboard{% endblock %}
 {% block page_title %}Tenant Dashboard{% endblock %}
-
+{% load static %}
 {% block extra_styles %}
 <style>
     .tenant-dashboard {
@@ -212,7 +212,7 @@
 </div>
 
 <!-- Real-time Dashboard Synchronization -->
-<script src="{% static 'js/real_time_sync.js' %}"></script>
+<script src="{% static 'tenant/components/real_time_sync.js' %}"></script>
 
 <div class="modal fade" id="contactAdminModal" tabindex="-1" aria-labelledby="contactAdminLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
