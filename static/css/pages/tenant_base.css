@@ -57,7 +57,7 @@
         a.t-user-pill-link:focus,
         a.t-brand-logo-link *,
         a.t-user-pill-link * {
-            color: inherit !important;
+            
             text-decoration: none !important;
             text-decoration-line: none !important;
             text-decoration-color: transparent !important;
@@ -71,7 +71,7 @@
             gap: 2px;
             align-items: flex-start;
             line-height: normal;
-            color: inherit !important;
+            
             text-decoration: none !important;
             text-decoration-line: none !important;
             text-decoration-color: transparent !important;
@@ -172,7 +172,7 @@
             padding: 10px 12px;
             border-radius: 10px;
             transition: all .18s ease;
-            color: inherit;
+           
             text-decoration: none;
             background: rgba(255,255,255,.05);
         }
