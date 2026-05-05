@@ -366,6 +366,11 @@ class CustomPasswordResetForm(PasswordResetForm):
 
         except Exception:
             logger.exception('SendGrid API failed for %s', to_email)
+            # In production, don't block the request with SMTP fallbacks that may hang
+            # (e.g. outbound SMTP restrictions) — fail fast and let the view return 503/JSON.
+            if not settings.DEBUG:
+                self.mail_delivery_failed = True
+                return
 
         try:
             return PasswordResetForm.send_mail(
@@ -449,7 +454,11 @@ class CustomPasswordResetView(PasswordResetView):
             'use_https': use_https,
             'domain_override': domain_only or None,
             'token_generator': self.token_generator,
-            'from_email': self.from_email,
+            'from_email': (
+                self.from_email
+                or getattr(settings, 'DEFAULT_FROM_EMAIL', None)
+                or getattr(settings, 'FROM_EMAIL', None)
+            ),
             'email_template_name': self.email_template_name,
             'subject_template_name': self.subject_template_name,
             'request': self.request,
