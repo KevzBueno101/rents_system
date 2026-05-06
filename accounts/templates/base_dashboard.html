@@ -37,10 +37,9 @@
 
     <!-- SIDEBAR -->
     <div id="sidebar" class="sidebar-desktop">
-
+        
         <div class="brand">
-            <h4>RENTS</h4>
-            <small>Residents Entry, Navigaion, Tenants Tracking System</small>
+            <img src="{% static 'img/_Logo.png' %}" alt="RENTS Logo" class="img-fluid" style="max-width: 150px;">
         </div>
 
         <nav class="mt-2">
@@ -210,14 +209,7 @@
                         </div>
                     {% endif %}
 
-                    <div>
-                        <div class="text-white" style="font-size:13px; font-weight:600;">
-                            {{ request.user.username }}
-                        </div>
-                        <div style="font-size:11px; color:#aaa;">
-                            {% if request.user.is_superuser %}Superadmin{% else %}Administrator{% endif %}
-                        </div>
-                    </div>
+                    
 
                 </div>
             </div>
