@@ -67,7 +67,7 @@
     </nav>
 
     <div class="t-sidebar-footer">
-        <a href="{% url 'edit_profile' %}" class="t-user-pill t-user-pill-link">
+        <a href="{% url 'edit_profile' %}" class="t-user-pill t-user-pill-link" style="color: #ffffff !important;">
             {% if user_profile and user_profile.photo %}
                 <img src="{{ user_profile.photo.url }}" class="t-avatar" alt="{{ user_profile.full_name }}">
             {% else %}
@@ -80,8 +80,8 @@
                 </div>
             {% endif %}
             <div class="t-user-info">
-                <div class="t-user-name">{{ user_profile.full_name|truncatechars:18|default:"Tenant" }}</div>
-                <div class="t-user-role">@{{ user_profile.user.username }} • {{ user_profile.get_room_display|default:"No Room" }}</div>
+                <div class="t-user-name" style="color:#ffffff;">{{ user_profile.full_name|truncatechars:18|default:"Tenant" }}</div>
+                <div class="t-user-role" style="color:rgba(255,255,255,0.75);">@{{ user_profile.user.username }} • {{ user_profile.get_room_display|default:"No Room" }}</div>
             </div>
         </a>
         {% if profile_completion < 100 %}
@@ -97,7 +97,7 @@
 <nav class="t-bottom-nav" aria-label="Tenant mobile navigation">
     <a href="{% url 'tenant_dashboard' %}" class="t-bottom-link {% if request.resolver_match.url_name == 'tenant_dashboard' %}active{% endif %}">
         <i class="bi bi-grid-1x2"></i>
-        <span>Dashboard</span>
+        <span>Home</span>
     </a>
     <a href="{% url 'tenant_show_rooms' %}" class="t-bottom-link {% if request.resolver_match.url_name == 'tenant_show_rooms' %}active{% endif %}">
         <i class="bi bi-door-open"></i>
@@ -105,31 +105,30 @@
     </a>
     <a href="{% url 'tenant_bills' %}" class="t-bottom-link {% if request.resolver_match.url_name == 'tenant_bills' %}active{% endif %}">
         <i class="bi bi-receipt"></i>
-        <span>Billing</span>
+        <span>Bills</span>
     </a>
     <a href="{% url 'tenant_reports' %}" class="t-bottom-link {% if request.resolver_match.url_name == 'tenant_reports' %}active{% endif %}">
         <i class="bi bi-flag"></i>
         <span>Reports</span>
     </a>
-    <a href="{% url 'edit_profile' %}" class="t-bottom-link {% if request.resolver_match.url_name == 'edit_profile' %}active{% endif %}">
-        <i class="bi bi-person-circle"></i>
-        <span>Profile</span>
+    <a href="{% url 'tenant_rules' %}" class="t-bottom-link {% if request.resolver_match.url_name == 'tenant_rules' %}active{% endif %}">
+        <i class="bi bi-clipboard-check"></i>
+        <span>Rules</span>
     </a>
 </nav>
-
 <!-- MAIN -->
 <div id="t-main">
 
     <!-- TOPBAR -->
     <div id="t-topbar">
-<span class="t-page-title">{% block page_title %}Dashboard{% endblock %}</span>
-        <div class="t-topbar-right">
-            <span class="t-date-chip d-none d-sm-block" id="t-date"></span>
-            
-            <!-- Notification Bell -->
-            <div class="position-relative me-2">
-                <button class="t-btn t-btn-light position-relative" id="notifBtn" 
-                    style="background: #f8f9fa; border: 1px solid #dee2e6; min-width: 40px; padding: 6px 10px;">
+    <span class="t-page-title">{% block page_title %}Dashboard{% endblock %}</span>
+    <div class="t-topbar-right">
+        <span class="t-date-chip d-none d-sm-block" id="t-date"></span>
+
+        <!-- Notification Bell -->
+        <div class="position-relative">
+            <button class="t-btn t-btn-light position-relative" id="notifBtn"
+                style="background: #f8f9fa; border: 1px solid #dee2e6; min-width: 40px; padding: 6px 10px;">
                 <i class="bi bi-bell-fill"></i>
                 {% if unread_count and unread_count > 0 %}
                 <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
@@ -139,15 +138,27 @@
                     {{ unread_count }}
                 </span>
                 {% endif %}
-                </button>
-            </div>
-            
-            <button class="t-logout-btn" data-bs-toggle="modal" data-bs-target="#logoutModal">
-                <i class="bi bi-box-arrow-right"></i>
-                <span class="d-none d-sm-inline">Logout</span>
             </button>
         </div>
+
+        <!-- Profile Avatar Link -->
+        <a href="{% url 'edit_profile' %}" style="text-decoration:none;">
+            {% if user_profile and user_profile.photo %}
+                <img src="{{ user_profile.photo.url }}"
+                     style="width:34px; height:34px; border-radius:50%; object-fit:cover; border:2px solid #dee2e6; cursor:pointer;">
+            {% else %}
+                <div style="width:34px; height:34px; border-radius:50%; background:#e8f4fd; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; color:#1a73e8; border:2px solid #dee2e6; cursor:pointer;">
+                    {% if user_profile.full_name %}{{ user_profile.full_name|slice:":1"|upper }}{% else %}T{% endif %}
+                </div>
+            {% endif %}
+        </a>
+
+        <button class="t-logout-btn" data-bs-toggle="modal" data-bs-target="#logoutModal">
+            <i class="bi bi-box-arrow-right"></i>
+            <span class="d-none d-sm-inline">Logout</span>
+        </button>
     </div>
+</div>
 
     <!-- Notification Dropdown -->
     <div id="notifDropdown" class="dropdown-menu dropdown-menu-end p-2 shadow" style="width:320px; display:none; position: absolute; right: 80px; top: 60px; z-index: 1050;">

@@ -40,32 +40,57 @@ def admin_list(request):
 
 
 def register_admin(request):
-    """Register a new admin account (Superadmin only)."""
     if not request.user.is_superuser:
         return redirect('admin_dashboard')
 
     if request.method == 'POST':
-        username  = request.POST.get('username')
-        password  = request.POST.get('password')
-        email     = request.POST.get('email')
-        full_name = request.POST.get('full_name')
-        phone     = parse_phone(request.POST.get('phone'))
+        username  = request.POST.get('username', '').strip()
+        password  = request.POST.get('password', '').strip()
+        email     = request.POST.get('email', '').strip()
+        full_name = request.POST.get('full_name', '').strip()
+        phone_raw = request.POST.get('phone', '').strip()
+        phone     = parse_phone(phone_raw)
         photo     = request.FILES.get('photo')
 
-        if User.objects.filter(username=username).exists():
+        def render_error(error_msg):
             return render(request, 'admin/admin_list.html', {
-                'admins'              : AdminProfile.objects.select_related('user', 'created_by').order_by('-created_at'),
-                'register_error'      : 'Username already taken.',
+                'admins'             : AdminProfile.objects.select_related('user', 'created_by').order_by('-created_at'),
+                'register_error'     : error_msg,
                 'show_register_modal': True,
             })
+
+        # ── VALIDATE ALL FIELDS BEFORE TOUCHING THE DB ──
+        if not full_name:
+            return render_error('Full name is required.')
+
+        if not email:
+            return render_error('Email is required.')
+
+        if not phone_raw:
+            return render_error('Phone number is required.')
+
+        if phone is None:
+            return render_error('Phone number must contain 10–15 digits only.')
+
+        if not username:
+            return render_error('Username is required.')
+
+        if len(username) < 3:
+            return render_error('Username must be at least 3 characters long.')
+
+        if not password:
+            return render_error('Password is required.')
+
+        if len(password) < 8:
+            return render_error('Password must be at least 8 characters long.')
+
+        if User.objects.filter(username__iexact=username).exists():
+            return render_error('Username already taken.')
 
         if User.objects.filter(email__iexact=email).exists():
-            return render(request, 'admin/admin_list.html', {
-                'admins'              : AdminProfile.objects.select_related('user', 'created_by').order_by('-created_at'),
-                'register_error'      : 'This email is already registered. Please use a different email.',
-                'show_register_modal': True,
-            })
+            return render_error('This email is already registered. Please use a different email.')
 
+        # ── ALL VALID — CREATE USER & PROFILE ──
         new_admin = User.objects.create_user(
             username=username,
             password=password,
@@ -81,23 +106,6 @@ def register_admin(request):
             photo=photo,
             created_by=request.user
         )
-
-        log_activity(
-            user=request.user,
-            action='admin_created',
-            description=f'Registered admin {full_name}',
-            content_type='AdminProfile',
-            object_id=admin_profile.id
-        )
-
-        return render(request, 'admin/dashboard.html', {
-            **get_dashboard_context(),
-            'register_success': f'Admin account for {full_name} created successfully!',
-        })
-
-    return redirect('admin_dashboard')
-
-
 def toggle_admin_status(request, user_id):
     """Toggle admin active/inactive status (Superadmin only)."""
     if not request.user.is_superuser:
