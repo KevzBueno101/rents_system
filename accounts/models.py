@@ -1,13 +1,20 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.validators import RegexValidator
 from django.utils import timezone
+
+
+PHONE_VALIDATOR = RegexValidator(
+    regex=r'^\d{10,15}$',
+    message='Phone number must contain only digits (10-15 numbers).'
+)
 
 
 # ─── TENANT PROFILE ───────────────────────────────────
 class TenantProfile(models.Model):
     user        = models.OneToOneField(User, on_delete=models.CASCADE)
     full_name   = models.CharField(max_length=100)
-    phone       = models.IntegerField()
+    phone       = models.CharField(max_length=20, validators=[PHONE_VALIDATOR])
     room        = models.ForeignKey('Room', on_delete=models.PROTECT, null=True, blank=True)
     room_number = models.CharField(max_length=20, blank=True)  # legacy fallback
     photo       = models.ImageField(upload_to='profiles/', blank=True, null=True)
@@ -26,7 +33,7 @@ class TenantProfile(models.Model):
 class AdminProfile(models.Model):
     user       = models.OneToOneField(User, on_delete=models.CASCADE)
     full_name  = models.CharField(max_length=100)
-    phone      = models.CharField(max_length=20)
+    phone      = models.CharField(max_length=20, validators=[PHONE_VALIDATOR])
     created_at = models.DateTimeField(auto_now_add=True)
     photo      = models.ImageField(upload_to='profiles/', blank=True, null=True)
     created_by = models.ForeignKey(
@@ -269,6 +276,7 @@ class ActivityLog(models.Model):
         ('bill_sent', 'Bill Sent'),
         ('payment_recorded', 'Payment Recorded'),
         ('payment_deleted', 'Payment Deleted'),
+        ('payment_proof_uploaded', 'Payment Proof Uploaded'),
         ('admin_created', 'Admin Created'),
         ('admin_updated', 'Admin Updated'),
         ('admin_deleted', 'Admin Deleted'),

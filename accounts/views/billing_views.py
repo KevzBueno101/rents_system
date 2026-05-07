@@ -10,6 +10,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q, Sum
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+import os
+from datetime import datetime
 from ..models import Bill, Notification, Payment, TenantProfile
 from ..activity_utils import log_activity, get_recent_activities
 from ..services.notification_service import NotificationService
@@ -438,3 +442,76 @@ def mark_as_sent(request, bill_id):
         messages.error(request, 'Bill not found')
 
     return redirect('billing_list')
+
+
+@login_required(login_url='/')
+def upload_payment_proof(request):
+    """
+    Handle payment proof upload from tenant Contact Admin modal.
+    Creates a new Payment record with the uploaded screenshot.
+    """
+    if request.method == 'POST':
+        bill_id = request.POST.get('bill_id')
+        payment_proof = request.FILES.get('payment_proof')
+        notes = request.POST.get('notes', '')
+        
+        # Validate bill exists and belongs to current tenant
+        try:
+            bill = Bill.objects.get(id=bill_id, tenant__user=request.user)
+        except Bill.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Bill not found'})
+        
+        # Validate file
+        if not payment_proof:
+            return JsonResponse({'success': False, 'error': 'Please select a file'})
+        
+        # Validate file type
+        allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+        if payment_proof.content_type not in allowed_types:
+            return JsonResponse({'success': False, 'error': 'Invalid file type. Please upload JPG, PNG, or WebP'})
+        
+        # Validate file size (5MB max)
+        if payment_proof.size > 5 * 1024 * 1024:
+            return JsonResponse({'success': False, 'error': 'File size must be less than 5MB'})
+        
+        try:
+            # Create Payment record
+            payment = Payment.objects.create(
+                bill=bill,
+                amount=0,  # Will be updated when admin processes payment
+                payment_date=datetime.now().date(),
+                payment_method='gcash',  # Default to GCash for tenant uploads
+                reference_number=f'PROOF_{datetime.now().strftime("%Y%m%d_%H%M%S")}',
+                proof=payment_proof,
+                notes=notes,
+            )
+            
+            # Log activity
+            log_activity(
+                user=request.user,
+                action='payment_proof_uploaded',
+                description=f'Uploaded payment proof for bill {bill.bill_number}',
+                content_type='Payment',
+                object_id=payment.id
+            )
+            
+            # Create notification for admin
+            NotificationService.create_notification(
+                recipient=None,  # Will be sent to all admins
+                title=f'Payment Proof Uploaded',
+                message=f'{request.user.tenantprofile.full_name} uploaded payment proof for bill {bill.bill_number}',
+                notification_type='payment_proof',
+                content_type='Payment',
+                object_id=payment.id
+            )
+            
+            return JsonResponse({
+                'success': True, 
+                'message': 'Payment proof uploaded successfully! Admin will review and process your payment.',
+                'payment_id': payment.id
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': f'Upload failed: {str(e)}'})
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})

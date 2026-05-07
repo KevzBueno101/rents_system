@@ -94,6 +94,9 @@ urlpatterns = [
     path('billing/payments/<int:payment_id>/send-receipt/', views.send_payment_receipt, name='send_payment_receipt'),
     path('billing/delete-payment/<int:payment_id>/', views.delete_payment, name='delete_payment'),
     path('billing/mark-sent/<int:bill_id>/', views.mark_as_sent, name='mark_as_sent'),
+    
+    # ─── PAYMENT PROOF UPLOAD ─────────────────────
+    path('upload-payment-proof/', views.upload_payment_proof, name='upload_payment_proof'),
 
     # ─── REMINDERS ───────────────────────────────────
     path('reminders/', views.reminder_list, name='reminder_list'),

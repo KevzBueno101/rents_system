@@ -69,6 +69,7 @@ from .billing_views import (
     send_payment_receipt,
     delete_payment,
     mark_as_sent,
+    upload_payment_proof,
 )
 
 # Import from maintenance_views
