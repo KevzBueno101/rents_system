@@ -2,9 +2,19 @@
 
 A Django-based boarding house management system for managing tenants, rooms, billing, maintenance, and violations.
 
-## Current Status: **Production Ready** v3.0
+## Current Status: **Production Ready** v3.1
 
-**Latest Updates (May 6, 2026):**
+**Latest Updates (May 7, 2026):**
+- ✅ **Mobile Sidebar Overlay Fixes** - Resolved overlay dismissal issues with proper z-index and event handling
+- ✅ **Responsive Sidebar Behavior** - Fixed CSS conflicts preventing proper mobile sidebar hide/show functionality
+- ✅ **Enhanced Hamburger Menu** - Improved mobile navigation toggle visibility and touch interactions
+- ✅ **Mobile Bottom Navigation** - Updated tenant bottom navigation grid layout for better mobile UX
+- ✅ **Mobile Profile Display** - Enhanced user profile display in mobile sidebar with role information
+- ✅ **CSS Cleanup** - Removed redundant overrides causing mobile responsiveness conflicts
+- ✅ **Touch Interaction Improvements** - Enhanced mobile touch events and transitions across all components
+- ✅ **Responsive Breakpoint Optimization** - Improved mobile breakpoints for seamless device compatibility
+
+**Previous Updates (May 6, 2026):**
 - ✅ **Comprehensive Rules Management System** - Complete CRUD operations for Admins and read-only access for Tenants
 - ✅ **Real-Time Rules Synchronization** - API endpoint with caching for immediate rule updates across all dashboards
 - ✅ **Professional Admin Interface** - Modal-based rule creation/editing with search and filter functionality
