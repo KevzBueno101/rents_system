@@ -24,6 +24,14 @@ def tenant_dashboard(request):
         data = get_tenant_dashboard_data(request.user)
         data['profile'] = data.get('tenant')
         data['payment'] = get_upcoming_payment(request.user)
+        
+        # Get admin phone number for contact display
+        try:
+            from ..models import AdminProfile
+            admin_profile = AdminProfile.objects.filter(user__is_superuser=True).first()
+            data['admin_phone'] = admin_profile.phone if admin_profile else 'Contact Admin'
+        except Exception:
+            data['admin_phone'] = 'Contact Admin'
 
         return render(request, 'tenant/tenant_dashboard.html', data)
     except TenantProfile.DoesNotExist:
@@ -39,6 +47,14 @@ def tenant_bills(request):
 
     from tenant.services.dashboard_service import get_tenant_dashboard_data
     dashboard_data = get_tenant_dashboard_data(request.user)
+    
+    # Get admin phone number for contact display
+    try:
+        from ..models import AdminProfile
+        admin_profile = AdminProfile.objects.filter(user__is_superuser=True).first()
+        admin_phone = admin_profile.phone if admin_profile else 'Contact Admin'
+    except Exception:
+        admin_phone = 'Contact Admin'
 
     status_filter = request.GET.get('status', '')
     bills = (
@@ -81,6 +97,7 @@ def tenant_bills(request):
         'total_outstanding': total_billed - total_paid,
         'paid_bills': all_bills.filter(status='paid').count(),
         'overdue_count': all_bills.filter(status='overdue').count(),
+        'admin_phone': admin_phone,
         'this_month_billed': this_month_billed,
         'average_bill': average_bill,
         'is_mobile': is_mobile,
