@@ -5,12 +5,16 @@ A Django-based boarding house management system for managing tenants, rooms, bil
 ## Current Status: **Production Ready** v3.1
 
 **Latest Updates (May 8, 2026):**
+- ✅ **Critical Violation Routing Fix** - Resolved data routing issue where violation reports were incorrectly saved as maintenance entries
+- ✅ **Dedicated Violation Submission** - Added separate violation submission modal with date field and proper endpoint routing
+- ✅ **Tab-Aware Modal Selection** - Implemented intelligent modal selection based on active tab (maintenance vs violations)
+- ✅ **Mobile Responsive Modals** - Enhanced modal responsiveness with scrollable dialogs for mobile devices
+- ✅ **Proper Model Separation** - Ensured strict data separation between MaintenanceReport and Violation models
+- ✅ **Non-Breaking Implementation** - Fixed critical bug while preserving all existing functionality
 - ✅ **Pay Now Button in My Bills Page** - Added one-click payment access from bills list with modal integration
 - ✅ **Complete Modal Integration** - Implemented full Pay Now modal with phone display and payment proof upload in bills page
 - ✅ **Dynamic Admin Contact** - Removed hardcoded phone numbers with proper superadmin profile integration
 - ✅ **Streamlined Payment Workflow** - Enhanced user experience with direct payment access from bills management
-- ✅ **Mobile-Optimized Payment Interface** - Maintained responsive design across all payment components
-- ✅ **Non-Breaking Implementation** - Preserved all existing functionality while adding new features
 - ✅ **Secure Payment Proof Upload System** - Implemented tenant payment screenshot upload with validation and admin notifications
 - ✅ **Copy-to-Clipboard Functionality** - Added one-click GCash number copying with visual feedback
 - ✅ **Mobile-Responsive Upload Interface** - Created touch-friendly payment proof upload modal with image preview
