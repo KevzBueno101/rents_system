@@ -50,6 +50,7 @@ urlpatterns = [
     path('tenant/billing/', views.tenant_bills, name='tenant_billing'),  # Alias for notifications
     path('tenant/reports/', views.tenant_reports, name='tenant_reports'),
     path('tenant/reports/maintenance/create/', views.tenant_submit_maintenance, name='tenant_submit_maintenance'),
+    path('tenant/reports/violation/create/', views.tenant_submit_violation, name='tenant_submit_violation'),
     path('tenant-list/', views.tenant_list, name='tenant_list'),
     path('add-tenant/', views.add_tenant, name='add_tenant'),
     path('edit-tenant/<int:tenant_id>/', views.edit_tenant, name='edit_tenant'),

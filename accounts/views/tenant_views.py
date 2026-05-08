@@ -150,6 +150,37 @@ def tenant_submit_maintenance(request):
     return redirect('tenant_reports')
 
 
+@login_required(login_url='/')
+def tenant_submit_violation(request):
+    """Allow tenants to submit their own violation reports."""
+    if request.user.is_staff:
+        return redirect('admin_dashboard')
+
+    profile = TenantProfile.objects.get(user=request.user)
+    if request.method == 'POST':
+        description = request.POST.get('description', '').strip()
+        date = request.POST.get('date', '').strip()
+        
+        if description and date:
+            violation = Violation.objects.create(
+                tenant=profile, 
+                description=description, 
+                date=date
+            )
+            log_activity(
+                user=request.user,
+                action='violation_created',
+                description=f'Tenant submitted violation report for {profile.full_name}',
+                content_type='Violation',
+                object_id=violation.id
+            )
+            messages.success(request, 'Violation report submitted.')
+        else:
+            messages.error(request, 'Please provide both description and date.')
+
+    return redirect('tenant_reports')
+
+
 def tenant_list(request):
     """List all tenants with search functionality."""
     if not request.user.is_staff:
