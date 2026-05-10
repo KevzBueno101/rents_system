@@ -11,7 +11,7 @@ from ..activity_utils import log_activity
 from .helpers import parse_phone, get_available_rooms
 
 
-@login_required(login_url='/')
+@login_required(login_url='/login/')
 def tenant_dashboard(request):
     """Tenant-only dashboard."""
     if request.user.is_staff:
@@ -39,7 +39,7 @@ def tenant_dashboard(request):
         return redirect('login')
 
 
-@login_required(login_url='/')
+@login_required(login_url='/login/')
 def tenant_bills(request):
     """Tenant-only billing history."""
     if request.user.is_staff:
@@ -106,7 +106,7 @@ def tenant_bills(request):
     return render(request, template_name, context)
 
 
-@login_required(login_url='/')
+@login_required(login_url='/login/')
 def tenant_reports(request):
     """Tenant-only maintenance and violation history."""
     if request.user.is_staff:
@@ -125,7 +125,7 @@ def tenant_reports(request):
     })
 
 
-@login_required(login_url='/')
+@login_required(login_url='/login/')
 def tenant_submit_maintenance(request):
     """Allow tenants to submit their own maintenance requests."""
     if request.user.is_staff:
@@ -150,7 +150,7 @@ def tenant_submit_maintenance(request):
     return redirect('tenant_reports')
 
 
-@login_required(login_url='/')
+@login_required(login_url='/login/')
 def tenant_submit_violation(request):
     """Allow tenants to submit their own violation reports."""
     if request.user.is_staff:

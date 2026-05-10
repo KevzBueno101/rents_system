@@ -58,7 +58,7 @@ def check_username_availability(request):
         })
 
 
-@login_required
+@login_required(login_url='/login/')
 @require_http_methods(["GET"])
 def get_current_user_info(request):
     """
@@ -103,7 +103,7 @@ def get_current_user_info(request):
 
 @csrf_exempt
 @require_http_methods(["POST"])
-@login_required
+@login_required(login_url='/login/')
 def update_username(request):
     """
     API endpoint to update username.
@@ -239,7 +239,7 @@ def api_force_dashboard_refresh(request):
 
 
 @csrf_exempt
-@login_required
+@login_required(login_url='/login/')
 @require_http_methods(["GET"])
 def api_rules_data(request):
     """

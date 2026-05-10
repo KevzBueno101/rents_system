@@ -63,7 +63,7 @@ def room_list(request):
     })
 
 
-@login_required(login_url='/')
+@login_required(login_url='/login/')
 def tenant_show_rooms(request):
     """Read-only room availability for tenant users."""
     if request.user.is_staff:
@@ -164,7 +164,7 @@ def add_room(request):
     return redirect('room_list')
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def edit_room(request, room_id):
     """Edit room details (AJAX-enabled)."""
     if not request.user.is_staff:
@@ -283,7 +283,7 @@ def delete_room(request, room_id):
     return redirect('room_list')
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def get_room_data_api(request, room_id):
     """API endpoint to get room data (AJAX)."""
     if not request.user.is_staff:
@@ -323,7 +323,7 @@ def get_room_data_api(request, room_id):
 
 # ─── ROOM FEATURES (INCLUSIONS & APPLIANCES) ─────────────
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def add_inclusion(request):
     """Add a new inclusion (AJAX)."""
     if not request.user.is_staff:
@@ -343,7 +343,7 @@ def add_inclusion(request):
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def add_appliance(request):
     """Add a new appliance (AJAX)."""
     if not request.user.is_staff:
@@ -363,7 +363,7 @@ def add_appliance(request):
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def get_all_inclusions(request):
     """Get all inclusions (AJAX)."""
     if not request.user.is_staff:
@@ -375,7 +375,7 @@ def get_all_inclusions(request):
     return JsonResponse(inclusions, safe=False)
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def get_all_appliances(request):
     """Get all appliances (AJAX)."""
     if not request.user.is_staff:
@@ -387,7 +387,7 @@ def get_all_appliances(request):
     return JsonResponse(appliances, safe=False)
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def get_room_features(request):
     """Get inclusions and appliances for a room (AJAX)."""
     if not request.user.is_staff:
@@ -427,7 +427,7 @@ def manage_features(request):
 
 
 @csrf_exempt
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def add_inclusion_management(request):
     """Add inclusion from management page (AJAX)."""
     if not request.user.is_staff:
@@ -452,7 +452,7 @@ def add_inclusion_management(request):
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def edit_inclusion(request, inclusion_id):
     """Edit inclusion (AJAX)."""
     if not request.user.is_staff:
@@ -483,7 +483,7 @@ def edit_inclusion(request, inclusion_id):
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def delete_inclusion(request, inclusion_id):
     """Delete inclusion (AJAX)."""
     if not request.user.is_staff:
@@ -497,7 +497,7 @@ def delete_inclusion(request, inclusion_id):
         return JsonResponse({'error': 'Inclusion not found'}, status=404)
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def add_appliance_management(request):
     """Add appliance from management page (AJAX)."""
     if not request.user.is_staff:
@@ -522,7 +522,7 @@ def add_appliance_management(request):
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def edit_appliance(request, appliance_id):
     """Edit appliance (AJAX)."""
     if not request.user.is_staff:
@@ -553,7 +553,7 @@ def edit_appliance(request, appliance_id):
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def delete_appliance(request, appliance_id):
     """Delete appliance (AJAX)."""
     if not request.user.is_staff:

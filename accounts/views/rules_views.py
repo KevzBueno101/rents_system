@@ -8,7 +8,7 @@ from ..models import Rule, TenantProfile, ActivityLog
 from ..activity_utils import log_activity
 
 
-@login_required
+@login_required(login_url='/admin/login/')
 def rules_list(request):
     """Admin list of rules with search/filter. Tenant redirects."""
     if not request.user.is_staff:
@@ -35,7 +35,7 @@ def rules_list(request):
     return render(request, 'admin/rules_list.html', context)
 
 
-@login_required
+@login_required(login_url='/admin/login/')
 def create_rule(request):
     """Admin create new rule."""
     if not request.user.is_staff:
@@ -67,7 +67,7 @@ def create_rule(request):
     return redirect('rules_list')
 
 
-@login_required
+@login_required(login_url='/admin/login/')
 def edit_rule(request, rule_id):
     """Admin edit existing rule."""
     if not request.user.is_staff:
@@ -111,7 +111,7 @@ def edit_rule(request, rule_id):
     return render(request, 'admin/edit_rule.html', context)
 
 
-@login_required
+@login_required(login_url='/admin/login/')
 def delete_rule(request, rule_id):
     """Admin delete rule."""
     if not request.user.is_staff:
@@ -138,7 +138,7 @@ def delete_rule(request, rule_id):
 
 
 # Tenant view
-@login_required
+@login_required(login_url='/login/')
 def tenant_rules(request):
     """Tenant read-only rules list."""
     if request.user.is_staff:

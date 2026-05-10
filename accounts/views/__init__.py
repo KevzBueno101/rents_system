@@ -3,9 +3,14 @@ Views module - backward compatible imports.
 All views are now organized in separate modules but can still be imported from here.
 """
 
+# Marketing / public landing
+from .marketing_views import home_view
+
 # Import from auth_views
 from .auth_views import (
     login_view,
+    tenant_login_view,
+    admin_login_view,
     signup_view,
     logout_view,
     edit_profile,
@@ -104,8 +109,12 @@ from .helpers import (
 )
 
 __all__ = [
+    # Public marketing
+    'home_view',
     # Auth views
     'login_view',
+    'tenant_login_view',
+    'admin_login_view',
     'signup_view',
     'logout_view',
     'edit_profile',

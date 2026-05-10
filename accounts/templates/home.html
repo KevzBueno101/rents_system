@@ -1,0 +1,378 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RENTS — Discover your next room</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="icon" href="https://img.icons8.com/ios/50/door.png" type="image/png">
+  <style>
+    html {
+      scroll-behavior: smooth;
+    }
+
+    .letter-tight {
+      letter-spacing: 0.04em;
+    }
+
+    .hero-section {
+      min-height: 100vh;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      position: relative;
+    }
+
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(13, 16, 20, 0.88) 0%, rgba(33, 37, 41, 0.75) 45%, rgba(13, 16, 20, 0.55) 100%);
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 2;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .anim-fade-up {
+      animation: fadeUp 0.7s ease both;
+    }
+
+    .delay-1 {
+      animation-delay: 0.12s;
+    }
+
+    .delay-2 {
+      animation-delay: 0.24s;
+    }
+
+    .delay-3 {
+      animation-delay: 0.36s;
+    }
+
+    .room-card {
+      transition: transform 0.22s ease, box-shadow 0.22s ease;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .room-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.12) !important;
+    }
+
+    .room-photo {
+      height: 200px;
+      object-fit: cover;
+      background: linear-gradient(120deg, #e9ecef, #dee2e6);
+    }
+
+    .section-soft {
+      background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
+    }
+
+    .footer-soft {
+      background: #212529;
+    }
+
+    /* Honeypot for bots */
+    .hp-field {
+      position: absolute !important;
+      left: -10000px !important;
+      top: auto !important;
+      width: 1px !important;
+      height: 1px !important;
+      overflow: hidden !important;
+    }
+  </style>
+</head>
+
+<body class="d-flex flex-column min-vh-100 bg-white text-dark">
+  {% include 'partials/landing_nav.html' %}
+
+  {% if messages %}
+  <div class="container mt-3">
+    {% for message in messages %}
+    <div class="alert {% if 'success' in message.tags %}alert-success{% elif 'error' in message.tags %}alert-danger{% elif 'warning' in message.tags %}alert-warning{% else %}alert-info{% endif %} alert-dismissible fade show rounded-3 shadow-sm border-0"
+         role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <main class="flex-grow-1">
+
+    {# —— Hero —— #}
+    <section id="hero" class="hero-section d-flex align-items-center text-white"
+      style="background-image: url('{% static 'img/hero-landing.svg' %}');">
+      <div class="hero-overlay"></div>
+      <div class="container hero-inner py-5">
+        <div class="row align-items-center">
+          <div class="col-lg-7 mb-5 mb-lg-0">
+            <p class="text-uppercase small text-white-50 fw-semibold letter-tight anim-fade-up">
+              Trusted room rentals
+            </p>
+            <h1 class="display-4 fw-bold lh-sm mb-3 anim-fade-up delay-1">
+              Find your perfect room, easily.
+            </h1>
+            <p class="lead text-white-75 mb-4 anim-fade-up delay-2">
+              Browse available spaces with clear pricing, essentials, and the details that matter —
+              before you sign in as a tenant or book a viewing.
+            </p>
+            <div class="d-flex flex-column flex-sm-row gap-3 anim-fade-up delay-3">
+              <a href="#featured-rooms" class="btn btn-light btn-lg px-4 shadow">
+                <i class="bi bi-grid-3x3-gap-fill me-2"></i>Browse rooms
+              </a>
+              <a href="{% url 'login' %}" class="btn btn-outline-light btn-lg px-4 border-2">
+                Login / Get started <i class="bi bi-arrow-right ms-2"></i>
+              </a>
+            </div>
+          </div>
+          <div class="col-lg-5 text-center">
+            <div class="rounded-4 bg-white bg-opacity-10 backdrop-blur p-4 p-lg-5 border border-white border-opacity-25 shadow-lg">
+              <img src="{% static 'img/logo_rents_white.png' %}" alt="RENTS" class="img-fluid mb-3" style="max-width: 280px;">
+              <p class="text-white-50 small mb-0">
+                Comfortable rooms. Transparent billing. A rental experience crafted for tenants and admins alike.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    {# —— Featured rooms —— #}
+    <section id="featured-rooms" class="py-5 section-soft">
+      <div class="container py-5">
+        <div class="row mb-5">
+          <div class="col-lg-8 mx-auto text-center">
+            <h2 class="fw-bold mb-3">Featured available rooms</h2>
+            <p class="text-muted lead mb-0">
+              Showing spaces with openings right now —
+              {% if featured_room_count %}
+              <strong>{{ featured_room_count }}</strong> {% if featured_room_count == 1 %}room{% else %}rooms{% endif %} ready to welcome you.
+              {% else %}
+              new spots appear as they open up.
+              {% endif %}
+            </p>
+          </div>
+        </div>
+
+        {% if featured_rooms %}
+        <div class="row g-4">
+          {% for room in featured_rooms %}
+          <div class="col-md-6 col-xl-4" id="room-{{ room.id }}">
+            <div class="card h-100 room-card shadow-sm rounded-4 overflow-hidden">
+              {% if room.photo %}
+              <img src="{{ room.photo.url }}" alt="{{ room.room_code }}" class="card-img-top room-photo w-100">
+              {% else %}
+              <div class="room-photo w-100 d-flex align-items-center justify-content-center text-secondary">
+                <i class="bi bi-door-open display-5 opacity-50"></i>
+              </div>
+              {% endif %}
+              <div class="card-body d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <div>
+                    <h3 class="h5 fw-bold mb-0">{{ room.room_code }}</h3>
+                    <small class="text-muted">Floor {{ room.floor }}</small>
+                  </div>
+                  <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">Available</span>
+                </div>
+                <p class="small text-muted mb-2 mb-lg-3">
+                  <i class="bi bi-people me-1"></i>
+                  {{ room.available_beds }} of {{ room.capacity }} bed{{ room.capacity|pluralize }} open ·
+                  <span class="fw-semibold text-dark">{{ room.get_bed_type_display }}</span>
+                </p>
+                <div class="mb-3">
+                  <span class="h4 fw-bold text-dark">₱{{ room.monthly_rate|floatformat:0 }}</span>
+                  <span class="text-muted small">/ month</span>
+                </div>
+                <div class="d-flex flex-wrap gap-1 mb-3">
+                  {% if room.has_wifi %}
+                  <span class="badge rounded-pill bg-light text-dark border"><i class="bi bi-wifi me-1"></i>Wi‑Fi</span>
+                  {% endif %}
+                  {% if room.water_included %}
+                  <span class="badge rounded-pill bg-light text-dark border"><i class="bi bi-droplet me-1"></i>Water</span>
+                  {% endif %}
+                  {% if room.electricity_included %}
+                  <span class="badge rounded-pill bg-light text-dark border"><i class="bi bi-lightning me-1"></i>Power</span>
+                  {% endif %}
+                  {% if room.has_lababo %}
+                  <span class="badge rounded-pill bg-light text-dark border"><i class="bi bi-funnel me-1"></i>Sink</span>
+                  {% endif %}
+                  {% for inc in room.dynamic_inclusions_list %}
+                  <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle">{{ inc.name }}</span>
+                  {% endfor %}
+                </div>
+                <button class="btn btn-outline-dark mt-auto rounded-pill" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#roomDetail{{ room.id }}" aria-expanded="false"
+                        aria-controls="roomDetail{{ room.id }}">
+                  View details <i class="bi bi-chevron-down ms-1"></i>
+                </button>
+                <div class="collapse mt-3" id="roomDetail{{ room.id }}">
+                  <div class="small text-muted border-top pt-3">
+                    {% if room.area %}
+                    <p class="mb-2"><strong>Area:</strong> {{ room.area }} m² · <strong>C.R.:</strong> {{ room.num_cr }}</p>
+                    {% else %}
+                    <p class="mb-2"><strong>C.R. count:</strong> {{ room.num_cr }}</p>
+                    {% endif %}
+                    <p class="mb-0 text-secondary">
+                      When you&apos;re ready, create an account from <a href="{% url 'login' %}">tenant login</a>
+                      — you&apos;ll choose a room during signup if one is listed for self-registration.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5 rounded-4 border border-dashed bg-white shadow-sm mx-auto" style="max-width: 640px;">
+          <i class="bi bi-building-check display-4 text-muted mb-3 d-block"></i>
+          <h3 class="h5 fw-semibold">Rooms are fully booked — for now</h3>
+          <p class="text-muted mb-4">Come back soon, or reach out below and our team will help you reserve the next opening.</p>
+          <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+            <a href="#contact" class="btn btn-dark rounded-pill px-4">Contact us</a>
+            <a href="{% url 'login' %}" class="btn btn-outline-dark rounded-pill px-4">Tenant login</a>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+
+    {# —— Contact —— #}
+    <section id="contact" class="py-5 border-top">
+      <div class="container py-5">
+        <div class="row g-5 align-items-start">
+          <div class="col-lg-5">
+            <h2 class="fw-bold mb-3">Let&apos;s talk</h2>
+            <p class="text-muted lead">
+              Questions about billing, housekeeping, lease terms, or walk-ins —
+              drop a note and our front desk routing will respond as soon as we can.
+            </p>
+            <ul class="list-unstyled text-muted small mt-4">
+              <li class="mb-2"><i class="bi bi-envelope me-2 text-dark"></i> Email reply during business hours</li>
+              <li class="mb-2"><i class="bi bi-shield-check me-2 text-dark"></i> No sharing of your message with other tenants</li>
+              <li><i class="bi bi-lock me-2 text-dark"></i> Secure form with basic bot defense</li>
+            </ul>
+          </div>
+          <div class="col-lg-7">
+            <div class="card border-0 shadow-lg rounded-4">
+              <div class="card-body p-4 p-lg-5">
+                <h3 class="h5 fw-bold mb-4">Send a message</h3>
+                <form method="post" action="{% url 'home' %}#contact" class="needs-validation" novalidate>
+                  {% csrf_token %}
+                  <div class="hp-field" aria-hidden="true">
+                    <label for="company_site">Company website</label>
+                    <input type="text" name="company_site" id="company_site" tabindex="-1" autocomplete="off" value="">
+                  </div>
+
+                  {% if landing_contact_form.non_field_errors %}
+                  <div class="alert alert-danger rounded-3 small">{{ landing_contact_form.non_field_errors }}</div>
+                  {% endif %}
+
+                  <div class="mb-3">
+                    <label for="id_name" class="form-label fw-semibold">Name</label>
+                    {{ landing_contact_form.name }}
+                    {% if landing_contact_form.name.errors %}<div class="invalid-feedback d-block">{{ landing_contact_form.name.errors.0 }}</div>{% endif %}
+                  </div>
+                  <div class="mb-3">
+                    <label for="id_email" class="form-label fw-semibold">Email</label>
+                    {{ landing_contact_form.email }}
+                    {% if landing_contact_form.email.errors %}<div class="invalid-feedback d-block">{{ landing_contact_form.email.errors.0 }}</div>{% endif %}
+                  </div>
+                  <div class="mb-4">
+                    <label for="id_message" class="form-label fw-semibold">Message</label>
+                    {{ landing_contact_form.message }}
+                    {% if landing_contact_form.message.errors %}<div class="invalid-feedback d-block">{{ landing_contact_form.message.errors.0 }}</div>{% endif %}
+                  </div>
+                  <button type="submit" class="btn btn-dark btn-lg w-100 rounded-pill shadow-sm">
+                    Send message <i class="bi bi-send-fill ms-2"></i>
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  {# —— Footer —— #}
+  <footer class="footer-soft text-white-50 mt-auto py-5">
+    <div class="container">
+      <div class="row g-4">
+        <div class="col-md-6 col-lg-4">
+          <div class="d-flex align-items-center gap-2 text-white fw-semibold mb-3">
+            <img src="{% static 'img/logo_rents_white.png' %}" alt="" height="28" class="opacity-75">
+            RENTS
+          </div>
+          <p class="small mb-0">
+            Room rental management designed for clarity — from move-in to monthly billing.
+          </p>
+        </div>
+        <div class="col-6 col-lg-2">
+          <h4 class="text-white text-uppercase small fw-bold mb-3">Explore</h4>
+          <ul class="list-unstyled small">
+            <li class="mb-2"><a href="{% url 'home' %}#hero" class="link-light link-underline-opacity-0 link-underline-opacity-100-hover">Home</a></li>
+            <li class="mb-2"><a href="{% url 'home' %}#featured-rooms" class="link-light link-underline-opacity-0 link-underline-opacity-100-hover">Rooms</a></li>
+            <li class="mb-2"><a href="{% url 'login' %}" class="link-light link-underline-opacity-0 link-underline-opacity-100-hover">Tenant login</a></li>
+            <li><a href="{% url 'admin_login' %}" class="link-secondary text-decoration-none">Staff sign-in</a></li>
+          </ul>
+        </div>
+        <div class="col-6 col-lg-3">
+          <h4 class="text-white text-uppercase small fw-bold mb-3">Social</h4>
+          <div class="d-flex gap-3 fs-5">
+            <a href="#" class="link-light" aria-label="Facebook (placeholder)"><i class="bi bi-facebook"></i></a>
+            <a href="#" class="link-light" aria-label="Instagram (placeholder)"><i class="bi bi-instagram"></i></a>
+            <a href="#" class="link-light" aria-label="LinkedIn (placeholder)"><i class="bi bi-linkedin"></i></a>
+          </div>
+        </div>
+        <div class="col-lg-3">
+          <h4 class="text-white text-uppercase small fw-bold mb-3">Contact</h4>
+          <p class="small mb-2"><i class="bi bi-chat-dots me-2"></i> Use the form above</p>
+          <p class="small mb-0 text-white-50">No phone published on this landing page — update when ready.</p>
+        </div>
+      </div>
+      <hr class="border-secondary my-4">
+      <p class="small text-center text-white-50 mb-0">
+        &copy; {% now 'Y' %} RENTS System. Built for landlords and tenants.
+      </p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    (function () {
+      'use strict';
+      var forms = document.querySelectorAll('.needs-validation');
+      Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+          if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+          form.classList.add('was-validated');
+        }, false);
+      });
+    })();
+  </script>
+</body>
+
+</html>

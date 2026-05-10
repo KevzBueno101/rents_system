@@ -235,7 +235,52 @@ class ProfileUpdateForm(forms.ModelForm):
             raise forms.ValidationError('Phone number must contain at least 10 digits.')
         if len(digits_only) > 15:
             raise forms.ValidationError('Phone number must contain at most 15 digits.')
-        
+
         # Return digits only for storage
         return digits_only
+
+
+class LandingContactForm(forms.Form):
+    """Public landing inquiry — validated server-side with conservative limits."""
+
+    name = forms.CharField(
+        max_length=120,
+        widget=forms.TextInput(
+            attrs={
+                'class': 'form-control',
+                'placeholder': 'Your full name',
+                'minlength': '2',
+                'maxlength': '120',
+            }
+        ),
+    )
+    email = forms.EmailField(
+        max_length=254,
+        widget=forms.EmailInput(
+            attrs={
+                'class': 'form-control',
+                'placeholder': 'you@example.com',
+                'maxlength': '254',
+            }
+        ),
+    )
+    message = forms.CharField(
+        min_length=10,
+        max_length=2000,
+        widget=forms.Textarea(
+            attrs={
+                'class': 'form-control',
+                'placeholder': 'How can we help?',
+                'rows': 5,
+                'minlength': '10',
+                'maxlength': '2000',
+            }
+        ),
+    )
+
+    def clean_name(self):
+        name = self.cleaned_data.get('name', '').strip()
+        if len(name) < 2:
+            raise ValidationError('Please enter your name.')
+        return name
 

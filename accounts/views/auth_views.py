@@ -1,63 +1,126 @@
 """
 Authentication-related views: login, signup, logout, profile management.
 """
-import json
 from django.shortcuts import render, redirect
+from django.urls import reverse
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib.auth.views import PasswordResetView
 from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.auth.tokens import default_token_generator
-from django.http import JsonResponse, HttpResponseRedirect
+from django.http import HttpResponseForbidden, HttpResponseRedirect, JsonResponse
 from django.contrib import messages
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
-from django.core.exceptions import ValidationError
-from ..models import Room, TenantProfile, AdminProfile, Notification
-from ..services.notification_service import NotificationService
+from ..models import Room, TenantProfile, AdminProfile
 from ..activity_utils import log_activity
 from .helpers import parse_phone, get_available_rooms, get_dashboard_context
 from accounts.services.user_service import UserService
 from accounts.forms import ProfileUpdateForm
 
+from accounts.rbac.admin_login_throttle import (
+    clear_admin_attempts,
+    get_client_ip,
+    is_admin_login_locked,
+    record_admin_failed_login,
+)
+from accounts.rbac.policy import SESSION_PORTAL_KEY
 
 
+def _safe_next_redirect(request, fallback_route: str):
+    next_candidate = request.GET.get('next') or request.POST.get('next')
+    if next_candidate and url_has_allowed_host_and_scheme(
+        next_candidate,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return redirect(next_candidate)
+    return redirect(fallback_route)
 
-def login_view(request):
-    """Handle user login with role-based redirect."""
-    # Always show login page - remove automatic redirect
+
+def tenant_login_view(request):
+    """Tenant portal sign-in — staff accounts cannot authenticate here."""
+
+    if request.method == 'GET' and request.user.is_authenticated and request.user.is_staff:
+        return redirect('admin_dashboard')
 
     if request.method == 'POST':
-        role     = request.POST.get('role')
         username = request.POST.get('username')
         password = request.POST.get('password')
 
         user = authenticate(request, username=username, password=password)
 
-        if user is not None:
-            if role == 'admin' and user.is_staff:
-                login(request, user)
-                return redirect('admin_dashboard')
-            elif role == 'tenant' and not user.is_staff:
-                login(request, user)
-                return redirect('tenant_dashboard')
-            else:
-                return render(request, 'login.html', {
-                    'error_modal'    : True,
-                    'error'          : 'Your account does not match the selected role.',
-                    'available_rooms': get_available_rooms(),
-                })
-        else:
+        if user is not None and getattr(user, 'is_staff', False):
             return render(request, 'login.html', {
                 'error_modal'    : True,
                 'error'          : 'Invalid username or password.',
                 'available_rooms': get_available_rooms(),
             })
 
+        if user is not None:
+            request.session.cycle_key()
+            login(request, user)
+            request.session[SESSION_PORTAL_KEY] = 'tenant'
+            return _safe_next_redirect(request, 'tenant_dashboard')
+
+        return render(request, 'login.html', {
+            'error_modal'    : True,
+            'error'          : 'Invalid username or password.',
+            'available_rooms': get_available_rooms(),
+        })
+
     return render(request, 'login.html', {
         'available_rooms': get_available_rooms(),
     })
+
+
+def admin_login_view(request):
+    """Dedicated administrator portal login (staff users only)."""
+    ip = get_client_ip(request)
+
+    if is_admin_login_locked(ip):
+        return HttpResponseForbidden('Too many failed attempts. Please try again later.')
+
+    if request.method == 'GET' and request.user.is_authenticated and not request.user.is_staff:
+        return redirect('tenant_dashboard')
+
+    if request.method == 'GET' and request.user.is_authenticated and request.user.is_staff:
+        return _safe_next_redirect(request, 'admin_dashboard')
+
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None and getattr(user, 'is_staff', False):
+            clear_admin_attempts(ip)
+            request.session.cycle_key()
+            login(request, user)
+            request.session[SESSION_PORTAL_KEY] = 'admin'
+            return _safe_next_redirect(request, 'admin_dashboard')
+
+        record_admin_failed_login(ip)
+        msg = (
+            'Invalid username or password.'
+            if user is None
+            else 'This account cannot use the administrator sign-in.'
+        )
+        return render(request, 'admin_login.html', {
+            'error_modal': True,
+            'error': msg,
+        })
+
+    return render(request, 'admin_login.html')
+
+
+login_view = tenant_login_view
+
+
+def admin_locked_placeholder(request):  # noqa: ARG001
+    raise NotImplementedError
 
 
 def signup_view(request):
@@ -131,11 +194,14 @@ def signup_view(request):
 
 def logout_view(request):
     """Handle user logout."""
+    portal = request.session.pop(SESSION_PORTAL_KEY, None)
     logout(request)
-    return redirect('login')
+    if portal == 'admin':
+        return redirect(reverse('admin_login'))
+    return redirect(reverse('login'))
 
 
-@login_required(login_url='/')
+@login_required(login_url='/login/')
 def edit_profile(request):
     """Role-aware profile page/update endpoint for admins and tenants."""
     if request.user.is_staff:

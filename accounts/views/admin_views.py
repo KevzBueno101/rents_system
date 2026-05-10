@@ -104,8 +104,22 @@ def register_admin(request):
             full_name=full_name,
             phone=phone,
             photo=photo,
-            created_by=request.user
+            created_by=request.user,
         )
+
+        messages.success(request, f'Administrator {full_name} registered.')
+        log_activity(
+            user=request.user,
+            action='admin_created',
+            description=f'Created admin account {username}',
+            content_type='AdminProfile',
+            object_id=admin_profile.id,
+        )
+        return redirect('admin_list')
+
+    return redirect('admin_list')
+
+
 def toggle_admin_status(request, user_id):
     """Toggle admin active/inactive status (Superadmin only)."""
     if not request.user.is_superuser:

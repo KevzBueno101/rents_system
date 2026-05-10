@@ -11,7 +11,7 @@ from ..models import TenantReminder, Notification, TenantProfile
 from ..activity_utils import log_activity
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def reminder_list(request):
     """List all tenant reminders with filtering."""
     if not request.user.is_staff:
@@ -48,7 +48,7 @@ def reminder_list(request):
     })
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def create_reminder(request):
     """Create a new tenant reminder with optional scheduling."""
     if not request.user.is_staff:
@@ -107,7 +107,7 @@ def create_reminder(request):
     return render(request, 'admin/reminder_create.html', {'form': form})
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def view_reminder(request, reminder_id):
     """View a single reminder details."""
     if not request.user.is_staff:
@@ -122,7 +122,7 @@ def view_reminder(request, reminder_id):
     return render(request, 'admin/reminder_view.html', {'reminder': reminder})
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def delete_reminder(request, reminder_id):
     """Delete a reminder."""
     if not request.user.is_staff:
@@ -139,7 +139,7 @@ def delete_reminder(request, reminder_id):
     return redirect('reminder_list')
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def send_reminder_now(request, reminder_id):
     """Manually trigger a scheduled reminder to send now."""
     if not request.user.is_staff:
@@ -166,7 +166,7 @@ def send_reminder_now(request, reminder_id):
 
 # ─── NOTIFICATIONS (TENANT SIDE - FUTURE READY) ─────────
 
-@login_required(login_url='/')
+@login_required(login_url='/login/')
 def notification_list(request):
     """List notifications for the current user with enhanced context."""
     notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
@@ -186,7 +186,7 @@ def notification_list(request):
     return render(request, 'tenant/notifications.html', context)
 
 
-@login_required(login_url='/')
+@login_required(login_url='/login/')
 def mark_notification_read(request, notification_id):
     """Mark a notification as read."""
     try:
@@ -202,7 +202,7 @@ def mark_notification_read(request, notification_id):
     return redirect('notification_list')
 
 
-@login_required(login_url='/')
+@login_required(login_url='/login/')
 def mark_all_notifications_read(request):
     """Mark all notifications as read for the current user."""
     if request.method == 'POST':

@@ -45,6 +45,18 @@ INSTALLED_APPS = [
     'accounts'
 ]
 
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/tenant/dashboard/'
+
+ADMIN_LOGIN_ATTEMPT_LIMIT = int(os.getenv('ADMIN_LOGIN_ATTEMPT_LIMIT', '5'))
+ADMIN_LOGIN_LOCKOUT_DURATION = int(os.getenv('ADMIN_LOGIN_LOCKOUT_DURATION', '900'))
+
+DJANGO_SITE_ADMIN_PATH_PREFIXES = tuple(
+    h.strip()
+    for h in os.getenv('DJANGO_SITE_ADMIN_PATH_PREFIXES', '/django-admin').split(',')
+    if h.strip()
+)
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -52,8 +64,11 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'accounts.middleware.PortalRBACMiddleware',
+    'accounts.middleware.AdminLoginProtectionMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'accounts.middleware.SecurityHeadersMiddleware',
 ]
 
 ROOT_URLCONF = 'rents_system.urls'

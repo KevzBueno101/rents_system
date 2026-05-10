@@ -10,7 +10,7 @@ from ..activity_utils import log_activity
 from ..services.notification_service import NotificationService
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def maintenance_list(request):
     """List all maintenance reports."""
     if not request.user.is_staff:
@@ -33,7 +33,7 @@ def maintenance_list(request):
     })
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def create_maintenance(request):
     """Create a new maintenance report."""
     if not request.user.is_staff:
@@ -68,7 +68,7 @@ def create_maintenance(request):
     return render(request, 'admin/maintenance_create.html', {'tenants': tenants})
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def update_maintenance_status(request, report_id):
     """Update maintenance report status."""
     if not request.user.is_staff:
@@ -120,7 +120,7 @@ def update_maintenance_status(request, report_id):
     return redirect('maintenance_list')
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def delete_maintenance(request, report_id):
     """Delete a maintenance report."""
     if not request.user.is_staff:
@@ -139,7 +139,7 @@ def delete_maintenance(request, report_id):
 
 # ─── VIOLATIONS ───────────────────────────────────────
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def violation_list(request):
     """List all violations."""
     if not request.user.is_staff:
@@ -156,7 +156,7 @@ def violation_list(request):
     })
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def create_violation(request):
     """Create a new violation."""
     if not request.user.is_staff:
@@ -185,7 +185,7 @@ def create_violation(request):
     return render(request, 'admin/violation_create.html', {'tenants': tenants})
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def delete_violation(request, violation_id):
     """Delete a violation."""
     if not request.user.is_staff:

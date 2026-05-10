@@ -50,7 +50,7 @@ def _redirect_back(request, fallback='billing_list'):
     return redirect(fallback)
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def billing_list(request):
     """List all bills with filtering and statistics."""
     if not request.user.is_staff:
@@ -104,7 +104,7 @@ def billing_list(request):
     })
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def generate_bill(request):
     """Generate a new bill."""
     if not request.user.is_staff:
@@ -163,7 +163,7 @@ def generate_bill(request):
     return redirect('billing_list')
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def edit_bill(request, bill_id):
     """Edit an existing bill."""
     if not request.user.is_staff:
@@ -208,7 +208,7 @@ def edit_bill(request, bill_id):
     return redirect('billing_list')
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def view_bill(request, bill_id):
     """View bill details."""
     if not request.user.is_staff:
@@ -222,7 +222,7 @@ def view_bill(request, bill_id):
     return render(request, 'admin/billing_view.html', {'bill': bill})
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def delete_bill(request, bill_id):
     """Delete a bill."""
     if not request.user.is_staff:
@@ -250,7 +250,7 @@ def delete_bill(request, bill_id):
     return redirect('billing_list')
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def record_payment(request, bill_id):
     """Record a payment for a bill."""
     if not request.user.is_staff:
@@ -315,7 +315,7 @@ def record_payment(request, bill_id):
     return redirect('billing_list')
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def generate_payment_receipt(request, payment_id):
     """Generate or regenerate a PNG receipt for a payment."""
     if request.method != 'POST':
@@ -333,7 +333,7 @@ def generate_payment_receipt(request, payment_id):
     })
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def download_payment_receipt(request, payment_id):
     """Download a generated PNG receipt."""
     payment = _get_accessible_payment_or_404(request, payment_id)
@@ -348,7 +348,7 @@ def download_payment_receipt(request, payment_id):
     return FileResponse(open(receipt_path, 'rb'), content_type='image/png', as_attachment=True, filename=filename)
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def send_payment_receipt(request, payment_id):
     """Send a generated receipt notification to the tenant dashboard."""
     if request.method != 'POST':
@@ -391,7 +391,7 @@ def send_payment_receipt(request, payment_id):
     return _redirect_back(request)
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def delete_payment(request, payment_id):
     """Delete a payment."""
     if not request.user.is_staff:
@@ -418,7 +418,7 @@ def delete_payment(request, payment_id):
         return redirect('billing_list')
 
 
-@login_required(login_url='/')
+@login_required(login_url='/admin/login/')
 def mark_as_sent(request, bill_id):
     """Mark a bill as sent."""
     if not request.user.is_staff:
@@ -444,7 +444,7 @@ def mark_as_sent(request, bill_id):
     return redirect('billing_list')
 
 
-@login_required(login_url='/')
+@login_required(login_url='/login/')
 def upload_payment_proof(request):
     """
     Handle payment proof upload from tenant Contact Admin modal.

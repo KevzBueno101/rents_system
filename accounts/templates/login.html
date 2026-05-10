@@ -225,24 +225,15 @@
       <!-- RIGHT PANEL (LOGIN) -->
       <div class="col-12 col-md-7 d-flex justify-content-center align-items-center bg-light">
         <div class="card shadow p-4 w-75">
-          <h3 class="text-center mb-3">Login As</h3>
+          <h3 class="text-center mb-3">Tenant sign in</h3>
 
-          <!-- ROLE TOGGLE -->
-          <div class="d-flex justify-content-center mb-4">
-            <div class="btn-group w-100" role="group">
-              <button type="button" class="btn btn-dark role-btn" id="btnAdmin" onclick="selectRole('admin')">
-                <i class="bi bi-shield-lock"></i> Admin
-              </button>
-              <button type="button" class="btn btn-outline-dark role-btn" id="btnTenant" onclick="selectRole('tenant')">
-                <i class="bi bi-person"></i> Tenant
-              </button>
-            </div>
-          </div>
 
           <!-- LOGIN FORM -->
           <form method="POST" action="{% url 'login' %}">
             {% csrf_token %}
-            <input type="hidden" name="role" id="roleInput" value="admin">
+            {% if request.GET.next %}
+            <input type="hidden" name="next" value="{{ request.GET.next }}">
+            {% endif %}
 
             <!-- USERNAME -->
             <div class="input-group mb-2">
@@ -268,14 +259,18 @@
               </a>
             </div>
 
-            <!-- SIGNUP BUTTON (Tenant only) -->
-            <div id="signupSection" class="mt-2 d-none">
+            <!-- SIGNUP -->
+            <div id="signupSection" class="mt-2">
               <button type="button" class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#signupModal">
                 Sign up as Tenant
               </button>
             </div>
 
           </form>
+
+          <div class="mt-3 text-center">
+            <a href="{% url 'home' %}" class="small text-muted text-decoration-none">&larr; Back to home page</a>
+          </div>
 
           {% if user.is_authenticated and not user.is_staff %}
           <div class="mt-4 text-center">
@@ -435,28 +430,6 @@
       const modalFooter = this.querySelector('.modal-footer');
       if (modalFooter) modalFooter.style.display = 'flex';
     });
-  </script>
-
-  <!-- Fallback selectRole (in case login.js fails to load) -->
-  <script>
-    if (typeof selectRole === 'undefined') {
-      window.selectRole = function(role) {
-        document.getElementById("roleInput").value = role;
-        const btnAdmin = document.getElementById("btnAdmin");
-        const btnTenant = document.getElementById("btnTenant");
-        const signupSection = document.getElementById("signupSection");
-
-        if (role === "admin") {
-          btnAdmin.className = "btn btn-dark role-btn";
-          btnTenant.className = "btn btn-outline-dark role-btn";
-          signupSection.classList.add("d-none");
-        } else {
-          btnTenant.className = "btn btn-dark role-btn";
-          btnAdmin.className = "btn btn-outline-dark role-btn";
-          signupSection.classList.remove("d-none");
-        }
-      };
-    }
   </script>
 
   {% if error_modal %}
