@@ -121,6 +121,56 @@
       height: 1px !important;
       overflow: hidden !important;
     }
+
+    /* Responsive Google Map Styles */
+    .map-container {
+      position: relative;
+      overflow: hidden;
+      border-radius: 0 0 1rem 1rem;
+    }
+
+    .map-iframe {
+      border: none !important;
+      min-height: 400px !important;
+      transition: opacity 0.3s ease;
+    }
+
+    .map-iframe:hover {
+      opacity: 0.95;
+    }
+
+    /* Mobile Map Responsiveness */
+    @media (max-width: 768px) {
+      .map-container {
+        height: 250px !important;
+      }
+      
+      .map-iframe {
+        min-height: 250px !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .map-container {
+        height: 200px !important;
+      }
+      
+      .map-iframe {
+        min-height: 200px !important;
+      }
+    }
+
+    /* Map Overlay Gradient Fix */
+    .bg-gradient-to-top {
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0) 100%);
+    }
+
+    /* Contact Section Height Consistency */
+    @media (min-width: 992px) {
+      .contact-section .card {
+        min-height: 500px;
+      }
+    }
   </style>
 </head>
 
@@ -253,9 +303,7 @@
                         data-room-rate="{{ room.monthly_rate }}"
                         data-room-area="{{ room.area|default:'N/A' }}"
                         data-room-cr="{{ room.num_cr }}"
-                        data-room-bed-type="{{ room.get_bed_type_display }}"
-                        data-bs-toggle="modal" 
-                        data-bs-target="#roomInfoModal">
+                        data-room-bed-type="{{ room.get_bed_type_display }}">
                   View details <i class="bi bi-info-circle ms-1"></i>
                 </button>
               </div>
@@ -281,20 +329,55 @@
     <section id="contact" class="py-5 border-top">
       <div class="container py-5">
         <div class="row g-5 align-items-start">
+          <!-- LEFT COLUMN: Text + Map -->
           <div class="col-lg-5">
+            <!-- Text Content -->
             <h2 class="fw-bold mb-3">Let&apos;s talk</h2>
             <p class="text-muted lead">
-              Questions about billing, housekeeping, lease terms, or walk-ins —
-              drop a note and our front desk routing will respond as soon as we can.
+              Interested in room reservations, property visits, or rental inquiries?
+Send us a message and our team will respond as soon as possible.
             </p>
-            <ul class="list-unstyled text-muted small mt-4">
-              <li class="mb-2"><i class="bi bi-envelope me-2 text-dark"></i> Email reply during business hours</li>
-              <li class="mb-2"><i class="bi bi-shield-check me-2 text-dark"></i> No sharing of your message with other tenants</li>
-              <li><i class="bi bi-lock me-2 text-dark"></i> Secure form with basic bot defense</li>
-            </ul>
+        
+            <!-- Google Map -->
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden mt-4">
+              <div class="card-body p-0">
+                <!-- Map Header -->
+                <div class="bg-light p-3 border-bottom">
+                  <h3 class="h5 fw-bold mb-0 d-flex align-items-center">
+                    <i class="bi bi-geo-alt me-2 text-primary"></i>
+                    Our Location
+                  </h3>
+                </div>
+                
+                <!-- Responsive Map Container -->
+                <div class="map-container position-relative" style="height: 350px; overflow: hidden;">
+                  <!-- Google Maps Embed -->
+                  <iframe src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d1630.572634350659!2d124.20969417091975!3d13.585986161307952!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2sph!4v1778430796871!5m2!1sen!2sph" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                  
+                  <!-- Map Overlay Actions -->
+                  <div class="position-absolute bottom-0 start-0 w-100 p-3 bg-gradient-to-top from-dark/50 to-transparent">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div class="text-white small">
+                        <i class="bi bi-geo-alt-fill me-1"></i>
+                        Real St. Calatagan Proper, Virac, Catanduanes
+                      </div>
+                      <a href="https://maps.google.com/?q=Manila,Philippines" 
+                         target="_blank" 
+                         rel="noopener noreferrer"
+                         class="btn btn-sm btn-light rounded-pill">
+                        <i class="bi bi-box-arrow-up-right me-1"></i>
+                        Open in Maps
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
+
+          <!-- RIGHT COLUMN: Contact Form Only -->
           <div class="col-lg-7">
-            <div class="card border-0 shadow-lg rounded-4">
+            <div class="card border-0 shadow-lg rounded-4 h-100">
               <div class="card-body p-4 p-lg-5">
                 <h3 class="h5 fw-bold mb-4">Send a message</h3>
                 <form method="post" action="{% url 'home' %}#contact" class="needs-validation" novalidate>
@@ -520,7 +603,7 @@
                   // Update photo if available
                   const photoContainer = document.getElementById('infoRoomPhoto');
                   if (roomPhoto) {
-                      photoContainer.innerHTML = `<img src="${roomPhoto}" class="w-100" style="max-height: 200px; object-fit: cover;">`;
+                      photoContainer.innerHTML = `<img src="${roomPhoto}" class="w-100" style="max-height: 200px; object-fit: cover;" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=&quot;bg-light d-flex align-items-center justify-content-center&quot; style=&quot;height: 200px;&quot;><i class=&quot;bi bi-image display-4 text-muted&quot;></i></div>';">`;
                   } else {
                       photoContainer.innerHTML = '<div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px;"><i class="bi bi-image display-4 text-muted"></i></div>';
                   }
@@ -592,7 +675,7 @@
               thumbnail.className = 'flex-shrink-0 cursor-pointer';
               thumbnail.style.width = '60px';
               thumbnail.style.height = '60px';
-              thumbnail.innerHTML = `<img src="${image.url}" alt="Image ${index + 1}" class="w-100 h-100 rounded" style="object-fit: cover;">`;
+              thumbnail.innerHTML = `<img src="${image.url}" alt="Image ${index + 1}" class="w-100 h-100 rounded" style="object-fit: cover;" onerror="this.style.display='none';">`;
               thumbnail.addEventListener('click', () => showGalleryImage(index));
               thumbnailsContainer.appendChild(thumbnail);
           });
@@ -623,6 +706,11 @@
           
           // Update main image
           const mainImage = document.getElementById('galleryMainImage');
+          mainImage.onerror = function () {
+              this.onerror = null;
+              this.removeAttribute('src');
+              this.alt = 'Image unavailable';
+          };
           mainImage.src = image.url;
           mainImage.alt = `${image.room_code} - Image ${index + 1}`;
           
