@@ -4,10 +4,10 @@ Room management views: list, add, edit, delete, and feature management.
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q, ProtectedError
+from django.db.models import Max, Q, ProtectedError
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from ..models import Room, Inclusion, Appliance, TenantProfile
+from ..models import Room, Inclusion, Appliance, TenantProfile, RoomImage
 from ..activity_utils import log_activity
 
 
@@ -29,7 +29,7 @@ def room_list(request):
 
     sort_field = valid_sorts.get(sort_by, 'floor')
 
-    rooms = Room.objects.prefetch_related('dynamic_inclusions')
+    rooms = Room.objects.prefetch_related('dynamic_inclusions', 'additional_images')
 
     if search:
         rooms = rooms.filter(
@@ -119,7 +119,7 @@ def add_room(request):
         floor                = request.POST.get('floor')
         capacity             = request.POST.get('capacity')
         monthly_rate         = request.POST.get('monthly_rate')
-        photo                = request.FILES.get('photo')
+        photos               = request.FILES.getlist('photos')
         area                 = request.POST.get('area') or None
         num_cr               = request.POST.get('num_cr', 1)
         bed_type             = request.POST.get('bed_type', 'single')
@@ -136,12 +136,12 @@ def add_room(request):
                 'show_add_modal': True,
             })
 
+        # Create room first
         room = Room.objects.create(
             room_number=room_number,
             floor=floor,
             capacity=capacity,
             monthly_rate=monthly_rate,
-            photo=photo,
             area=area,
             num_cr=num_cr,
             bed_type=bed_type,
@@ -150,6 +150,20 @@ def add_room(request):
             electricity_included=electricity_included,
             has_wifi=has_wifi,
         )
+        
+        # Handle multiple photos
+        for order, photo in enumerate(photos):
+            if order == 0:
+                # First photo becomes the primary photo
+                room.photo = photo
+                room.save()
+            else:
+                # Additional photos go to RoomImage
+                RoomImage.objects.create(
+                    room=room,
+                    image=photo,
+                    order=order
+                )
 
         log_activity(
             user=request.user,
@@ -207,10 +221,20 @@ def edit_room(request, room_id):
                 except Inclusion.DoesNotExist:
                     pass
 
-        if request.FILES.get('photo'):
-            room.photo = request.FILES.get('photo')
-
         room.save()
+
+        photos = request.FILES.getlist('photos')
+        if photos:
+            room.photo = photos[0]
+            room.save(update_fields=['photo'])
+
+            next_order = (room.additional_images.aggregate(Max('order'))['order__max'] or 0) + 1
+            for offset, photo in enumerate(photos[1:]):
+                RoomImage.objects.create(
+                    room=room,
+                    image=photo,
+                    order=next_order + offset
+                )
 
         log_activity(
             user=request.user,
@@ -234,6 +258,7 @@ def edit_room(request, room_id):
                 'rate'              : float(room.monthly_rate),
                 'status'            : room.status(),
                 'photo'             : room.photo.url if room.photo else None,
+                'images'            : room.all_images,
                 'tenants'           : tenants,
                 'area'              : float(room.area) if room.area else None,
                 'cr'                : room.num_cr,
@@ -307,6 +332,7 @@ def get_room_data_api(request, room_id):
             'rate': float(room.monthly_rate),
             'status': room.status(),
             'photo': room.photo.url if room.photo else None,
+            'images': room.all_images,
             'tenants': tenants,
             'area': float(room.area) if room.area else None,
             'cr': room.num_cr,

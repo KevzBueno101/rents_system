@@ -4,10 +4,14 @@
 <div class="col-12 col-md-6 col-lg-4 d-flex align-items-stretch">
     <div class="card border-0 shadow-sm h-100 w-100">
 
-        {% if room.photo %}
-            <img src="{{ room.photo.url }}"
+        {% if room.all_images %}
+            {% with room.all_images|first as primary_image %}
+            <img src="{{ primary_image.url }}"
                  alt="{{ room.room_code }}"
-                 style="width:100%; height:160px; object-fit:cover; border-radius:12px 12px 0 0;">
+                 style="width:100%; height:160px; object-fit:cover; border-radius:12px 12px 0 0; cursor:pointer;"
+                 onclick="openRoomCarousel('{{ room.id }}', '{{ room.room_code }}', {{ room.all_images|json_attr }})"
+                 title="Click to view all {{ room.all_images|length }} photos">
+            {% endwith %}
         {% else %}
             <div style="width:100%; height:160px; background:#f4f6f9; border-radius:12px 12px 0 0; display:flex; align-items:center; justify-content:center;">
                 <i class="bi bi-door-open" style="font-size:48px; color:#ccc;"></i>
@@ -47,6 +51,7 @@
                         data-rate="{{ room.monthly_rate }}"
                         data-status="{{ room.status }}"
                         data-photo="{% if room.photo %}{{ room.photo.url }}{% endif %}"
+                        data-images='{{ room.all_images|json_attr }}'
                         data-tenants="{% for t in room.get_tenants %}{{ t.full_name }}{% if not forloop.last %}|{% endif %}{% endfor %}"
                         data-area="{{ room.area|default:'' }}"
                         data-cr="{{ room.num_cr }}"
@@ -123,6 +128,8 @@
                         data-area="{{ room.area|default:'' }}"
                         data-cr="{{ room.num_cr }}"
                         data-bedtype="{{ room.bed_type }}"
+                        data-code="{{ room.room_code }}"
+                        data-images='{{ room.all_images|json_attr }}'
                         data-sink="{{ room.has_lababo }}"
                         data-water="{{ room.water_included }}"
                         data-elec="{{ room.electricity_included }}"

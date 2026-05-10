@@ -1,4 +1,5 @@
 {% load static %}
+{% load json_filters %}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -230,6 +231,7 @@
                         data-room-id="{{ room.id }}"
                         data-room-code="{{ room.room_code }}"
                         data-room-photo="{% if room.photo %}{{ room.photo.url }}{% else %}{% endif %}"
+                        data-room-images='{{ room.images_data|json_attr }}'
                         data-room-status="{{ room.status }}"
                         data-room-floor="{{ room.floor }}"
                         data-room-occupancy="{{ room.occupied_beds }}/{{ room.capacity }}"
@@ -319,6 +321,55 @@
 
   </main>
 
+<!-- ROOM IMAGE GALLERY MODAL -->
+<div class="modal fade" id="roomGalleryModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-fullscreen-lg-down">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-white">
+                    <i class="bi bi-images"></i>
+                    <span id="galleryRoomCode"></span> - Photo Gallery
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <!-- Main Image Display -->
+                <div class="position-relative" style="height: 500px; background: #000;">
+                    <img id="galleryMainImage" src="" alt="" class="w-100 h-100" style="object-fit: contain;">
+                    
+                    <!-- Navigation Arrows -->
+                    <button id="galleryPrev" class="btn btn-dark btn-lg position-absolute top-50 start-0 translate-middle-y ms-3 rounded-circle" style="opacity: 0.8;">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <button id="galleryNext" class="btn btn-dark btn-lg position-absolute top-50 end-0 translate-middle-y me-3 rounded-circle" style="opacity: 0.8;">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                    
+                    <!-- Image Counter -->
+                    <div class="position-absolute top-0 end-0 m-3">
+                        <span class="badge bg-dark bg-opacity-75 text-white">
+                            <span id="galleryCurrentIndex">1</span> / <span id="galleryTotalImages">1</span>
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Thumbnail Strip -->
+                <div class="bg-dark p-3">
+                    <div id="galleryThumbnails" class="d-flex gap-2 overflow-auto">
+                        <!-- Thumbnails will be dynamically added -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 bg-dark">
+                <div class="text-white-50 small">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Use arrow keys or click thumbnails to navigate. Click outside image to close.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
   {# —— Footer —— #}
   <footer class="footer-soft text-white-50 mt-auto py-5">
     <div class="container">
@@ -405,6 +456,7 @@
               <span id="infoBedType"></span>
             </div>
             <div class="text-center">
+              <div id="galleryButtonContainer"></div>
               <p class="mb-0 text-secondary">
                 When you&apos;re ready, create an account from <a href="{% url 'login' %}">tenant login</a>
                 — you&apos;ll choose a room during signup if one is listed for self-registration.
@@ -430,6 +482,7 @@
                   const roomId = this.getAttribute('data-room-id');
                   const roomCode = this.getAttribute('data-room-code');
                   const roomPhoto = this.getAttribute('data-room-photo');
+                  const roomImages = this.getAttribute('data-room-images');
                   const roomStatus = this.getAttribute('data-room-status');
                   const roomFloor = this.getAttribute('data-room-floor');
                   const roomOccupancy = this.getAttribute('data-room-occupancy');
@@ -457,12 +510,175 @@
                       photoContainer.innerHTML = '<div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px;"><i class="bi bi-image display-4 text-muted"></i></div>';
                   }
                   
+                  // Add gallery button if images exist
+                  const galleryContainer = document.getElementById('galleryButtonContainer');
+                  try {
+                      const images = JSON.parse(roomImages || '[]');
+                      if (images.length > 0) {
+                          galleryContainer.innerHTML = '';
+                          const galleryButton = document.createElement('button');
+                          galleryButton.type = 'button';
+                          galleryButton.className = 'btn btn-primary btn-sm mb-3';
+                          galleryButton.innerHTML = `<i class="bi bi-images me-1"></i>View All Photos (${images.length})`;
+                          galleryButton.addEventListener('click', () => {
+                              openRoomGallery(roomId, roomCode, images);
+                          });
+                          galleryContainer.appendChild(galleryButton);
+                      } else {
+                          galleryContainer.innerHTML = '';
+                      }
+                  } catch (e) {
+                      galleryContainer.innerHTML = '';
+                  }
+                  
                   // Show modal
                   const modal = new bootstrap.Modal(roomInfoModal);
                   modal.show();
               });
           });
       }
+
+      // Fix modal backdrop cleanup
+      roomInfoModal.addEventListener('hidden.bs.modal', function () {
+          // Remove any leftover backdrops
+          document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+              backdrop.remove();
+          });
+          // Restore body classes
+          document.body.classList.remove('modal-open');
+          document.body.style.overflow = '';
+          document.body.style.paddingRight = '';
+      });
+
+      // Gallery functionality
+      let currentGalleryImages = [];
+      let currentGalleryIndex = 0;
+
+      // Open gallery from room info modal
+      function openRoomGallery(roomId, roomCode, images) {
+          currentGalleryImages = images;
+          currentGalleryIndex = 0;
+          
+          if (images.length === 0) {
+              alert('No images available for this room.');
+              return;
+          }
+          
+          // Update gallery modal
+          document.getElementById('galleryRoomCode').textContent = roomCode;
+          document.getElementById('galleryTotalImages').textContent = images.length;
+          
+          // Generate thumbnails
+          const thumbnailsContainer = document.getElementById('galleryThumbnails');
+          thumbnailsContainer.innerHTML = '';
+          
+          images.forEach((image, index) => {
+              const thumbnail = document.createElement('div');
+              thumbnail.className = 'flex-shrink-0 cursor-pointer';
+              thumbnail.style.width = '60px';
+              thumbnail.style.height = '60px';
+              thumbnail.innerHTML = `<img src="${image.url}" alt="Image ${index + 1}" class="w-100 h-100 rounded" style="object-fit: cover;">`;
+              thumbnail.addEventListener('click', () => showGalleryImage(index));
+              thumbnailsContainer.appendChild(thumbnail);
+          });
+          
+          // Show first image
+          showGalleryImage(0);
+          
+          const galleryModalElement = document.getElementById('roomGalleryModal');
+          const showGallery = () => {
+              const galleryModal = new bootstrap.Modal(galleryModalElement);
+              galleryModal.show();
+          };
+
+          const infoModalInstance = bootstrap.Modal.getInstance(roomInfoModal);
+          if (infoModalInstance && roomInfoModal.classList.contains('show')) {
+              roomInfoModal.addEventListener('hidden.bs.modal', showGallery, { once: true });
+              infoModalInstance.hide();
+          } else {
+              showGallery();
+          }
+      }
+
+      function showGalleryImage(index) {
+          if (index < 0 || index >= currentGalleryImages.length) return;
+          
+          currentGalleryIndex = index;
+          const image = currentGalleryImages[index];
+          
+          // Update main image
+          const mainImage = document.getElementById('galleryMainImage');
+          mainImage.src = image.url;
+          mainImage.alt = `${image.room_code} - Image ${index + 1}`;
+          
+          // Update counter
+          document.getElementById('galleryCurrentIndex').textContent = index + 1;
+          
+          // Update thumbnail selection
+          const thumbnails = document.querySelectorAll('#galleryThumbnails > div');
+          thumbnails.forEach((thumb, i) => {
+              if (i === index) {
+                  thumb.querySelector('img').classList.add('border', 'border-white', 'border-2');
+              } else {
+                  thumb.querySelector('img').classList.remove('border', 'border-white', 'border-2');
+              }
+          });
+      }
+
+      // Navigation buttons
+      document.getElementById('galleryPrev').addEventListener('click', () => {
+          showGalleryImage(currentGalleryIndex - 1);
+      });
+
+      document.getElementById('galleryNext').addEventListener('click', () => {
+          showGalleryImage(currentGalleryIndex + 1);
+      });
+
+      // Keyboard navigation
+      document.addEventListener('keydown', (e) => {
+          const galleryModal = document.getElementById('roomGalleryModal');
+          if (galleryModal.classList.contains('show')) {
+              if (e.key === 'ArrowLeft') {
+                  showGalleryImage(currentGalleryIndex - 1);
+              } else if (e.key === 'ArrowRight') {
+                  showGalleryImage(currentGalleryIndex + 1);
+              } else if (e.key === 'Escape') {
+                  bootstrap.Modal.getInstance(galleryModal).hide();
+              }
+          }
+      });
+
+      // Touch/swipe support for mobile
+      let touchStartX = 0;
+      let touchEndX = 0;
+
+      const galleryMainImage = document.getElementById('galleryMainImage');
+      galleryMainImage.addEventListener('touchstart', (e) => {
+          touchStartX = e.changedTouches[0].screenX;
+      });
+
+      galleryMainImage.addEventListener('touchend', (e) => {
+          touchEndX = e.changedTouches[0].screenX;
+          handleSwipe();
+      });
+
+      function handleSwipe() {
+          const swipeThreshold = 50;
+          const diff = touchStartX - touchEndX;
+          
+          if (Math.abs(diff) > swipeThreshold) {
+              if (diff > 0) {
+                  // Swipe left - next image
+                  showGalleryImage(currentGalleryIndex + 1);
+              } else {
+                  // Swipe right - previous image
+                  showGalleryImage(currentGalleryIndex - 1);
+              }
+          }
+      }
+
+      // Make gallery functions globally accessible
+      window.openRoomGallery = openRoomGallery;
   });
   </script>
   

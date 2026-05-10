@@ -4,7 +4,19 @@ A Django-based boarding house management system for managing tenants, rooms, bil
 
 ## Current Status: **Production Ready** v3.2
 
+**Refactor Highlights (May 10, 2026):**
+- Room media now supports modern modal galleries with arrows, counters, keyboard navigation, swipe support, and smooth image transitions.
+- Room uploads are organized into per-room folders such as `media/rooms/Room_1-A/primary.jpg`, `1.jpg`, and `2.jpg`.
+- `room.all_images` provides one ordered image source for primary photos, additional photos, cards, details modals, and future gallery views.
+- `migrate_room_media` can dry-run or migrate existing room images into the new directory structure without breaking existing records.
+- The tenant login page now uses a full-bleed, grayscale rental SaaS layout aligned with the landing page styling.
+
 **Latest Updates (May 10, 2026):**
+- ✅ **Room Details Modal System** - Interactive modal for room information on home page
+- ✅ **Building Background Implementation** - Professional building photo with dark overlay
+- ✅ **Mobile Responsive Background** - Optimized background display for all devices
+- ✅ **Enhanced User Experience** - Consistent modal behavior across all pages
+- ✅ **Template Syntax Fixes** - Resolved Django template parsing errors
 - ✅ **Role-Based Access Control (RBAC) System** - Comprehensive role management with decorators and middleware
 - ✅ **Security Middleware Implementation** - Admin login protection and security headers
 - ✅ **Marketing Views and Landing Page** - Professional landing page with hero section and navigation

@@ -23,11 +23,13 @@ def parse_phone(raw):
 
 
 def get_available_rooms():
-    """Get available rooms with dynamic inclusions."""
-    rooms = [r for r in Room.objects.prefetch_related('dynamic_inclusions').order_by('floor', 'room_number') if not r.is_full()]
-    # Add dynamic inclusions to each room
+    """Get available rooms with dynamic inclusions and images."""
+    rooms = [r for r in Room.objects.prefetch_related('dynamic_inclusions', 'additional_images').order_by('floor', 'room_number') if not r.is_full()]
+    # Add dynamic inclusions and images to each room
     for room in rooms:
         room.dynamic_inclusions_list = [{'id': inc.id, 'name': inc.name} for inc in room.dynamic_inclusions.all()]
+        # Use unified image property
+        room.images_data = room.all_images
     return rooms
 
 

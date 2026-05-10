@@ -11,12 +11,277 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" href="https://img.icons8.com/ios/50/door.png" type="image/png">
   <style>
+    :root {
+      --auth-ink: #17202a;
+      --auth-muted: #687383;
+      --auth-line: #dbe2ea;
+      --auth-soft: #f5f7fa;
+      --auth-accent: #343a40;
+      --auth-accent-dark: #212529;
+    }
+
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 12% 12%, rgba(33, 37, 41, 0.10), transparent 30%),
+        linear-gradient(135deg, #f7f9fb 0%, #eef3f6 100%);
+      color: var(--auth-ink);
+    }
+
+    .auth-shell {
+      min-height: 100vh;
+      padding: 0;
+    }
+
     .left-panel {
-      background: linear-gradient(135deg, #212529, #212529);
+      position: relative;
+      overflow: hidden;
+      min-height: 100vh;
+      border-radius: 0;
+      background:
+        linear-gradient(135deg, rgba(13, 16, 20, 0.95) 0%, rgba(33, 37, 41, 0.86) 46%, rgba(13, 16, 20, 0.78) 100%),
+        url("{% static 'img/bldg.jpg' %}") center/cover;
+      box-shadow: none;
+    }
+
+    .left-panel::after {
+      content: "";
+      position: absolute;
+      inset: auto 28px 28px 28px;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.28);
+    }
+
+    .brand-lockup {
+      position: relative;
+      z-index: 1;
+      width: min(420px, 82%);
+      text-align: left;
+    }
+
+    .brand-lockup img {
+      max-width: 230px;
+      margin-bottom: 40px;
+    }
+
+    .brand-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0;
+      margin-bottom: 18px;
+    }
+
+    .brand-lockup h1 {
+      color: #fff;
+      font-size: clamp(34px, 4vw, 56px);
+      line-height: 1.02;
+      letter-spacing: 0;
+      margin-bottom: 18px;
+    }
+
+    .brand-lockup p {
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 16px;
+      max-width: 360px;
+      margin-bottom: 30px;
+    }
+
+    .auth-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 360px;
+    }
+
+    .auth-stat {
+      padding: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.11);
+      backdrop-filter: blur(10px);
+    }
+
+    .auth-stat strong {
+      display: block;
+      color: #fff;
+      font-size: 18px;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .auth-stat span {
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 12px;
+    }
+
+    .auth-panel {
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .auth-card {
+      width: min(100%, 460px);
+      padding: 38px;
+      border: 1px solid rgba(219, 226, 234, 0.9);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: 0 22px 60px rgba(23, 32, 42, 0.12);
+      backdrop-filter: blur(16px);
+    }
+
+    .auth-card-header {
+      margin-bottom: 26px;
+    }
+
+    .auth-card-header .eyebrow {
+      color: #495057;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .auth-card h3 {
+      font-size: 32px;
+      line-height: 1.12;
+      margin-bottom: 8px;
+      letter-spacing: 0;
+    }
+
+    .auth-card .subcopy {
+      color: var(--auth-muted);
+      margin-bottom: 0;
+    }
+
+    .auth-card .input-group {
+      border: 1px solid var(--auth-line);
+      border-radius: 12px;
+      background: #fff;
+      overflow: hidden;
+      transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+    }
+
+    .auth-card .input-group:focus-within {
+      border-color: rgba(33, 37, 41, 0.58);
+      box-shadow: 0 0 0 4px rgba(33, 37, 41, 0.10);
+      transform: translateY(-1px);
+    }
+
+    .auth-card .input-group-text,
+    .auth-card .form-control {
+      min-height: 52px;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .auth-card .input-group-text {
+      width: 52px;
+      justify-content: center;
+      color: var(--auth-muted);
+    }
+
+    .auth-card .form-control {
+      color: var(--auth-ink);
+      font-size: 15px;
+    }
+
+    .auth-card .form-control::placeholder {
+      color: #8a95a3;
+    }
+
+    .auth-primary-btn {
+      min-height: 52px;
+      border: 0;
+      border-radius: 12px;
+      background: var(--auth-ink);
+      font-weight: 700;
+      box-shadow: 0 14px 28px rgba(23, 32, 42, 0.18);
+    }
+
+    .auth-primary-btn:hover {
+      background: #0d141b;
+      transform: translateY(-1px);
+    }
+
+    .auth-secondary-btn {
+      min-height: 50px;
+      border-radius: 12px;
+      border-color: rgba(33, 37, 41, 0.28);
+      color: var(--auth-accent-dark);
+      font-weight: 700;
+      background: rgba(33, 37, 41, 0.035);
+    }
+
+    .auth-secondary-btn:hover {
+      border-color: var(--auth-accent);
+      background: rgba(33, 37, 41, 0.08);
+      color: var(--auth-accent-dark);
+    }
+
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      color: var(--auth-muted);
+      font-size: 13px;
+      margin: 24px 0 16px;
+    }
+
+    .auth-divider::before,
+    .auth-divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--auth-line);
+    }
+
+    .auth-link {
+      color: var(--auth-muted);
+      transition: color 150ms ease;
+    }
+
+    .auth-link:hover {
+      color: var(--auth-accent-dark);
+    }
+
+    .mobile-brand {
+      background: rgba(23, 32, 42, 0.96);
+      letter-spacing: 0;
     }
 
     .role-btn {
       transition: all 0.2s;
+    }
+
+    @media (max-width: 767.98px) {
+      .auth-shell {
+        padding: 0;
+      }
+
+      .auth-panel {
+        min-height: calc(100vh - 44px);
+        padding: 24px 16px;
+      }
+
+      .auth-card {
+        padding: 28px 20px;
+        border-radius: 18px;
+        box-shadow: 0 14px 38px rgba(23, 32, 42, 0.12);
+      }
+
+      .auth-card h3 {
+        font-size: 28px;
+      }
     }
   </style>
 </head>
@@ -211,22 +476,43 @@
   </div>
 
   <!-- MAIN CONTAINER -->
-  <div class="container-fluid">
-    <div class="d-md-none text-center p-2 bg-dark text-white">
+  <div class="container-fluid auth-shell">
+    <div class="d-md-none text-center p-2 mobile-brand text-white">
       <strong>RENTS</strong>
     </div>
-    <div class="row min-vh-100">
+    <div class="row g-0 min-vh-100">
 
       <!-- LEFT PANEL -->
-      <div class="col-md-5 d-none d-md-flex left-panel text-white flex-column justify-content-center align-items-center text-center p-3">
-        <img src="{% static 'img/logo_rents_white.png' %}" alt="RENTS Logo" class="img-fluid" style="max-width: 550px;">
+      <div class="col-md-5 d-none d-md-flex left-panel text-white flex-column justify-content-center p-5">
+        <div class="brand-lockup">
+          <img src="{% static 'img/logo_rents_white.png' %}" alt="RENTS Logo" class="img-fluid">
+          <div class="brand-kicker">
+            <i class="bi bi-building-check"></i>
+            Rental management portal
+          </div>
+          <h1>Manage your stay with clarity.</h1>
+          <p>Secure tenant access for room details, billing updates, reminders, and rental account activity.</p>
+          <div class="auth-stat-grid">
+            <div class="auth-stat">
+              <strong>{{ available_rooms|length }}</strong>
+              <span>rooms open for signup</span>
+            </div>
+            <div class="auth-stat">
+              <strong>24/7</strong>
+              <span>self-service access</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- RIGHT PANEL (LOGIN) -->
-      <div class="col-12 col-md-7 d-flex justify-content-center align-items-center bg-light">
-        <div class="card shadow p-4 w-75">
-          <h3 class="text-center mb-3">Tenant sign in</h3>
-
+      <div class="col-12 col-md-7 d-flex justify-content-center align-items-center auth-panel">
+        <div class="auth-card">
+          <div class="auth-card-header">
+            <div class="eyebrow">Tenant portal</div>
+            <h3>Welcome back</h3>
+            <p class="subcopy">Sign in to continue to your room dashboard.</p>
+          </div>
 
           <!-- LOGIN FORM -->
           <form method="POST" action="{% url 'login' %}">
@@ -236,7 +522,7 @@
             {% endif %}
 
             <!-- USERNAME -->
-            <div class="input-group mb-2">
+            <div class="input-group mb-3">
               <span class="input-group-text"><i class="bi bi-person"></i></span>
               <input type="text" name="username" class="form-control" placeholder="Username" required>
             </div>
@@ -250,26 +536,26 @@
               </span>
             </div>
 
-            <button class="btn btn-dark w-100">Login</button>
+            <button class="btn btn-dark w-100 auth-primary-btn">Login</button>
 
-            <!-- FORGOT PASSWORD LINK -->
-            <div class="mt-3 text-center">
-              <a href="#" class="text-decoration-none small text-muted" data-bs-toggle="modal" data-bs-target="#forgotPasswordModal">
-                <i class="bi bi-question-circle me-1"></i>Forgot your password?
-              </a>
-            </div>
-
+            
+            <div class="auth-divider">New tenant?</div>
             <!-- SIGNUP -->
             <div id="signupSection" class="mt-2">
-              <button type="button" class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#signupModal">
+              <button type="button" class="btn btn-outline-primary w-100 auth-secondary-btn" data-bs-toggle="modal" data-bs-target="#signupModal">
                 Sign up as Tenant
               </button>
             </div>
-
+            <!-- FORGOT PASSWORD LINK -->
+            <div class="mt-4 text-center">
+              <a href="#" class="text-decoration-none small auth-link" data-bs-toggle="modal" data-bs-target="#forgotPasswordModal">
+                <i class="bi bi-question-circle me-1"></i>Forgot your password?
+              </a>
+            </div>
           </form>
 
           <div class="mt-3 text-center">
-            <a href="{% url 'home' %}" class="small text-muted text-decoration-none">&larr; Back to home page</a>
+            <a href="{% url 'home' %}" class="small auth-link text-decoration-none">&larr; Back to home page</a>
           </div>
 
           {% if user.is_authenticated and not user.is_staff %}

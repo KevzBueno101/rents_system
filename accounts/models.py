@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import RegexValidator
+from pathlib import Path
 from django.utils import timezone
 
 
@@ -92,7 +93,20 @@ class Appliance(models.Model):
         return self.name
 
 
-# ─── ROOM ─────────────────────────────────────────────
+# ─── ROOM UPLOAD PATH FUNCTIONS ───────────────────────────────
+def room_primary_upload_path(instance, filename):
+    """Generate upload path for a room's primary image."""
+    if instance and hasattr(instance, 'get_primary_image_path'):
+        return instance.get_primary_image_path(filename)
+    return f'rooms/{filename}'
+
+def room_additional_upload_path(instance, filename):
+    """Generate upload path for a room's additional image."""
+    if instance and getattr(instance, 'room', None):
+        return instance.room.get_additional_image_path(instance.order, filename)
+    return f'room_images/{filename}'
+
+# ─── ROOM MODEL ────────────────────────────────────────────
 class Room(models.Model):
 
     BED_CHOICES = [
@@ -106,7 +120,7 @@ class Room(models.Model):
     floor        = models.PositiveIntegerField(default=1)
     capacity     = models.PositiveIntegerField(default=1)
     monthly_rate = models.DecimalField(max_digits=8, decimal_places=2)
-    photo        = models.ImageField(upload_to='rooms/', blank=True, null=True)
+    photo        = models.ImageField(upload_to=room_primary_upload_path, blank=True, null=True)
 
     # ── ROOM FEATURES ─────────────────────────────────
     area       = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
@@ -138,8 +152,93 @@ class Room(models.Model):
     @property          
     def room_code(self):
         return f"Room {self.floor}-{self.room_number}"
+    
+    def get_room_directory_path(self):
+        """Generate safe directory path for room media storage"""
+        # Convert room code to safe directory name
+        safe_name = f"Room_{self.floor}-{self.room_number}"
+        # Remove any unsafe characters and replace spaces with underscores
+        safe_name = ''.join(c if c.isalnum() or c in '-_' else '_' for c in safe_name)
+        return f"rooms/{safe_name}"
+    
+    def get_primary_image_path(self, filename="primary.jpg"):
+        """Get the path for primary room image"""
+        return f"{self.get_room_directory_path()}/primary.jpg"
+    
+    def get_additional_image_path(self, index, filename="image.jpg"):
+        """Get the path for additional room image"""
+        return f"{self.get_room_directory_path()}/{index}.jpg"
+    
+    @property
+    def all_images(self):
+        """Unified image source combining primary photo and additional images with proper ordering"""
+        images = []
+        
+        # Add primary photo first (order 0)
+        if self.photo:
+            images.append({
+                'url': self.photo.url,
+                'order': 0,
+                'is_primary': True,
+                'filename': Path(self.photo.name).name,
+                'type': 'primary'
+            })
+        
+        # Add additional images in order (order 1, 2, 3, ...)
+        for img in self.additional_images.all().order_by('order', 'id'):
+            if not img.image:
+                continue
+            images.append({
+                'url': img.image.url,
+                'order': img.order,
+                'is_primary': False,
+                'filename': Path(img.image.name).name,
+                'type': 'additional',
+                'image_id': img.id
+            })
+        
+        return images
+    
+    @property
+    def image_count(self):
+        """Get total number of images for this room"""
+        return len(self.all_images)
+    
+    @property
+    def primary_image(self):
+        """Get primary image URL or first additional image"""
+        images = self.all_images
+        return images[0]['url'] if images else None
+    
     def __str__(self):
         return self.room_code
+
+
+# ─── ROOM IMAGE ─────────────────────────────────────────
+class RoomImage(models.Model):
+    """Additional images for rooms with ordering support"""
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='additional_images')
+    image = models.ImageField(upload_to=room_additional_upload_path)
+    order = models.PositiveIntegerField(default=1)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['order']
+        verbose_name = 'Room Image'
+        verbose_name_plural = 'Room Images'
+        indexes = [
+            models.Index(fields=['room', 'order'], name='idx_room_image_order'),
+        ]
+    
+    @classmethod
+    def get_upload_path(cls, instance, filename):
+        """Generate upload path for additional room images"""
+        if instance and getattr(instance, 'room', None):
+            return instance.room.get_additional_image_path(instance.order, filename)
+        return f'room_images/{filename}'
+    
+    def __str__(self):
+        return f"{self.room.room_code} - Image {self.order}"
 
 
 # ─── BILLING SYSTEM ─────────────────────────────────────

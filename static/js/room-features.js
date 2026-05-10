@@ -257,6 +257,24 @@ document.addEventListener('DOMContentLoaded', async function () {
 
             document.getElementById('editRoomForm').action = `/edit-room/${currentRoomId}/`;
 
+            let roomImages = [];
+            try {
+                roomImages = JSON.parse(this.dataset.images || '[]');
+            } catch (e) {
+                console.warn('Failed to parse edit room images:', e);
+            }
+
+            if (window.createRoomInlineCarousel) {
+                window.createRoomInlineCarousel(
+                    document.getElementById('editRoomCarousel'),
+                    roomImages,
+                    {
+                        roomCode: this.dataset.code || `Room ${this.dataset.floor}-${this.dataset.room}`,
+                        height: '230px'
+                    }
+                );
+            }
+
             // Load dynamic inclusions
             loadRoomFeatures(currentRoomId);
 
@@ -269,6 +287,71 @@ document.addEventListener('DOMContentLoaded', async function () {
     // Render inclusion badges for all room cards on page load
     document.querySelectorAll('[id^="room-inclusions-"]').forEach(containerEl => {
         renderRoomInclusions(containerEl);
+    });
+
+    // Setup room info modal functionality
+    document.querySelectorAll('.info-room-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const roomId = this.getAttribute('data-id');
+            const roomCode = this.getAttribute('data-code');
+            
+            // Parse images data safely
+            let roomImages = [];
+            try {
+                const imagesData = this.getAttribute('data-images');
+                if (imagesData) {
+                    roomImages = JSON.parse(imagesData);
+                }
+            } catch (e) {
+                console.error('Error parsing room images:', e);
+                roomImages = [];
+            }
+            
+            // Update modal content
+            document.getElementById('infoRoomCode').textContent = roomCode;
+            document.getElementById('infoFloor').textContent = this.getAttribute('data-floor');
+            document.getElementById('infoOccupancy').textContent = `${this.getAttribute('data-occupied')} / ${this.getAttribute('data-capacity')}`;
+            document.getElementById('infoRate').textContent = `₱${this.getAttribute('data-rate')}`;
+            document.getElementById('infoStatus').textContent = this.getAttribute('data-status');
+            document.getElementById('infoStatus').className = `badge ${this.getAttribute('data-status') === 'Occupied' ? 'bg-danger' : 'bg-success'}`;
+            document.getElementById('infoArea').textContent = this.getAttribute('data-area') || 'N/A';
+            document.getElementById('infoCR').textContent = this.getAttribute('data-cr');
+            document.getElementById('infoBedType').textContent = this.getAttribute('data-bedtype');
+            
+            // Update photo with inline carousel integration
+            const photoContainer = document.getElementById('infoRoomPhoto');
+            if (window.createRoomInlineCarousel) {
+                window.createRoomInlineCarousel(photoContainer, roomImages, {
+                    roomCode,
+                    height: '260px'
+                });
+            }
+            
+            // Update inclusions
+            const inclusionsContainer = document.getElementById('infoInclusions');
+            inclusionsContainer.innerHTML = '';
+            
+            const hasSink = this.getAttribute('data-sink') === 'True';
+            const hasWater = this.getAttribute('data-water') === 'True';
+            const hasElec = this.getAttribute('data-elec') === 'True';
+            const hasWifi = this.getAttribute('data-wifi') === 'True';
+            
+            if (hasSink) inclusionsContainer.innerHTML += '<span class="badge bg-secondary me-1">Sink</span>';
+            if (hasWater) inclusionsContainer.innerHTML += '<span class="badge bg-info me-1">Water</span>';
+            if (hasElec) inclusionsContainer.innerHTML += '<span class="badge bg-warning me-1">Electricity</span>';
+            if (hasWifi) inclusionsContainer.innerHTML += '<span class="badge bg-primary me-1">WiFi</span>';
+            
+            // Update tenants
+            const tenantsContainer = document.getElementById('infoTenants');
+            const tenants = this.getAttribute('data-tenants');
+            tenantsContainer.innerHTML = tenants ? tenants.split('|').map(tenant => 
+                `<div class="small text-muted">${tenant}</div>`
+            ).join('') : '<div class="small text-muted">No tenants</div>';
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('roomInfoModal'));
+            modal.show();
+        });
     });
 });
 

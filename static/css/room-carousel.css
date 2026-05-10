@@ -1,0 +1,323 @@
+/**
+ * Modern Room Image Carousel CSS
+ * Airbnb-style immersive image viewing experience
+ * Production-ready with responsive design
+ */
+
+/* ========================================
+   MODAL BACKDROP & CONTAINER
+   ======================================== */
+.room-carousel-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: none;
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+}
+
+.carousel-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.room-carousel-modal.show .carousel-backdrop {
+    opacity: 1;
+}
+
+/* ========================================
+   CAROUSEL CONTAINER
+   ======================================== */
+.carousel-container {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: scale(0.9);
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.room-carousel-modal.show .carousel-container {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* ========================================
+   IMAGE CONTAINER & IMAGE
+   ======================================== */
+.carousel-image-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.carousel-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transition: opacity 0.15s ease;
+    border-radius: 8px;
+}
+
+/* ========================================
+   NAVIGATION BUTTONS
+   ======================================== */
+.carousel-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 10;
+    backdrop-filter: blur(10px);
+}
+
+.carousel-nav:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-nav:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.carousel-nav:disabled:hover {
+    transform: translateY(-50%) scale(1);
+}
+
+.carousel-nav-prev {
+    left: 20px;
+}
+
+.carousel-nav-next {
+    right: 20px;
+}
+
+.carousel-nav i {
+    font-size: 20px;
+    color: #000;
+}
+
+/* ========================================
+   CLOSE BUTTON
+   ======================================== */
+.carousel-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 10;
+    backdrop-filter: blur(10px);
+}
+
+.carousel-close:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: scale(1.1);
+}
+
+.carousel-close i {
+    font-size: 18px;
+    color: #000;
+}
+
+/* ========================================
+   IMAGE COUNTER
+   ======================================== */
+.carousel-counter {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* ========================================
+   ROOM CODE (OPTIONAL)
+   ======================================== */
+.carousel-room-code {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+@media (max-width: 768px) {
+    .carousel-container {
+        max-width: 95vw;
+        max-height: 85vh;
+    }
+    
+    .carousel-nav {
+        width: 44px;
+        height: 44px;
+    }
+    
+    .carousel-nav-prev {
+        left: 10px;
+    }
+    
+    .carousel-nav-next {
+        right: 10px;
+    }
+    
+    .carousel-close {
+        width: 36px;
+        height: 36px;
+        top: 10px;
+        right: 10px;
+    }
+    
+    .carousel-counter {
+        bottom: 15px;
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+    
+    .carousel-room-code {
+        top: 10px;
+        left: 10px;
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .carousel-container {
+        max-width: 98vw;
+        max-height: 80vh;
+    }
+    
+    .carousel-nav {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .carousel-nav i {
+        font-size: 16px;
+    }
+    
+    .carousel-close {
+        width: 32px;
+        height: 32px;
+        top: 8px;
+        right: 8px;
+    }
+    
+    .carousel-close i {
+        font-size: 14px;
+    }
+}
+
+/* ========================================
+   LOADING & ANIMATIONS
+   ======================================== */
+.carousel-image.loading {
+    opacity: 0.5;
+}
+
+.carousel-image-container::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s linear infinite;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+}
+
+.carousel-image.loading + .carousel-image-container::before {
+    display: block;
+}
+
+@keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* ========================================
+   ACCESSIBILITY
+   ======================================== */
+.carousel-nav:focus,
+.carousel-close:focus {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+/* ========================================
+   HIGH CONTRAST MODE SUPPORT
+   ======================================== */
+@media (prefers-contrast: high) {
+    .carousel-backdrop {
+        background: rgba(0, 0, 0, 1);
+    }
+    
+    .carousel-nav,
+    .carousel-close {
+        background: #fff;
+        border: 2px solid #000;
+    }
+    
+    .carousel-nav i,
+    .carousel-close i {
+        color: #000;
+    }
+}

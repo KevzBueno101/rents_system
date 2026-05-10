@@ -129,12 +129,14 @@
                         <div id="dynamicInclusions" class="row g-1"></div>
                     </div>
 
-                    <!-- PHOTO -->
+                    <!-- PHOTOS -->
                     <div class="mb-2">
                         <label class="form-label text-muted" style="font-size:13px;">
-                            <i class="bi bi-camera"></i> Room Photo (optional)
+                            <i class="bi bi-camera"></i> Room Photos (optional)
                         </label>
-                        <input type="file" name="photo" class="form-control" accept="image/*">
+                        <input type="file" name="photos" class="form-control" multiple accept="image/*">
+                        <small class="text-muted">Upload multiple photos. First photo will be the primary display image.</small>
+                        <div id="addPhotoPreview" class="row g-2 mt-2"></div>
                     </div>
 
                     <!-- NAMING HINT -->
@@ -162,6 +164,7 @@
         </div>
     </div>
 </div>
+
 
 <!-- ══════════════════════════════════════════════════
      EDIT ROOM MODAL
@@ -279,12 +282,15 @@
                         <div id="dynamicInclusionsEdit" class="row g-1"></div>
                     </div>
 
-                    <!-- PHOTO -->
+                    <!-- PHOTOS -->
                     <div class="mb-3">
                         <label class="form-label text-muted" style="font-size:13px;">
-                            <i class="bi bi-camera"></i> Room Photo (optional — leave blank to keep current)
+                            <i class="bi bi-camera"></i> Room Photos (optional)
                         </label>
-                        <input type="file" name="photo" class="form-control" accept="image/*">
+                        <div id="editRoomCarousel" class="mb-2"></div>
+                        <input type="file" name="photos" class="form-control" multiple accept="image/*">
+                        <small class="text-muted">Upload multiple photos. First photo will be the primary display image.</small>
+                        <div id="editPhotoPreview" class="row g-2 mt-2"></div>
                     </div>
 
                     <button class="btn btn-dark w-100">
@@ -309,7 +315,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-0">
-                <div id="infoRoomPhoto"></div>
+                <div id="infoRoomPhoto" style="cursor: pointer;"></div>
                 <div class="p-3">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <span class="text-muted">Status</span>
@@ -353,6 +359,40 @@
             </div>
         </div>
     </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     MODERN IMAGE CAROUSEL MODAL (Airbnb-style)
+══════════════════════════════════════════════════ -->
+<div id="roomImageCarousel" class="room-carousel-modal">
+    <!-- Backdrop -->
+    <div class="carousel-backdrop"></div>
+    
+    <!-- Close Button -->
+    <button id="carouselClose" class="carousel-close" aria-label="Close">
+        <i class="bi bi-x-lg"></i>
+    </button>
+    
+    <!-- Image Container -->
+    <div class="carousel-container">
+        <div id="carouselImageContainer" class="carousel-image-container">
+            <img id="carouselImage" src="" alt="" class="carousel-image">
+        </div>
+        
+        <!-- Navigation Buttons -->
+        <button id="carouselPrev" class="carousel-nav carousel-nav-prev" aria-label="Previous image">
+            <i class="bi bi-chevron-left"></i>
+        </button>
+        <button id="carouselNext" class="carousel-nav carousel-nav-next" aria-label="Next image">
+            <i class="bi bi-chevron-right"></i>
+        </button>
+        
+        <!-- Image Counter -->
+        <div id="carouselCounter" class="carousel-counter">1 / 1</div>
+    </div>
+    
+    <!-- Room Code (Optional) -->
+    <div id="carouselRoomCode" class="carousel-room-code"></div>
 </div>
 
 <!-- BREADCRUMBS -->
@@ -444,6 +484,12 @@
     });
 </script>
 {% endif %}
+
+<link rel="stylesheet" href="{% static 'css/room-carousel.css' %}">
+<link rel="stylesheet" href="{% static 'css/room-details-carousel.css' %}">
+
+<script src="{% static 'js/room-carousel.js' %}"></script>
+<script src="{% static 'js/room-details-carousel.js' %}"></script>
 
 <script src="{% static 'js/room-features.js' %}" defer></script>
 

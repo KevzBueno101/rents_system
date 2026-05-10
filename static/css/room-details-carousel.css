@@ -1,0 +1,115 @@
+/* Inline room carousel used inside Edit and View Details modals. */
+.room-inline-carousel {
+    position: relative;
+    width: 100%;
+    min-height: 220px;
+    overflow: hidden;
+    background: #101214;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: pan-y;
+}
+
+.room-inline-carousel-empty {
+    background: #f4f6f8;
+    border: 1px dashed #d6dbe1;
+}
+
+.room-inline-carousel-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: opacity 160ms ease;
+}
+
+.room-inline-carousel-image.is-changing {
+    opacity: 0;
+}
+
+.room-inline-carousel-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 42px;
+    height: 42px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.92);
+    color: #111;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 150ms ease, opacity 150ms ease, background 150ms ease;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.24);
+}
+
+.room-inline-carousel-nav:hover {
+    background: #fff;
+    transform: translateY(-50%) scale(1.06);
+}
+
+.room-inline-carousel-nav:disabled {
+    cursor: default;
+    opacity: 0.34;
+}
+
+.room-inline-carousel-nav:disabled:hover {
+    transform: translateY(-50%);
+}
+
+.room-inline-carousel-prev {
+    left: 12px;
+}
+
+.room-inline-carousel-next {
+    right: 12px;
+}
+
+.room-inline-carousel-counter {
+    position: absolute;
+    left: 50%;
+    bottom: 12px;
+    transform: translateX(-50%);
+    min-width: 54px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.72);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.room-inline-carousel:focus {
+    outline: 2px solid rgba(13, 110, 253, 0.7);
+    outline-offset: 2px;
+}
+
+@media (max-width: 576px) {
+    .room-inline-carousel {
+        min-height: 200px;
+        border-radius: 0;
+    }
+
+    .room-inline-carousel-nav {
+        width: 38px;
+        height: 38px;
+    }
+
+    .room-inline-carousel-prev {
+        left: 8px;
+    }
+
+    .room-inline-carousel-next {
+        right: 8px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .room-inline-carousel-image,
+    .room-inline-carousel-nav {
+        transition: none;
+    }
+}
