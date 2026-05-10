@@ -24,12 +24,20 @@
       background-position: center;
       background-repeat: no-repeat;
       position: relative;
+      background-attachment: fixed;
+    }
+
+    @media (max-width: 768px) {
+      .hero-section {
+        background-attachment: scroll;
+        min-height: 90vh;
+      }
     }
 
     .hero-overlay {
       position: absolute;
       inset: 0;
-      background: linear-gradient(135deg, rgba(13, 16, 20, 0.88) 0%, rgba(33, 37, 41, 0.75) 45%, rgba(13, 16, 20, 0.55) 100%);
+      background: linear-gradient(135deg, rgba(13, 16, 20, 0.95) 0%, rgba(33, 37, 41, 0.85) 45%, rgba(13, 16, 20, 0.75) 100%);
     }
 
     .hero-inner {
@@ -119,7 +127,7 @@
 
     {# —— Hero —— #}
     <section id="hero" class="hero-section d-flex align-items-center text-white"
-      style="background-image: url('{% static 'img/hero-landing.svg' %}');">
+      style="background-image: url('{% static 'img/bldg.jpg' %}');">
       <div class="hero-overlay"></div>
       <div class="container hero-inner py-5">
         <div class="row align-items-center">
@@ -147,7 +155,7 @@
             <div class="rounded-4 bg-white bg-opacity-10 backdrop-blur p-4 p-lg-5 border border-white border-opacity-25 shadow-lg">
               <img src="{% static 'img/logo_rents_white.png' %}" alt="RENTS" class="img-fluid mb-3" style="max-width: 280px;">
               <p class="text-white-50 small mb-0">
-                Comfortable rooms. Transparent billing. A rental experience crafted for tenants and admins alike.
+                Comfortable rooms. Transparent billing. A rental experience suited for students.
               </p>
             </div>
           </div>
@@ -218,24 +226,21 @@
                   <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle">{{ inc.name }}</span>
                   {% endfor %}
                 </div>
-                <button class="btn btn-outline-dark mt-auto rounded-pill" type="button" data-bs-toggle="collapse"
-                        data-bs-target="#roomDetail{{ room.id }}" aria-expanded="false"
-                        aria-controls="roomDetail{{ room.id }}">
-                  View details <i class="bi bi-chevron-down ms-1"></i>
+                <button class="btn btn-outline-dark mt-auto rounded-pill info-room-btn" type="button" 
+                        data-room-id="{{ room.id }}"
+                        data-room-code="{{ room.room_code }}"
+                        data-room-photo="{% if room.photo %}{{ room.photo.url }}{% else %}{% endif %}"
+                        data-room-status="{{ room.status }}"
+                        data-room-floor="{{ room.floor }}"
+                        data-room-occupancy="{{ room.occupied_beds }}/{{ room.capacity }}"
+                        data-room-rate="{{ room.monthly_rate }}"
+                        data-room-area="{{ room.area|default:'N/A' }}"
+                        data-room-cr="{{ room.num_cr }}"
+                        data-room-bed-type="{{ room.get_bed_type_display }}"
+                        data-bs-toggle="modal" 
+                        data-bs-target="#roomInfoModal">
+                  View details <i class="bi bi-info-circle ms-1"></i>
                 </button>
-                <div class="collapse mt-3" id="roomDetail{{ room.id }}">
-                  <div class="small text-muted border-top pt-3">
-                    {% if room.area %}
-                    <p class="mb-2"><strong>Area:</strong> {{ room.area }} m² · <strong>C.R.:</strong> {{ room.num_cr }}</p>
-                    {% else %}
-                    <p class="mb-2"><strong>C.R. count:</strong> {{ room.num_cr }}</p>
-                    {% endif %}
-                    <p class="mb-0 text-secondary">
-                      When you&apos;re ready, create an account from <a href="{% url 'login' %}">tenant login</a>
-                      — you&apos;ll choose a room during signup if one is listed for self-registration.
-                    </p>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -357,7 +362,110 @@
     </div>
   </footer>
 
+  <!-- ROOM INFO MODAL -->
+  <div class="modal fade" id="roomInfoModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-info-circle"></i>
+            <span id="infoRoomCode"></span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-0">
+          <div id="infoRoomPhoto"></div>
+          <div class="p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <span class="text-muted">Status</span>
+              <span id="infoStatus" class="badge"></span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span class="text-muted"><i class="bi bi-building"></i> Floor</span>
+              <span id="infoFloor"></span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span class="text-muted"><i class="bi bi-people"></i> Occupancy</span>
+              <span id="infoOccupancy"></span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span class="text-muted"><i class="bi bi-cash"></i> Monthly Rate</span>
+              <span id="infoRate" class="fw-bold"></span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span class="text-muted"><i class="bi bi-rulers"></i> Area</span>
+              <span id="infoArea"></span>
+            </div>
+            <div class="d-flex justify-content-between mb-3">
+              <span class="text-muted"><i class="bi bi-droplet"></i> CR</span>
+              <span id="infoCR"></span>
+            </div>
+            <div class="d-flex justify-content-between mb-3">
+              <span class="text-muted"><i class="bi bi-moon"></i> Bed Type</span>
+              <span id="infoBedType"></span>
+            </div>
+            <div class="text-center">
+              <p class="mb-0 text-secondary">
+                When you&apos;re ready, create an account from <a href="{% url 'login' %}">tenant login</a>
+                — you&apos;ll choose a room during signup if one is listed for self-registration.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+      // Room Info Modal functionality
+      const infoButtons = document.querySelectorAll('.info-room-btn');
+      const roomInfoModal = document.getElementById('roomInfoModal');
+      
+      if (infoButtons.length > 0 && roomInfoModal) {
+          infoButtons.forEach(button => {
+              button.addEventListener('click', function() {
+                  const roomId = this.getAttribute('data-room-id');
+                  const roomCode = this.getAttribute('data-room-code');
+                  const roomPhoto = this.getAttribute('data-room-photo');
+                  const roomStatus = this.getAttribute('data-room-status');
+                  const roomFloor = this.getAttribute('data-room-floor');
+                  const roomOccupancy = this.getAttribute('data-room-occupancy');
+                  const roomRate = this.getAttribute('data-room-rate');
+                  const roomArea = this.getAttribute('data-room-area');
+                  const roomCR = this.getAttribute('data-room-cr');
+                  const roomBedType = this.getAttribute('data-room-bed-type');
+                  
+                  // Update modal content
+                  document.getElementById('infoRoomCode').textContent = roomCode;
+                  document.getElementById('infoStatus').textContent = roomStatus;
+                  document.getElementById('infoStatus').className = 'badge ' + (roomStatus === 'Vacant' ? 'bg-success' : 'bg-warning');
+                  document.getElementById('infoFloor').textContent = roomFloor;
+                  document.getElementById('infoOccupancy').textContent = roomOccupancy;
+                  document.getElementById('infoRate').textContent = '₱' + parseFloat(roomRate).toLocaleString();
+                  document.getElementById('infoArea').textContent = roomArea;
+                  document.getElementById('infoCR').textContent = roomCR;
+                  document.getElementById('infoBedType').textContent = roomBedType;
+                  
+                  // Update photo if available
+                  const photoContainer = document.getElementById('infoRoomPhoto');
+                  if (roomPhoto) {
+                      photoContainer.innerHTML = `<img src="${roomPhoto}" class="w-100" style="max-height: 200px; object-fit: cover;">`;
+                  } else {
+                      photoContainer.innerHTML = '<div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px;"><i class="bi bi-image display-4 text-muted"></i></div>';
+                  }
+                  
+                  // Show modal
+                  const modal = new bootstrap.Modal(roomInfoModal);
+                  modal.show();
+              });
+          });
+      }
+  });
+  </script>
+  
   <script>
     (function () {
       'use strict';
