@@ -498,8 +498,8 @@
               <span>rooms open for signup</span>
             </div>
             <div class="auth-stat">
-              <strong>24/7</strong>
-              <span>self-service access</span>
+              <strong>{{ active_tenants|default:0 }}</strong>
+              <span>active tenants</span>
             </div>
           </div>
         </div>

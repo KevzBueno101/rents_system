@@ -134,11 +134,11 @@
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body p-0">
-                <div class="brand p-3 border-bottom text-center">
-        <img src="{% static 'img/_Logo.png' %}" 
-            alt="RENTS Logo" 
-            style="max-width: 100px; height: auto; display: block; margin: 0 auto;">
-    </div>
+            <div class="brand p-3 border-bottom">
+                <h4 class="text-white mb-1">RENTS</h4>
+                <small class="text-white-50">Boarding House Management</small>
+            </div>
+
             <nav class="p-3">
 
                 <div class="nav-section text-muted small text-uppercase mb-2">Main</div>
@@ -196,29 +196,21 @@
             
             <!-- Profile Section -->
             <div class="sidebar-footer" style="margin-top: auto; padding: 16px; border-top: 1px solid #444;">
-    <div class="d-flex align-items-center gap-2" style="cursor:pointer;" onclick="openProfileModal()">
-        
-        {% if user_profile and user_profile.photo %}
-            <img src="{{ user_profile.photo.url }}"
-                 style="width:36px; height:36px; border-radius:50%; object-fit:cover; flex-shrink:0;">
-        {% else %}
-            <div style="width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:15px;">
-                {{ request.user.username|first|upper }}
-            </div>
-        {% endif %}
+                <div class="d-flex align-items-center gap-2" style="cursor:pointer;" onclick="openProfileModal()">
+                    
+                    {% if user_profile and user_profile.photo %}
+                        <img src="{{ user_profile.photo.url }}"
+                             style="width:36px; height:36px; border-radius:50%; object-fit:cover; flex-shrink:0;">
+                    {% else %}
+                        <div style="width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:15px;">
+                            {{ request.user.username|first|upper }}
+                        </div>
+                    {% endif %}
 
-        <!-- ADD THIS BLOCK -->
-        <div style="overflow: hidden;">
-            <div style="color: white; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                {{ request.user.username }}
-            </div>
-            <div style="color: #aaa; font-size: 11px;">
-                {% if request.user.is_superuser %}Superadmin{% else %}Administrator{% endif %}
-            </div>
-        </div>
+                    
 
-    </div>
-</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -553,14 +545,10 @@
 
             sidebarOffcanvas.addEventListener('shown.bs.offcanvas', function () {
                 sidebarOverlay.classList.add('show');
-                // Prevent body scroll when sidebar is open
-                document.body.style.overflow = 'hidden';
             });
 
             sidebarOffcanvas.addEventListener('hidden.bs.offcanvas', function () {
                 sidebarOverlay.classList.remove('show');
-                // Restore body scroll
-                document.body.style.overflow = '';
             });
 
             offcanvasToggleButtons.forEach(function (button) {
@@ -569,18 +557,8 @@
                 });
             });
 
-            // Click outside to close
-            sidebarOverlay.addEventListener('click', function (e) {
-                if (e.target === sidebarOverlay) {
-                    bsOffcanvas.hide();
-                }
-            });
-
-            // ESC key to close
-            document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape' && sidebarOffcanvas.classList.contains('show')) {
-                    bsOffcanvas.hide();
-                }
+            sidebarOverlay.addEventListener('click', function () {
+                bsOffcanvas.hide();
             });
         }
     </script>

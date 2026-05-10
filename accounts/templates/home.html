@@ -97,6 +97,21 @@
       background: #212529;
     }
 
+    .room-gallery-btn {
+      background: #343a40;
+      border-color: #343a40;
+      color: #fff;
+      border-radius: 0.5rem;
+      font-weight: 600;
+    }
+
+    .room-gallery-btn:hover,
+    .room-gallery-btn:focus {
+      background: #212529;
+      border-color: #212529;
+      color: #fff;
+    }
+
     /* Honeypot for bots */
     .hp-field {
       position: absolute !important;
@@ -518,7 +533,7 @@
                           galleryContainer.innerHTML = '';
                           const galleryButton = document.createElement('button');
                           galleryButton.type = 'button';
-                          galleryButton.className = 'btn btn-primary btn-sm mb-3';
+                          galleryButton.className = 'btn btn-sm mb-3 room-gallery-btn';
                           galleryButton.innerHTML = `<i class="bi bi-images me-1"></i>View All Photos (${images.length})`;
                           galleryButton.addEventListener('click', () => {
                               openRoomGallery(roomId, roomCode, images);

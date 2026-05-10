@@ -40,6 +40,15 @@ def _safe_next_redirect(request, fallback_route: str):
     return redirect(fallback_route)
 
 
+def _tenant_login_context(**extra):
+    context = {
+        'available_rooms': get_available_rooms(),
+        'active_tenants': TenantProfile.objects.filter(user__is_active=True).count(),
+    }
+    context.update(extra)
+    return context
+
+
 def tenant_login_view(request):
     """Tenant portal sign-in — staff accounts cannot authenticate here."""
 
@@ -53,11 +62,10 @@ def tenant_login_view(request):
         user = authenticate(request, username=username, password=password)
 
         if user is not None and getattr(user, 'is_staff', False):
-            return render(request, 'login.html', {
-                'error_modal'    : True,
-                'error'          : 'Invalid username or password.',
-                'available_rooms': get_available_rooms(),
-            })
+            return render(request, 'login.html', _tenant_login_context(
+                error_modal=True,
+                error='Invalid username or password.',
+            ))
 
         if user is not None:
             request.session.cycle_key()
@@ -65,15 +73,12 @@ def tenant_login_view(request):
             request.session[SESSION_PORTAL_KEY] = 'tenant'
             return _safe_next_redirect(request, 'tenant_dashboard')
 
-        return render(request, 'login.html', {
-            'error_modal'    : True,
-            'error'          : 'Invalid username or password.',
-            'available_rooms': get_available_rooms(),
-        })
+        return render(request, 'login.html', _tenant_login_context(
+            error_modal=True,
+            error='Invalid username or password.',
+        ))
 
-    return render(request, 'login.html', {
-        'available_rooms': get_available_rooms(),
-    })
+    return render(request, 'login.html', _tenant_login_context())
 
 
 def admin_login_view(request):
@@ -135,39 +140,34 @@ def signup_view(request):
         
         # Validate phone number
         if phone_raw and not phone:
-            return render(request, 'login.html', {
-                'signup_error'   : 'Phone number must contain 10-15 digits only.',
-                'available_rooms': get_available_rooms(),
-            })
+            return render(request, 'login.html', _tenant_login_context(
+                signup_error='Phone number must contain 10-15 digits only.',
+            ))
         
         room_id   = request.POST.get('room_id')
         photo     = request.FILES.get('photo')
 
         if not room_id:
-            return render(request, 'login.html', {
-                'signup_error'   : 'Please select a room.',
-                'available_rooms': get_available_rooms(),
-            })
+            return render(request, 'login.html', _tenant_login_context(
+                signup_error='Please select a room.',
+            ))
 
         if User.objects.filter(username=username).exists():
-            return render(request, 'login.html', {
-                'signup_error'   : 'Username already taken. Please choose another.',
-                'available_rooms': get_available_rooms(),
-            })
+            return render(request, 'login.html', _tenant_login_context(
+                signup_error='Username already taken. Please choose another.',
+            ))
 
         if User.objects.filter(email__iexact=email).exists():
-            return render(request, 'login.html', {
-                'signup_error'   : 'This email is already registered. Please use a different email.',
-                'available_rooms': get_available_rooms(),
-            })
+            return render(request, 'login.html', _tenant_login_context(
+                signup_error='This email is already registered. Please use a different email.',
+            ))
 
         try:
             selected_room = Room.objects.get(id=room_id)
         except Room.DoesNotExist:
-            return render(request, 'login.html', {
-                'signup_error'   : 'Selected room no longer available.',
-                'available_rooms': get_available_rooms(),
-            })
+            return render(request, 'login.html', _tenant_login_context(
+                signup_error='Selected room no longer available.',
+            ))
 
         user = User.objects.create_user(
             username=username,
@@ -184,10 +184,9 @@ def signup_view(request):
             photo=photo
         )
 
-        return render(request, 'login.html', {
-            'signup_success' : 'Account created! You can now log in as Tenant.',
-            'available_rooms': get_available_rooms(),
-        })
+        return render(request, 'login.html', _tenant_login_context(
+            signup_success='Account created! You can now log in as Tenant.',
+        ))
 
     return redirect('login')
 
