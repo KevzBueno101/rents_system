@@ -47,6 +47,7 @@ SHARED_AUTH_ROUTE_NAMES = frozenset(
     {
         'logout',
         'edit_profile',
+        'download_payment_receipt',
         'get_current_user_info',
         'update_username',
         'api_rules_data',
@@ -90,7 +91,6 @@ STAFF_PORTAL_ROUTE_NAMES = frozenset(
         'delete_bill',
         'record_payment',
         'generate_payment_receipt',
-        'download_payment_receipt',
         'send_payment_receipt',
         'delete_payment',
         'mark_as_sent',

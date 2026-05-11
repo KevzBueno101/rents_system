@@ -9,4 +9,4 @@ db.mysql
 .DS_Store
 
 # Local test files and debugging scripts
-test_*.py
+# test_*.py

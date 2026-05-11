@@ -333,7 +333,7 @@ def generate_payment_receipt(request, payment_id):
     })
 
 
-@login_required(login_url='/admin/login/')
+@login_required(login_url='/login/')
 def download_payment_receipt(request, payment_id):
     """Download a generated PNG receipt."""
     payment = _get_accessible_payment_or_404(request, payment_id)
@@ -365,7 +365,7 @@ def send_payment_receipt(request, payment_id):
         return _redirect_back(request)
 
     result = send_receipt_to_tenant(payment.receipt_image.name, payment.bill.tenant)
-    Notification.objects.create(
+    NotificationService.create_notification(
         user=payment.bill.tenant.user,
         title='Payment receipt available',
         message=(
@@ -373,6 +373,8 @@ def send_payment_receipt(request, payment_id):
             f'Amount paid: ₱{payment.amount:,.2f}. '
             'Open your bill payment history to view or download it.'
         ),
+        notif_type='billing',
+        link='/tenant/billing/'
     )
 
     log_activity(
@@ -496,14 +498,16 @@ def upload_payment_proof(request):
             )
             
             # Create notification for admin
-            NotificationService.create_notification(
-                recipient=None,  # Will be sent to all admins
-                title=f'Payment Proof Uploaded',
-                message=f'{request.user.tenantprofile.full_name} uploaded payment proof for bill {bill.bill_number}',
-                notification_type='payment_proof',
-                content_type='Payment',
-                object_id=payment.id
-            )
+            try:
+                NotificationService.create_notification(
+                    user=request.user,
+                    title='Payment proof uploaded',
+                    message=f'{request.user.tenantprofile.full_name} uploaded payment proof for bill {bill.bill_number}',
+                    link='/admin/billing/',
+                    notif_type='payment_proof'
+                )
+            except Exception as e:
+                logger.error(f"Failed to create admin notification: {e}")
             
             return JsonResponse({
                 'success': True, 

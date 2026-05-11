@@ -1,14 +1,14 @@
 <section class="section-card">
     <div class="section-header">
         <h2 class="section-title"><i class="bi bi-bell text-warning"></i> Notifications</h2>
-        {% if data.unread_notifications %}
-            <span class="t-badge t-badge-warning">{{ data.unread_notifications }} unread</span>
+        {% if unread_notifications %}
+            <span class="t-badge t-badge-warning">{{ unread_notifications }} unread</span>
         {% endif %}
     </div>
     <div class="section-body">
-        {% if data.notifications %}
+        {% if notifications %}
             <div class="d-flex flex-column gap-2">
-                {% for notice in data.notifications %}
+                {% for notice in notifications %}
                     <div class="alert alert-{{ notice.level }} mb-0 py-2 px-3 notification-item {% if not notice.is_read %}unread-notification{% endif %}" 
                          style="cursor: pointer; transition: background-color 0.2s;"
                          data-notification-id="{{ notice.id }}"
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Mark as read via AJAX
             if (notificationId) {
-                fetch(`/accounts/mark-notification-read/${notificationId}/`, {
+                fetch(`/accounts/mark_notification_read/${notificationId}/`, {
                     method: 'POST',
                     headers: {
                         'X-CSRFToken': getCookie('csrftoken'),
@@ -75,6 +75,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }).catch(error => {
                     console.error('Error marking notification as read:', error);
+                    // Show non-blocking user feedback
+                    console.warn('Failed to mark notification as read. Please try again.');
                 });
             }
             
@@ -89,14 +91,12 @@ document.addEventListener('DOMContentLoaded', function() {
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
+            document.cookie.split(';').forEach(cookie => {
+                const c = cookie.trim();
+                if (c.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(c.slice(name.length + 1));
                 }
-            }
+            });
         }
         return cookieValue;
     }

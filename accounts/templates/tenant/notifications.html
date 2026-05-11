@@ -55,7 +55,7 @@
                                     {% if not notif.is_read %}
                                         <a href="{% url 'mark_notification_read' notif.id %}" class="btn btn-sm btn-outline-primary mb-1">Mark Read</a>
                                     {% endif %}
-                                    {% if notif.link and notif.link != '/tenant/dashboard/' %}
+                                    {% if notif.link %}
                                         <a href="{{ notif.link }}" class="btn btn-sm btn-primary">View</a>
                                     {% endif %}
                                     {% if notif.is_read %}

@@ -6,10 +6,16 @@ import logging
 from urllib.parse import quote
 
 from django.conf import settings
-from django.contrib import messages
 from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import redirect
 from django.urls import Resolver404, resolve, reverse
+
+# Import messages safely to avoid circular import issues
+try:
+    from django.contrib import messages
+    MESSAGES_AVAILABLE = True
+except ImportError:
+    MESSAGES_AVAILABLE = False
 
 from accounts.rbac.admin_login_throttle import (
     get_client_ip,
@@ -91,7 +97,8 @@ class PortalRBACMiddleware:
             if request.user.is_staff:
                 if path_info.startswith('/api/'):
                     return JsonResponse({'success': False, 'error': 'Forbidden'}, status=403)
-                messages.warning(request, 'Staff accounts cannot use tenant screens.')
+                if MESSAGES_AVAILABLE:
+                    messages.warning(request, 'Staff accounts cannot use tenant screens.')
                 return redirect('admin_dashboard')
             return self.get_response(request)
 
@@ -99,7 +106,10 @@ class PortalRBACMiddleware:
             if not request.user.is_staff:
                 if path_info.startswith('/api/'):
                     return JsonResponse({'success': False, 'error': 'Forbidden'}, status=403)
-                messages.error(request, 'Sign in via the administrator portal.')
+                try:
+                    messages.error(request, 'Sign in via the administrator portal.')
+                except Exception:
+                    pass  # MessageMiddleware not active; redirect will still proceed
                 next_q = quote(request.get_full_path(), safe='/')
                 return redirect(f'{reverse("admin_login")}?next={next_q}')
             return self.get_response(request)
