@@ -139,35 +139,19 @@
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                 <h6 class="mb-0 fw-bold"><i class="bi bi-cash-coin"></i> Recent Payments</h6>
-                <a href="#" class="btn btn-sm btn-outline-dark">View All</a>
+        
             </div>
             <div class="card-body p-3">
-                <div class="recent-payments-scroll" style="max-height: 200px; overflow-y: scroll; padding-right: 8px; border: 1px solid #e9ecef; border-radius: 8px;">
-                    {% if recent_payments %}
-                        {% for payment in recent_payments %}
-                        <div class="payment-item d-flex align-items-start gap-2 mb-2 p-2 border rounded" 
-                             style="transition: all 0.3s;" 
-                             onmouseover="this.style.backgroundColor='#f8f9fa'"
-                             onmouseout="this.style.backgroundColor='transparent'">
-                            
-                            <!-- Payment Icon -->
-                            <div class="payment-icon flex-shrink-0">
-                                <i class="bi bi-cash-coin text-success" style="font-size: 14px;"></i>
+                <div class="recent-payments-scroll" id="recentPaymentsContainer" style="max-height: 200px; overflow-y: scroll; padding-right: 8px; border: 1px solid #e9ecef; border-radius: 8px;">
+                    <div id="paymentsList">
+                        <!-- Payments will be loaded dynamically -->
+                        <div class="text-center py-3">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
                             </div>
-                            
-                            <!-- Payment Content -->
-                            <div class="payment-content flex-grow-1">
-                                <div class="payment-description" style="font-size: 12px;">{{ payment.description }}</div>
-                                <div class="payment-time text-muted small" style="font-size: 10px;">{{ payment.timestamp|timesince }} ago</div>
-                            </div>
+                            <div class="mt-2 text-muted small">Loading recent payments...</div>
                         </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="text-center text-muted py-3">
-                            <i class="bi bi-cash-coin" style="font-size: 1.5rem;"></i>
-                            <div class="mt-1" style="font-size: 11px;">No recent payments yet.</div>
-                        </div>
-                    {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -568,6 +552,121 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('paymentForm').action = `/billing/pay/${btn.dataset.id}/`;
         });
     }
+});
+
+// Dynamic Recent Payments functionality
+let recentPaymentsLoaded = false;
+
+function createPaymentElement(payment) {
+    const div = document.createElement('div');
+    div.className = 'payment-item d-flex align-items-start gap-2 mb-2 p-2 border rounded';
+    div.style.transition = 'all 0.3s';
+    div.setAttribute('data-payment-id', payment.id);
+    
+    div.onmouseover = function() { this.style.backgroundColor = '#f8f9fa'; };
+    div.onmouseout = function() { this.style.backgroundColor = 'transparent'; };
+    
+    div.innerHTML = `
+        <!-- Payment Icon -->
+        <div class="payment-icon flex-shrink-0">
+            <i class="bi bi-cash-coin text-success" style="font-size: 14px;"></i>
+        </div>
+        
+        <!-- Payment Content -->
+        <div class="payment-content flex-grow-1">
+            <div class="payment-description" style="font-size: 12px;">${payment.description}</div>
+            <div class="payment-time text-muted small" style="font-size: 10px;">${payment.time_ago} ago</div>
+        </div>
+    `;
+    
+    return div;
+}
+
+function loadRecentPayments() {
+    const paymentsList = document.getElementById('paymentsList');
+    
+    fetch('/billing/recent-payments/', {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        paymentsList.innerHTML = '';
+        
+        if (data.payments && data.payments.length > 0) {
+            data.payments.forEach(payment => {
+                const paymentElement = createPaymentElement(payment);
+                paymentsList.appendChild(paymentElement);
+            });
+        } else {
+            paymentsList.innerHTML = `
+                <div class="text-center text-muted py-3">
+                    <i class="bi bi-cash-coin" style="font-size: 1.5rem;"></i>
+                    <div class="mt-1" style="font-size: 11px;">No recent payments yet.</div>
+                </div>
+            `;
+        }
+        
+        recentPaymentsLoaded = true;
+    })
+    .catch(error => {
+        console.error('Error loading recent payments:', error);
+        paymentsList.innerHTML = `
+            <div class="text-center text-danger py-3">
+                <i class="bi bi-exclamation-triangle" style="font-size: 1.5rem;"></i>
+                <div class="mt-1" style="font-size: 11px;">Error loading payments.</div>
+            </div>
+        `;
+    });
+}
+
+// Auto-refresh recent payments every 30 seconds (only after initial load)
+setInterval(function() {
+    if (recentPaymentsLoaded) {
+        refreshRecentPayments();
+    }
+}, 30000);
+
+function refreshRecentPayments() {
+    fetch('/billing/recent-payments/', {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.payments && data.payments.length > 0) {
+            const paymentsList = document.getElementById('paymentsList');
+            const currentPayments = Array.from(paymentsList.children);
+            
+            // Add new payments that don't already exist
+            data.payments.forEach(payment => {
+                const exists = currentPayments.some(el => 
+                    el.getAttribute('data-payment-id') == payment.id
+                );
+                
+                if (!exists) {
+                    const paymentElement = createPaymentElement(payment);
+                    paymentElement.style.backgroundColor = '#d4edda';
+                    paymentsList.insertBefore(paymentElement, paymentsList.firstChild);
+                    
+                    // Remove highlight after 3 seconds
+                    setTimeout(() => {
+                        paymentElement.style.backgroundColor = 'transparent';
+                    }, 3000);
+                }
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error refreshing payments:', error);
+    });
+}
+
+// Load recent payments on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadRecentPayments();
 });
 </script>
 

@@ -70,6 +70,8 @@ MIDDLEWARE = [
     'accounts.middleware.AdminLoginProtectionMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'accounts.middleware.SecurityHeadersMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'django.middleware.security.SecurityMiddleware',
 ]
 
 ROOT_URLCONF = 'rents_system.urls'
