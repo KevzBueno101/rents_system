@@ -17,6 +17,7 @@ from datetime import datetime
 from ..models import Bill, Notification, Payment, TenantProfile
 from ..activity_utils import log_activity, get_recent_activities
 from ..services.notification_service import NotificationService
+from notifications.services import DynamicNotificationService
 from billing.services.receipt_generator import (
     generate_receipt_for_payment,
     send_receipt_to_tenant,
@@ -149,12 +150,20 @@ def generate_bill(request):
         # Create notification for tenant about new bill (only if not draft)
         if not save_as_draft:
             try:
-                NotificationService.create_billing_notification(
-                    tenant_user=tenant.user,
-                    bill_number=bill.bill_number
+                DynamicNotificationService.create(
+                    user=tenant.user,
+                    type_code='billing',
+                    context={
+                        'title': 'New Bill Generated',
+                        'message': f'A new bill {bill.bill_number} has been generated for you with total amount of ₱{bill.total_amount:,.2f}. Due date: {bill.due_date}.',
+                        'bill_number': bill.bill_number,
+                        'amount': bill.total_amount,
+                        'due_date': bill.due_date
+                    },
+                    link='/tenant/billing/'
                 )
             except Exception as e:
-                # Log error but don't fail the bill generation
+                # Log error but don't fail the bill creation
                 import logging
                 logger = logging.getLogger(__name__)
                 logger.error(f"Failed to create billing notification: {e}")
@@ -299,9 +308,16 @@ def record_payment(request, bill_id):
 
         # Create notification for tenant about payment
         try:
-            NotificationService.create_payment_notification(
-                tenant_user=bill.tenant.user,
-                amount=float(amount)
+            DynamicNotificationService.create(
+                user=bill.tenant.user,
+                type_code='payment',
+                context={
+                    'title': 'Payment Recorded',
+                    'message': f'Your payment of ₱{float(amount):,.2f} for bill {bill.bill_number} has been recorded successfully.',
+                    'amount': float(amount),
+                    'bill_number': bill.bill_number
+                },
+                link='/tenant/billing/'
             )
         except Exception as e:
             # Log error but don't fail the payment process
@@ -365,16 +381,17 @@ def send_payment_receipt(request, payment_id):
         return _redirect_back(request)
 
     result = send_receipt_to_tenant(payment.receipt_image.name, payment.bill.tenant)
-    NotificationService.create_notification(
+    DynamicNotificationService.create(
         user=payment.bill.tenant.user,
-        title='Payment receipt available',
-        message=(
-            f'Your receipt for bill {payment.bill.bill_number} is ready. '
-            f'Amount paid: ₱{payment.amount:,.2f}. '
-            'Open your bill payment history to view or download it.'
-        ),
-        notif_type='billing',
-        link='/tenant/billing/'
+        type_code='payment',
+        context={
+            'title': 'Payment receipt available',
+            'message': (
+                f'Your payment receipt for {payment.bill.bill_number} '
+                f'(amount: ₱{payment.amount:,.2f}) is now available for download.'
+            )
+        },
+        link=f'/billing/payments/{payment.id}/download-receipt/'
     )
 
     log_activity(
@@ -499,12 +516,14 @@ def upload_payment_proof(request):
             
             # Create notification for admin
             try:
-                NotificationService.create_notification(
+                DynamicNotificationService.create(
                     user=request.user,
-                    title='Payment proof uploaded',
-                    message=f'{request.user.tenantprofile.full_name} uploaded payment proof for bill {bill.bill_number}',
-                    link='/admin/billing/',
-                    notif_type='payment_proof'
+                    type_code='payment_proof',
+                    context={
+                        'title': 'Payment proof uploaded',
+                        'message': f'{request.user.tenantprofile.full_name} uploaded payment proof for bill {bill.bill_number}'
+                    },
+                    link='/admin/billing/'
                 )
             except Exception as e:
                 logger.error(f"Failed to create admin notification: {e}")

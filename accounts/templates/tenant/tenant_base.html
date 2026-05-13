@@ -131,8 +131,8 @@
                 style="background: #f8f9fa; border: 1px solid #dee2e6; min-width: 40px; padding: 6px 10px;">
                 <i class="bi bi-bell-fill"></i>
                 {% if unread_count and unread_count > 0 %}
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                    style="font-size: 10px; padding: 2px 5px;"
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notification-badge"
+                    style="font-size: 11px; padding: 3px 6px; min-width: 20px; text-align: center; font-weight: bold; box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);"
                     id="notification-count"
                     data-notification-count>
                     {{ unread_count }}
