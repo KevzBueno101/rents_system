@@ -47,6 +47,7 @@ SHARED_AUTH_ROUTE_NAMES = frozenset(
     {
         'logout',
         'edit_profile',
+        'download_payment_receipt',
         'get_current_user_info',
         'update_username',
         'api_rules_data',

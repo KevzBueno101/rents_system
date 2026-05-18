@@ -69,10 +69,11 @@ def create_reminder(request):
                 reminder.save()
                 
                 # Create notification immediately
-                Notification.objects.create(
+                NotificationService.create_notification(
                     user=reminder.tenant.user,
                     title=reminder.title,
-                    message=reminder.message
+                    message=reminder.message,
+                    notif_type='reminder'
                 )
                 
                 log_activity(
@@ -169,13 +170,27 @@ def send_reminder_now(request, reminder_id):
 @login_required(login_url='/login/')
 def notification_list(request):
     """List notifications for the current user with enhanced context."""
-    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+    # Index: Notification(user, is_read, created_at) recommended
+    from django.db.models import Count, Q
+    
+    # Optimized query with select_related for user relationship
+    notifications = (
+        Notification.objects
+        .filter(user=request.user)
+        .select_related('user')
+        .order_by('-created_at')[:10]
+    )
+    
+    # Separate count query - cheap COUNT(*) SQL call
+    unread_count = Notification.objects.filter(
+        user=request.user, is_read=False
+    ).count()
     
     # Enhanced context for better template rendering
     context = {
         'notifications': notifications,
-        'unread_count': notifications.filter(is_read=False).count(),
-        'total_count': notifications.count(),
+        'unread_count': unread_count,
+        'total_count': Notification.objects.filter(user=request.user).count(),
         'page_title': 'Notifications',
         'breadcrumb': [
             {'title': 'Dashboard', 'url': 'tenant_dashboard'},

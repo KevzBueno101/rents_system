@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'accounts'
+    'accounts',
+    'notifications'
 ]
 
 LOGIN_URL = '/login/'
@@ -69,6 +70,8 @@ MIDDLEWARE = [
     'accounts.middleware.AdminLoginProtectionMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'accounts.middleware.SecurityHeadersMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'django.middleware.security.SecurityMiddleware',
 ]
 
 # Configure WhiteNoise to serve media files
@@ -207,3 +210,10 @@ else:
 
 MEDIA_URL  = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Dynamic Notifications System Settings
+DYNAMIC_NOTIFICATION_AUTO_CREATE = True  # Create NotificationType on-the-fly if not found
+ENABLE_WEBSOCKET_NOTIFICATIONS = False   # Phase 3 feature flag (disabled by default)
+NOTIFICATION_EXPIRY_DAYS = 90             # Days before auto-deletion
+NOTIFICATION_PAGE_SIZE = 20
+NOTIFICATION_EMAIL_FROM = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@rents.com')

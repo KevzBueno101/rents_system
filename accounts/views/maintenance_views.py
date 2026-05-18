@@ -91,27 +91,17 @@ def update_maintenance_status(request, report_id):
             
             # Create notification for tenant about maintenance update
             try:
-                # Debug: Print information to help troubleshoot
-                print(f"DEBUG: Creating maintenance notification for report {report_id}")
-                print(f"DEBUG: Report tenant: {report.tenant}")
-                print(f"DEBUG: Report tenant user: {report.tenant.user if report.tenant else 'None'}")
-                print(f"DEBUG: New status: {report.status}")
-                
                 if report.tenant and report.tenant.user:
                     notification = NotificationService.create_maintenance_notification(
                         tenant_user=report.tenant.user,
                         status=report.status
                     )
-                    print(f"DEBUG: Notification created successfully: {notification.id}")
-                else:
-                    print("DEBUG: No tenant or tenant user found for maintenance report")
                     
             except Exception as e:
                 # Log error but don't fail the maintenance update
                 import logging
                 logger = logging.getLogger(__name__)
                 logger.error(f"Failed to create maintenance notification: {e}")
-                print(f"DEBUG: Exception in notification creation: {e}")
             
             messages.success(request, 'Maintenance status updated!')
         except MaintenanceReport.DoesNotExist:

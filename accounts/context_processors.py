@@ -160,7 +160,7 @@ def active_rules(request):
         return {'active_rules': []}
     rules = Rule.objects.filter(is_active=True)[:5]
     return {'active_rules': rules}
-    return {'active_rules': rules}
+    
 
 def rules_count(request):
     """Rules count for dashboards (active only) - available for all authenticated users."""

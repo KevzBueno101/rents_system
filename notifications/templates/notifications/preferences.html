@@ -1,0 +1,385 @@
+{% extends 'tenant/base.html' %}
+{% load static %}
+
+{% block title %}Notification Preferences - RENTS{% endblock %}
+
+{% block extra_css %}
+<style>
+.preference-section {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.channel-option {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.channel-option:hover {
+    border-color: #007bff;
+    background-color: #f8f9ff;
+}
+
+.channel-option.selected {
+    border-color: #007bff;
+    background-color: #e7f3ff;
+}
+
+.type-override-table {
+    background-color: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.type-override-table th {
+    background-color: #007bff;
+    color: white;
+}
+
+.quiet-hours-input {
+    max-width: 150px;
+}
+
+@media (max-width: 768px) {
+    .type-override-table {
+        font-size: 0.875rem;
+    }
+    
+    .quiet-hours-input {
+        max-width: 100%;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="bi bi-gear"></i> Notification Preferences
+                </h2>
+                <a href="{% url 'notifications:notification_center' %}" 
+                   class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left"></i> Back to Notifications
+                </a>
+            </div>
+            
+            <form method="post" id="preferences-form">
+                {% csrf_token %}
+                
+                <!-- Default Channel -->
+                <div class="preference-section">
+                    <h5 class="mb-3">
+                        <i class="bi bi-broadcast"></i> Default Delivery Channel
+                    </h5>
+                    <p class="text-muted mb-3">
+                        Choose how you want to receive notifications by default.
+                    </p>
+                    
+                    {% for value, label in form.default_channel.field.choices %}
+                        <div class="channel-option {% if form.default_channel.value == value %}selected{% endif %}"
+                             data-channel="{{ value }}">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" 
+                                       name="default_channel" 
+                                       id="channel-{{ value }}" 
+                                       value="{{ value }}"
+                                       {% if form.default_channel.value == value %}checked{% endif %}>
+                                <label class="form-check-label w-100" for="channel-{{ value }}">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span>
+                                            <i class="bi bi-{% if value == 'in_app' %}bell{% elif value == 'email' %}envelope{% elif value == 'sms' %}phone{% elif value == 'all' %}globe{% else %}x-circle{% endif %} me-2"></i>
+                                            {{ label }}
+                                        </span>
+                                        <small class="text-muted">
+                                            {% if value == 'in_app' %}Show in app only{% endif %}
+                                            {% if value == 'email' %}Send via email{% endif %}
+                                            {% if value == 'sms' %}Send via SMS{% endif %}
+                                            {% if value == 'all' %}All available channels{% endif %}
+                                            {% if value == 'none' %}Disable notifications{% endif %}
+                                        </small>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Type Overrides -->
+                <div class="preference-section">
+                    <h5 class="mb-3">
+                        <i class="bi bi-sliders"></i> Per-Type Overrides
+                    </h5>
+                    <p class="text-muted mb-3">
+                        Override the default channel for specific notification types.
+                    </p>
+                    
+                    <div class="table-responsive">
+                        <table class="table type-override-table">
+                            <thead>
+                                <tr>
+                                    <th>Notification Type</th>
+                                    <th>Channel</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for type in notification_types %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class="bi {{ type.icon }} me-2 text-{{ type.color }}"></i>
+                                                {{ type.label }}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <select class="form-select form-select-sm type-override-select"
+                                                    name="type_override_{{ type.code }}">
+                                                <option value="">Use Default</option>
+                                                {% for value, label in form.default_channel.field.choices %}
+                                                    <option value="{{ value }}"
+                                                            {% if form.type_overrides.value|get_item:type.code == value %}selected{% endif %}>
+                                                        {{ label }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ type.description|truncatewords:10 }}</small>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Quiet Hours -->
+                <div class="preference-section">
+                    <h5 class="mb-3">
+                        <i class="bi bi-moon"></i> Quiet Hours
+                    </h5>
+                    <p class="text-muted mb-3">
+                        Set a time period when you don't want to receive notifications.
+                    </p>
+                    
+                    <div class="row align-items-center">
+                        <div class="col-md-5">
+                            <label for="{{ form.quiet_hours_start.id_for_label }}" class="form-label">
+                                Start Time
+                            </label>
+                            <input type="time" 
+                                   name="{{ form.quiet_hours_start.name }}" 
+                                   id="{{ form.quiet_hours_start.id_for_label }}"
+                                   class="form-control quiet-hours-input"
+                                   value="{{ form.quiet_hours_start.value|time:'H:i' if form.quiet_hours_start.value }}">
+                        </div>
+                        <div class="col-md-2 text-center">
+                            <span class="text-muted">to</span>
+                        </div>
+                        <div class="col-md-5">
+                            <label for="{{ form.quiet_hours_end.id_for_label }}" class="form-label">
+                                End Time
+                            </label>
+                            <input type="time" 
+                                   name="{{ form.quiet_hours_end.name }}" 
+                                   id="{{ form.quiet_hours_end.id_for_label }}"
+                                   class="form-control quiet-hours-input"
+                                   value="{{ form.quiet_hours_end.value|time:'H:i' if form.quiet_hours_end.value }}">
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="disable-quiet-hours">
+                            <label class="form-check-label" for="disable-quiet-hours">
+                                Disable quiet hours
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Save Button -->
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'notifications:notification_center' %}" 
+                       class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </a>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Save Preferences
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Channel option selection
+    const channelOptions = document.querySelectorAll('.channel-option');
+    const defaultChannelRadios = document.querySelectorAll('input[name="default_channel"]');
+    
+    channelOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            const channel = this.dataset.channel;
+            const radio = document.querySelector(`input[name="default_channel"][value="${channel}"]`);
+            if (radio) {
+                radio.checked = true;
+                updateChannelSelection();
+            }
+        });
+    });
+    
+    defaultChannelRadios.forEach(radio => {
+        radio.addEventListener('change', updateChannelSelection);
+    });
+    
+    function updateChannelSelection() {
+        channelOptions.forEach(option => {
+            const channel = option.dataset.channel;
+            const radio = document.querySelector(`input[name="default_channel"][value="${channel}"]`);
+            
+            if (radio && radio.checked) {
+                option.classList.add('selected');
+            } else {
+                option.classList.remove('selected');
+            }
+        });
+    }
+    
+    // Quiet hours toggle
+    const disableQuietHours = document.getElementById('disable-quiet-hours');
+    const quietHoursStart = document.getElementById('{{ form.quiet_hours_start.id_for_label }}');
+    const quietHoursEnd = document.getElementById('{{ form.quiet_hours_end.id_for_label }}');
+    
+    disableQuietHours.addEventListener('change', function() {
+        if (this.checked) {
+            quietHoursStart.disabled = true;
+            quietHoursEnd.disabled = true;
+            quietHoursStart.value = '';
+            quietHoursEnd.value = '';
+        } else {
+            quietHoursStart.disabled = false;
+            quietHoursEnd.disabled = false;
+        }
+    });
+    
+    // Form submission
+    const form = document.getElementById('preferences-form');
+    
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Collect type overrides
+        const typeOverrides = {};
+        document.querySelectorAll('.type-override-select').forEach(select => {
+            const name = select.name;
+            const typeCode = name.replace('type_override_', '');
+            const value = select.value;
+            
+            if (value) {
+                typeOverrides[typeCode] = value;
+            }
+        });
+        
+        // Create hidden input for type overrides
+        let typeOverridesInput = document.querySelector('input[name="type_overrides"]');
+        if (!typeOverridesInput) {
+            typeOverridesInput = document.createElement('input');
+            typeOverridesInput.type = 'hidden';
+            typeOverridesInput.name = 'type_overrides';
+            form.appendChild(typeOverridesInput);
+        }
+        typeOverridesInput.value = JSON.stringify(typeOverrides);
+        
+        // Submit form
+        const formData = new FormData(form);
+        
+        fetch('{% url "notifications:notification_preferences" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                alertDiv.innerHTML = `
+                    <i class="bi bi-check-circle"></i> Notification preferences saved successfully!
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                
+                form.insertBefore(alertDiv, form.firstChild);
+                
+                // Scroll to top
+                window.scrollTo(0, 0);
+                
+                // Auto-hide after 5 seconds
+                setTimeout(() => {
+                    if (alertDiv.parentNode) {
+                        alertDiv.remove();
+                    }
+                }, 5000);
+            } else {
+                // Show error message
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+                alertDiv.innerHTML = `
+                    <i class="bi bi-exclamation-triangle"></i> Error saving preferences: ${data.error}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                
+                form.insertBefore(alertDiv, form.firstChild);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+            alertDiv.innerHTML = `
+                <i class="bi bi-exclamation-triangle"></i> An error occurred while saving preferences.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            form.insertBefore(alertDiv, form.firstChild);
+        });
+    });
+    
+    // Initialize channel selection
+    updateChannelSelection();
+});
+
+// CSRF token helper
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

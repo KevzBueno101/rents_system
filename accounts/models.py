@@ -433,6 +433,7 @@ class Notification(models.Model):
         ('announcement', 'Announcement'),
         ('system', 'System'),
         ('reminder', 'Reminder'),
+        ('payment_proof', 'Payment Proof'),
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
@@ -451,6 +452,7 @@ class Notification(models.Model):
             models.Index(fields=['user', '-created_at'], name='idx_notification_user_created'),
             models.Index(fields=['user', 'is_read'], name='idx_notification_user_read'),
             models.Index(fields=['type'], name='idx_notification_type'),
+            models.Index(fields=['user', 'is_read', '-created_at'], name='notif_user_read_date_idx'),
         ]
 
     def __str__(self):
@@ -513,7 +515,8 @@ class TenantReminder(models.Model):
         Notification.objects.create(
             user=self.tenant.user,
             title=self.title,
-            message=self.message
+            message=self.message,
+            type='reminder'
         )
 
 

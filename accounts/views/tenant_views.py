@@ -8,6 +8,7 @@ from django.contrib import messages
 from django.db.models import Q, Sum
 from ..models import Bill, MaintenanceReport, Room, TenantProfile, Violation
 from ..activity_utils import log_activity
+from notifications.services import DynamicNotificationService
 from .helpers import parse_phone, get_available_rooms
 
 
@@ -143,6 +144,30 @@ def tenant_submit_maintenance(request):
                 content_type='MaintenanceReport',
                 object_id=report.id
             )
+            
+            # Create notification for all staff users about new maintenance request
+            try:
+                from django.contrib.auth.models import User
+                staff_users = User.objects.filter(is_staff=True)
+                
+                for staff_user in staff_users:
+                    DynamicNotificationService.create(
+                        user=staff_user,
+                        type_code='maintenance',
+                        context={
+                            'title': 'New Maintenance Request',
+                            'message': f'{profile.full_name} submitted a maintenance request: {description[:100]}{"..." if len(description) > 100 else ""}',
+                            'tenant_name': profile.full_name,
+                            'request_description': description
+                        },
+                        link='/admin/maintenance/'
+                    )
+            except Exception as e:
+                # Log error but don't fail the process
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to create admin maintenance notification: {e}")
+            
             messages.success(request, 'Maintenance request submitted.')
         else:
             messages.error(request, 'Please describe the maintenance issue.')
