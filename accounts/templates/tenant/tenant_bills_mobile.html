@@ -637,7 +637,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="mt-3">
                     <form id="paymentProofForm" method="POST" enctype="multipart/form-data" action="{% url 'upload_payment_proof' %}">
                         {% csrf_token %}
-                        <input type="hidden" name="bill_id" value="{% if dashboard_data.current_bill %}{{ dashboard_data.current_bill.id }}{% endif %}">
+                        <input type="hidden" name="bill_id" value="{% if current_bill %}{{ current_bill.id }}{% endif %}">
                         
                         <div class="mb-3">
                             <label for="paymentProof" class="form-label small fw-bold">Upload Payment Screenshot</label>
@@ -674,9 +674,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     </form>
                 </div>
                 
-                {% if dashboard_data.current_bill %}
+                {% if current_bill %}
                     <div class="alert alert-light border mb-0 mt-3">
-                        Bill reference: <strong>{{ dashboard_data.current_bill.bill_number }}</strong>
+                        Bill reference: <strong>{{ current_bill.bill_number }}</strong>
                     </div>
                 {% endif %}
             </div>

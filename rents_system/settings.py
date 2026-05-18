@@ -64,12 +64,21 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
     'accounts.middleware.PortalRBACMiddleware',
     'accounts.middleware.AdminLoginProtectionMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'accounts.middleware.SecurityHeadersMiddleware',
 ]
+
+# Configure WhiteNoise to serve media files
+WHITENOISE_USE_FINDERS = False
+if DEBUG:
+    WHITENOISE_AUTOREFRESH = True
+    # In development, let Django serve media files
+    WHITENOISE_SKIP_REGEXES = [
+        r'^/media/',
+    ]
 
 ROOT_URLCONF = 'rents_system.urls'
 

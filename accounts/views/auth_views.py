@@ -218,6 +218,9 @@ def _edit_admin_profile(request):
         new_password     = request.POST.get('new_password') or request.POST.get('password')
         confirm_password = request.POST.get('confirm_password')
         photo            = request.FILES.get('photo')
+        print("DEBUG _edit_admin_profile: POST =", request.POST)
+        print("DEBUG _edit_admin_profile: FILES =", request.FILES)
+        print("DEBUG _edit_admin_profile: photo =", photo)
 
         errors = []
 
@@ -280,6 +283,9 @@ def _edit_tenant_profile(request):
         new_password     = request.POST.get('new_password') or request.POST.get('password')
         confirm_password = request.POST.get('confirm_password')
         photo            = request.FILES.get('photo')
+        print("DEBUG _edit_tenant_profile: POST =", request.POST)
+        print("DEBUG _edit_tenant_profile: FILES =", request.FILES)
+        print("DEBUG _edit_tenant_profile: photo =", photo)
 
         errors = []
 

@@ -250,7 +250,7 @@
         <div class="row g-4">
           {% for room in featured_rooms %}
           <div class="col-md-6 col-xl-4" id="room-{{ room.id }}">
-            <div class="card h-100 room-card shadow-sm rounded-4 overflow-hidden">
+            <div class="card h-100 room-card clickable-room-card shadow-sm rounded-4 overflow-hidden" style="cursor: pointer;">
               {% if room.photo %}
               <img src="{{ room.photo.url }}" alt="{{ room.room_code }}" class="card-img-top room-photo w-100">
               {% else %}
@@ -779,6 +779,20 @@ Send us a message and our team will respond as soon as possible.
               }
           }
       }
+
+      // Make entire room card clickable to show info modal
+      document.querySelectorAll('.clickable-room-card').forEach(function(card) {
+          card.addEventListener('click', function(e) {
+              // Ignore if clicked on image carousel or buttons/links
+              if (e.target.closest('img') || e.target.closest('.edit-room-btn') || e.target.closest('form') || e.target.closest('.btn-outline-danger') || e.target.closest('button')) {
+                  return;
+              }
+              const btn = card.querySelector('.info-room-btn');
+              if (btn && !btn.contains(e.target)) {
+                  btn.click();
+              }
+          });
+      });
 
       // Make gallery functions globally accessible
       window.openRoomGallery = openRoomGallery;

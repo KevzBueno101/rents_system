@@ -307,8 +307,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 const modal = new bootstrap.Modal(roomInfoModal);
                 modal.show();
             });
-        });
     }
+
+    // Make entire room card clickable to show info modal
+    document.querySelectorAll('.clickable-room-card').forEach(function(card) {
+        card.addEventListener('click', function(e) {
+            // Ignore if clicked on image carousel or buttons/links
+            if (e.target.closest('img') || e.target.closest('.edit-room-btn') || e.target.closest('form') || e.target.closest('.btn-outline-danger') || e.target.closest('button')) {
+                return;
+            }
+            const btn = card.querySelector('.info-room-btn');
+            if (btn && !btn.contains(e.target)) {
+                btn.click();
+            }
+        });
+    });
 });
 </script>
 

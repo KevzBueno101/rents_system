@@ -2,7 +2,7 @@
 {% load json_filters %}
 <!-- Room Card Component - Reusable for Admin and Tenant -->
 <div class="col-12 col-md-6 col-lg-4 d-flex align-items-stretch">
-    <div class="card border-0 shadow-sm h-100 w-100">
+    <div class="card border-0 shadow-sm h-100 w-100 clickable-room-card" style="cursor: pointer;">
 
         {% if room.all_images %}
             {% with room.all_images|first as primary_image %}

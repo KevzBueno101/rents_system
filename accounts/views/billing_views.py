@@ -4,7 +4,7 @@ Billing and payment views: list, generate, edit, view, delete, record payment.
 from pathlib import Path
 
 from django.conf import settings
-from django.http import FileResponse, Http404, JsonResponse
+from django.http import FileResponse, Http404, JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -333,7 +333,7 @@ def generate_payment_receipt(request, payment_id):
     })
 
 
-@login_required(login_url='/admin/login/')
+@login_required(login_url='/login/')
 def download_payment_receipt(request, payment_id):
     """Download a generated PNG receipt."""
     payment = _get_accessible_payment_or_404(request, payment_id)
@@ -345,7 +345,14 @@ def download_payment_receipt(request, payment_id):
         raise Http404("Receipt file not found")
 
     filename = f"{payment.receipt_id or 'receipt'}.png"
-    return FileResponse(open(receipt_path, 'rb'), content_type='image/png', as_attachment=True, filename=filename)
+    
+    with open(receipt_path, 'rb') as f:
+        file_data = f.read()
+        
+    response = HttpResponse(file_data, content_type='image/png')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    response['Content-Length'] = len(file_data)
+    return response
 
 
 @login_required(login_url='/admin/login/')
@@ -456,6 +463,14 @@ def upload_payment_proof(request):
         notes = request.POST.get('notes', '')
         
         # Validate bill exists and belongs to current tenant
+        if not bill_id:
+            return JsonResponse({'success': False, 'error': 'No active bill found to pay.'})
+            
+        try:
+            bill_id = int(bill_id)
+        except (ValueError, TypeError):
+            return JsonResponse({'success': False, 'error': 'Invalid bill reference.'})
+            
         try:
             bill = Bill.objects.get(id=bill_id, tenant__user=request.user)
         except Bill.DoesNotExist:
