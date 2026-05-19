@@ -172,7 +172,7 @@
         
         {% for notif in notifications %}
             {% if notif.id %}
-                <a href="{% url 'mark_notification_read' notif.id %}" class="dropdown-item {% if not notif.is_read %}fw-bold text-primary{% endif %} text-decoration-none">
+<a href="{% url 'tenant_bills' %}" class="dropdown-item {% if not notif.is_read %}fw-bold text-primary{% endif %} text-decoration-none" data-notification-id="{{ notif.id }}">
                     <div class="d-flex align-items-start">
                         <i class="bi bi-bell-fill me-2 mt-1 {% if not notif.is_read %}text-primary{% else %}text-muted{% endif %}"></i>
                         <div class="flex-grow-1">

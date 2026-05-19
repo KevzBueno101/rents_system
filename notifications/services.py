@@ -73,10 +73,6 @@ class DynamicNotificationService:
             message=rendered['message'],
             link=link or cls._get_default_link(type_code),
             type=type_code,  # Legacy field
-            dynamic_type=notification_type,
-            context_data=context,
-            delivery_channel=delivery_channel,
-            expires_at=expires_at,
         )
         
         # Trigger async delivery if needed

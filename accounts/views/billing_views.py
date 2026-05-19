@@ -13,6 +13,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 import os
+import logging
 from datetime import datetime
 from ..models import Bill, Notification, Payment, TenantProfile
 from ..activity_utils import log_activity, get_recent_activities
@@ -22,6 +23,8 @@ from billing.services.receipt_generator import (
     generate_receipt_for_payment,
     send_receipt_to_tenant,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _can_access_payment(user, payment):
@@ -480,6 +483,7 @@ def upload_payment_proof(request):
         bill_id = request.POST.get('bill_id')
         payment_proof = request.FILES.get('payment_proof')
         notes = request.POST.get('notes', '')
+        amount = request.POST.get('amount', '0')
         
         # Validate bill exists and belongs to current tenant
         if not bill_id:
@@ -495,6 +499,14 @@ def upload_payment_proof(request):
         except Bill.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'Bill not found'})
         
+        # Validate amount
+        try:
+            amount = float(amount)
+            if amount <= 0:
+                return JsonResponse({'success': False, 'error': 'Payment amount must be greater than 0'})
+        except (ValueError, TypeError):
+            return JsonResponse({'success': False, 'error': 'Invalid payment amount'})
+        
         # Validate file
         if not payment_proof:
             return JsonResponse({'success': False, 'error': 'Please select a file'})
@@ -509,16 +521,19 @@ def upload_payment_proof(request):
             return JsonResponse({'success': False, 'error': 'File size must be less than 5MB'})
         
         try:
-            # Create Payment record
+            # Create Payment record with the provided amount
             payment = Payment.objects.create(
                 bill=bill,
-                amount=0,  # Will be updated when admin processes payment
+                amount=amount,
                 payment_date=datetime.now().date(),
                 payment_method='gcash',  # Default to GCash for tenant uploads
                 reference_number=f'PROOF_{datetime.now().strftime("%Y%m%d_%H%M%S")}',
                 proof=payment_proof,
                 notes=notes,
             )
+            
+            # Update bill status based on payment
+            bill.update_status()
             
             # Log activity
             log_activity(
@@ -529,19 +544,23 @@ def upload_payment_proof(request):
                 object_id=payment.id
             )
             
-            # Create notification for admin
+            # Create notification for admin/staff users
             try:
-                DynamicNotificationService.create(
-                    user=request.user,
-                    type_code='payment_proof',
-                    context={
-                        'title': 'Payment proof uploaded',
-                        'message': f'{request.user.tenantprofile.full_name} uploaded payment proof for bill {bill.bill_number}'
-                    },
-                    link='/admin/billing/'
-                )
+                from django.contrib.auth.models import User
+                staff_users = User.objects.filter(is_staff=True)
+                for staff_user in staff_users:
+                    DynamicNotificationService.create(
+                        user=staff_user,
+                        type_code='payment_proof',
+                        context={
+                            'title': 'Payment proof uploaded',
+                            'message': f'{request.user.tenantprofile.full_name} uploaded payment proof for bill {bill.bill_number}'
+                        },
+                        link='/billing/'
+                    )
             except Exception as e:
                 logger.error(f"Failed to create admin notification: {e}")
+
             
             return JsonResponse({
                 'success': True, 

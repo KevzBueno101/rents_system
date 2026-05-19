@@ -425,7 +425,7 @@ class ActivityLog(models.Model):
 # ─── NOTIFICATION ─────────────────────────────────────
 class Notification(models.Model):
     """Production-ready notification model for tenant-specific system alerts"""
-    
+
     NOTIFICATION_TYPES = [
         ('payment', 'Payment'),
         ('billing', 'Billing'),
@@ -443,6 +443,18 @@ class Notification(models.Model):
     type = models.CharField(max_length=50, choices=NOTIFICATION_TYPES, null=True, blank=True)
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    # Dynamic notification fields
+    dynamic_type = models.ForeignKey(
+        'notifications.NotificationType',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='notifications'
+    )
+    context_data = models.JSONField(default=dict, null=True, blank=True)
+    delivery_channel = models.CharField(max_length=50, default='in_app', blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['-created_at']

@@ -15,8 +15,14 @@ from .helpers import parse_phone, get_available_rooms
 @login_required(login_url='/login/')
 def tenant_dashboard(request):
     """Tenant-only dashboard."""
-    if request.user.is_staff:
-        return redirect('admin_dashboard')
+    # Check if user is actually a tenant (has TenantProfile), not just non-staff
+    try:
+        TenantProfile.objects.get(user=request.user)
+    except TenantProfile.DoesNotExist:
+        # User doesn't have a tenant profile, redirect appropriately
+        if request.user.is_staff:
+            return redirect('admin_dashboard')
+        return redirect('login')
 
     try:
         from tenant.services.dashboard_service import get_tenant_dashboard_data
@@ -43,18 +49,26 @@ def tenant_dashboard(request):
 @login_required(login_url='/login/')
 def tenant_bills(request):
     """Tenant-only billing history."""
-    if request.user.is_staff:
-        return redirect('admin_dashboard')
+    # Check if user is actually a tenant (has TenantProfile), not just non-staff
+    try:
+        TenantProfile.objects.get(user=request.user)
+    except TenantProfile.DoesNotExist:
+        # User doesn't have a tenant profile, redirect appropriately
+        if request.user.is_staff:
+            return redirect('admin_dashboard')
+        return redirect('login')
 
     from tenant.services.dashboard_service import get_tenant_dashboard_data
     dashboard_data = get_tenant_dashboard_data(request.user)
     
-    # Get admin phone number for contact display
+    # Get admin details for contact display
     try:
         from ..models import AdminProfile
         admin_profile = AdminProfile.objects.filter(user__is_superuser=True).first()
+        admin_name = admin_profile.full_name if admin_profile else 'Administrator'
         admin_phone = admin_profile.phone if admin_profile else 'Contact Admin'
     except Exception:
+        admin_name = 'Administrator'
         admin_phone = 'Contact Admin'
 
     status_filter = request.GET.get('status', '')
@@ -98,6 +112,7 @@ def tenant_bills(request):
         'total_outstanding': total_billed - total_paid,
         'paid_bills': all_bills.filter(status='paid').count(),
         'overdue_count': all_bills.filter(status='overdue').count(),
+        'admin_name': admin_name,
         'admin_phone': admin_phone,
         'this_month_billed': this_month_billed,
         'average_bill': average_bill,

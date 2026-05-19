@@ -134,14 +134,26 @@ def recent_payments(request):
 def notifications(request):
     """Notifications context processor for authenticated users."""
     if not request.user.is_authenticated:
-        return {'notifications': []}
-    
+        return {
+            'notifications': [],
+            'unread_count': 0,
+        }
+
     try:
         from .models import Notification
+
         notifications = Notification.objects.filter(user=request.user, is_read=False)[:5]
-        return {'notifications': notifications}
+        unread_count = Notification.objects.filter(user=request.user, is_read=False).count()
+
+        return {
+            'notifications': notifications,
+            'unread_count': unread_count,
+        }
     except Exception:
-        return {'notifications': []}
+        return {
+            'notifications': [],
+            'unread_count': 0,
+        }
 
 
 def app_settings(request):

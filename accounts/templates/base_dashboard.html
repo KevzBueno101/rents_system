@@ -271,7 +271,7 @@
             <!-- Scrollable Notification Container -->
             <div class="notif-container">
                 {% for notif in notifications %}
-                    <a href="{% url 'mark_notification' notif.id %}" class="dropdown-item {% if not notif.is_read %}fw-bold text-primary{% endif %} text-decoration-none">
+<a href="{% url 'billing_list' %}" class="dropdown-item {% if not notif.is_read %}fw-bold text-primary{% endif %} text-decoration-none" data-notification-id="{{ notif.id }}">
                         <div class="d-flex align-items-start">
                             <i class="bi bi-bell-fill me-2 mt-1 {% if not notif.is_read %}text-primary{% else %}text-muted{% endif %}"></i>
                             <div class="flex-grow-1">
@@ -514,9 +514,69 @@
     </div>
 </div>
 <!-- Notification Toggle Script -->
-    <script>
+<script>
         const notifBtn = document.getElementById('notifBtn');
         const notifDropdown = document.getElementById('notifDropdown');
+
+        // When clicking a notification, mark it read via the notifications endpoint, then redirect
+        document.addEventListener('click', function(e) {
+            const link = e.target.closest('a[data-notification-id]');
+            if (!link) return;
+            const notificationId = link.getAttribute('data-notification-id');
+            if (!notificationId) return;
+
+            // Optimistic redirect
+            const href = link.getAttribute('href');
+
+            // Optimistic UI: clear unread indicator immediately
+            // 1) remove unread icon styling
+            const bellIcon = link.querySelector('i.bi');
+            if (bellIcon) {
+                bellIcon.classList.remove('text-primary');
+                bellIcon.classList.add('text-muted');
+            }
+            // 2) if dropdown item has fw-bold/text-primary, remove it
+            link.classList.remove('fw-bold', 'text-primary');
+            link.classList.add('fw-normal', 'text-muted');
+
+            // 3) update unread badge count (if present)
+            const topBadge = document.querySelector('#notifBtn .badge');
+            if (topBadge) {
+                const current = parseInt(topBadge.textContent || '0', 10);
+                const next = Math.max(0, current - 1);
+                if (next === 0) {
+                    topBadge.remove();
+                } else {
+                    topBadge.textContent = next;
+                }
+            }
+            const dropdownUnread = document.querySelector('#notifDropdown small.text-muted');
+            if (dropdownUnread && dropdownUnread.textContent.includes('unread')) {
+                const m = dropdownUnread.textContent.match(/(\d+)/);
+                const current = m ? parseInt(m[1], 10) : 0;
+                const next = Math.max(0, current - 1);
+                if (next === 0) {
+                    dropdownUnread.remove();
+                } else {
+                    dropdownUnread.textContent = `${next} unread`;
+                }
+            }
+
+            // Request backend mark-read
+            fetch('{% url "notifications:notification_mark_read" 0 %}'.replace('0', notificationId), {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).catch(() => { /* ignore */ });
+
+            if (href && href !== 'None') {
+                window.location.href = href;
+            }
+            e.preventDefault();
+        });
+
 
         if (notifBtn && notifDropdown) {
             notifBtn.addEventListener('click', function(e) {

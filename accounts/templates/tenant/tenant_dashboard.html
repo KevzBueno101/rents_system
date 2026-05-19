@@ -323,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="modal-content" style="border-radius:8px;">
             <div class="modal-header">
                 
-                <h5 class="modal-title" id="contactAdminLabel">Contact Admin</h5>
+                <h5 class="modal-title" id="contactAdminLabel">Pay Now</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -342,6 +342,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     <form id="paymentProofForm" method="POST" enctype="multipart/form-data" action="{% url 'upload_payment_proof' %}">
                         {% csrf_token %}
                         <input type="hidden" name="bill_id" value="{% if current_bill %}{{ current_bill.id }}{% endif %}">
+                        
+                        <div class="mb-3">
+                            <label for="paymentAmount" class="form-label small fw-bold">Payment Amount (₱)</label>
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="paymentAmount" 
+                                   name="amount" 
+                                   step="0.01"
+                                   min="0"
+                                   placeholder="Enter amount paid"
+                                   required>
+                            <div class="form-text small">Enter the exact amount you paid</div>
+                        </div>
                         
                         <div class="mb-3">
                             <label for="paymentProof" class="form-label small fw-bold">Upload Payment Screenshot</label>
@@ -383,6 +396,53 @@ document.addEventListener('DOMContentLoaded', function() {
                         Bill reference: <strong>{{ current_bill.bill_number }}</strong>
                     </div>
                 {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contact Admin Info Modal -->
+<div class="modal fade" id="contactAdminInfoModal" tabindex="-1" aria-labelledby="contactAdminInfoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:8px;">
+            <div class="modal-header">
+                <h5 class="modal-title" id="contactAdminInfoLabel">Contact Admin</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <div class="mb-3">
+                        <i class="bi bi-person-circle" style="font-size: 4rem; color: #0d6efd;"></i>
+                    </div>
+                    <h5 class="mb-2">{{ admin_name }}</h5>
+                    <p class="text-muted mb-3">Administrator</p>
+                </div>
+                
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="bi bi-telephone-fill text-primary me-3" style="font-size: 1.5rem;"></i>
+                            <div>
+                                <small class="text-muted d-block">Phone Number</small>
+                                <h6 class="mb-0">{{ admin_phone }}</h6>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-envelope-fill text-primary me-3" style="font-size: 1.5rem;"></i>
+                            <div>
+                                <small class="text-muted d-block">Email</small>
+                                <h6 class="mb-0">admin@rents-system.com</h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-3 text-center">
+                    <a href="tel:{{ admin_phone }}" class="btn btn-primary w-100">
+                        <i class="bi bi-telephone me-2"></i> Call Now
+                    </a>
+                </div>
             </div>
         </div>
     </div>
