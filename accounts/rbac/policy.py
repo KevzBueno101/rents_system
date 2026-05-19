@@ -43,6 +43,7 @@ TENANT_PORTAL_ROUTE_NAMES = frozenset(
 )
 
 
+
 SHARED_AUTH_ROUTE_NAMES = frozenset(
     {
         'logout',

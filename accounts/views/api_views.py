@@ -13,6 +13,22 @@ from django.core.cache import cache
 from ..models import Rule
 from django.utils import timezone
 
+import jwt
+import time
+from django.conf import settings
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def get_chatbase_token(request):
+    user = request.user
+    payload = {
+        'user_id': str(user.id),
+        'email': user.email,
+        'exp': int(time.time()) + 3600,
+    }
+    token = jwt.encode(payload, settings.CHATBASE_SECRET, algorithm='HS256')
+    return JsonResponse({'token': token})
 @csrf_exempt
 @require_http_methods(["GET"])
 def check_username_availability(request):

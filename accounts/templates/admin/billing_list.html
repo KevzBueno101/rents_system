@@ -278,7 +278,8 @@
                                 <a href="{% url 'view_bill' bill.id %}" class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-eye"></i>
                                 </a>
-                                <!-- EDIT -->
+                                <!-- EDIT (SuperAdmin only) -->
+                                {% if request.user.is_superuser %}
                                 <button class="btn btn-sm btn-outline-secondary edit-btn"
                                     data-id="{{ bill.id }}"
                                     data-tenant="{{ bill.tenant.id }}"
@@ -315,14 +316,15 @@
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
-                    {% empty %}
+                {% empty %}
                     <tr>
                         <td colspan="11" class="text-center text-muted py-4">No bills yet.</td>
                     </tr>
-                    {% endfor %}
+                {% endfor %}
                 </tbody>
             </table>
         </div>
@@ -348,7 +350,7 @@
                             <select name="tenant" class="form-select" required id="tenantSelect">
                                 <option value="">Select Tenant</option>
                                 {% for tenant in all_tenants %}
-                                <option value="{{ tenant.id }}">{{ tenant.full_name }} - {{ tenant.room.room_code|default:"—" }}</option>
+                                <option value="{{ tenant.id }}" data-monthly-rate="{{ tenant.room.monthly_rate }}">{{ tenant.full_name }} - {{ tenant.room.room_code|default:"—" }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -510,14 +512,83 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // Tenant select change - auto-fill room
+    // Tenant select change - auto-fill room + room monthly rate
     const tenantSelect = document.getElementById('tenantSelect');
+    const roomDisplay = document.getElementById('roomDisplay');
+    const totalAmountInput = document.querySelector('#generateBillForm input[name="total_amount"]');
+
+    function safeParseNumber(val) {
+        const n = parseFloat(val);
+        return Number.isFinite(n) ? n : null;
+    }
+
     if (tenantSelect) {
         tenantSelect.addEventListener('change', function () {
             const selectedOption = this.options[this.selectedIndex];
-            const roomText = selectedOption.text.split(' - ')[1] || '';
-            document.getElementById('roomDisplay').value = roomText;
+            const roomText = (selectedOption.text.split(' - ')[1] || '').trim();
+            if (roomDisplay) roomDisplay.value = roomText;
+
+            // Auto-fill Total Amount based on room monthly rate.
+            // We rely on data-monthly-rate attribute added to the <option>.
+            const monthlyRate = selectedOption.dataset.monthlyRate;
+            if (totalAmountInput && monthlyRate) {
+                const n = safeParseNumber(monthlyRate);
+                if (n !== null) {
+                    totalAmountInput.value = n;
+                }
+            }
         });
+    }
+
+    // Period auto-fill (client-side helper)
+    const periodStartInput = document.querySelector('#generateBillForm input[name="period_start"]');
+    const periodEndInput = document.querySelector('#generateBillForm input[name="period_end"]');
+    const dueDateInput = document.querySelector('#generateBillForm input[name="due_date"]');
+
+    function addMonths(d, months) {
+        const date = new Date(d.getTime());
+        const day = date.getDate();
+        date.setMonth(date.getMonth() + months);
+
+        // Handle month overflow (e.g., Jan 31 -> Mar 3). Clamp to last day of target month.
+        if (date.getDate() !== day) {
+            date.setDate(0); // last day of previous month
+        }
+        return date;
+    }
+
+    function toYMD(dateObj) {
+        const yyyy = dateObj.getFullYear();
+        const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const dd = String(dateObj.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function autoFillDatesFromPeriodStart() {
+        if (!periodStartInput || !periodEndInput || !dueDateInput) return;
+        if (!periodStartInput.value) return;
+
+        const start = new Date(periodStartInput.value + 'T00:00:00');
+        if (Number.isNaN(start.getTime())) return;
+
+        // Your rule: Period End = Period Start + 1 month (same day when possible)
+        const end = addMonths(start, 1);
+        periodEndInput.value = toYMD(end);
+
+        // Due Date = Period End + 5 days
+        const due = new Date(end.getTime());
+        due.setDate(due.getDate() + 5);
+        dueDateInput.value = toYMD(due);
+
+        // Optional: keep total amount as-is; backend will compute if missing/0.
+        if (totalAmountInput && (totalAmountInput.value === '' || safeParseNumber(totalAmountInput.value) === null)) {
+            // Leave empty; backend will auto-fill based on selected tenant room rate if desired.
+        }
+    }
+
+    if (periodStartInput) {
+        periodStartInput.addEventListener('change', autoFillDatesFromPeriodStart);
+        periodStartInput.addEventListener('input', autoFillDatesFromPeriodStart);
     }
 
     // Edit bill modal

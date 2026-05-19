@@ -60,6 +60,7 @@ def billing_list(request):
     if not request.user.is_staff:
         return redirect('tenant_dashboard')
 
+
     search = request.GET.get('search', '')
     status_filter = request.GET.get('status', '')
     sort_by = request.GET.get('sort', '-created_at')
@@ -123,6 +124,56 @@ def generate_bill(request):
         notes = request.POST.get('notes', '')
         save_as_draft = request.POST.get('save_as_draft') == 'on'
 
+        # Autofill rules (server-side safety):
+        # - Period End = Period Start + 1 month
+        # - Due Date = Period End + 5 days
+        # - Total Amount = Room monthly_rate (if missing/invalid)
+        from datetime import timedelta
+
+        def _add_months(d, months):
+            # Clamp overflow dates to last day of target month.
+            month = d.month - 1 + months
+            year = d.year + month // 12
+            month = month % 12 + 1
+            # last day of target month:
+            import calendar
+            last_day = calendar.monthrange(year, month)[1]
+            day = min(d.day, last_day)
+            return datetime(year, month, day).date()
+
+        parsed_period_start = None
+        parsed_period_end = None
+        parsed_due_date = None
+        try:
+            parsed_period_start = datetime.strptime(period_start, '%Y-%m-%d').date() if period_start else None
+        except Exception:
+            parsed_period_start = None
+
+        # If we have period_start, recompute period_end + due_date regardless of what came from UI.
+        if parsed_period_start:
+            parsed_period_end = _add_months(parsed_period_start, 1)
+            parsed_due_date = parsed_period_end + timedelta(days=5)
+        else:
+            # Fallback to posted values
+            try:
+                parsed_period_end = datetime.strptime(period_end, '%Y-%m-%d').date() if period_end else None
+            except Exception:
+                parsed_period_end = None
+            try:
+                parsed_due_date = datetime.strptime(due_date, '%Y-%m-%d').date() if due_date else None
+            except Exception:
+                parsed_due_date = None
+
+        # Total amount: if missing/0/invalid, use room monthly_rate from tenant.room.
+        parsed_total_amount = None
+        try:
+            if total_amount is not None and str(total_amount).strip() != '':
+                parsed_total_amount = float(total_amount)
+        except Exception:
+            parsed_total_amount = None
+
+        # We'll set final total_amount after we load tenant and access room.monthly_rate.
+
         try:
             tenant = TenantProfile.objects.get(id=tenant_id)
         except TenantProfile.DoesNotExist:
@@ -131,12 +182,36 @@ def generate_bill(request):
 
         from datetime import datetime
 
+        # Apply computed autofill values (if available)
+        final_period_start = parsed_period_start
+        final_period_end = parsed_period_end
+        final_due_date = parsed_due_date
+
+        # Reuse posted period_start if parsed_period_start is None
+        if final_period_start is None and period_start:
+            try:
+                final_period_start = datetime.strptime(period_start, '%Y-%m-%d').date()
+            except Exception:
+                final_period_start = None
+
+        # Total amount: use room monthly_rate if missing/invalid, otherwise use parsed_total_amount.
+        final_total_amount = total_amount
+        try:
+            room_rate = tenant.room.monthly_rate if tenant.room else None
+        except Exception:
+            room_rate = None
+
+        if parsed_total_amount is None and room_rate is not None:
+            final_total_amount = room_rate
+        elif parsed_total_amount is not None:
+            final_total_amount = parsed_total_amount
+
         bill = Bill(
             tenant=tenant,
-            period_start=datetime.strptime(period_start, '%Y-%m-%d').date() if period_start else None,
-            period_end=datetime.strptime(period_end, '%Y-%m-%d').date() if period_end else None,
-            due_date=datetime.strptime(due_date, '%Y-%m-%d').date() if due_date else None,
-            total_amount=total_amount,
+            period_start=final_period_start,
+            period_end=final_period_end,
+            due_date=final_due_date,
+            total_amount=final_total_amount,
             notes=notes,
             status='draft' if save_as_draft else 'sent'
         )

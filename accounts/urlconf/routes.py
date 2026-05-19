@@ -9,7 +9,7 @@ from .. import views
 from ..views import admin_views
 from ..views import api_views
 from ..views import rules_views
-
+from accounts.views.api_views import get_chatbase_token
 urlpatterns = [
     path('admin/login/', views.admin_login_view, name='admin_login'),
     path('login/', views.login_view, name='login'),
@@ -146,4 +146,6 @@ urlpatterns = [
     path('api/user-info/', api_views.get_current_user_info, name='get_current_user_info'),
     path('api/update-username/', api_views.update_username, name='update_username'),
     path('api/rules-data/', api_views.api_rules_data, name='api_rules_data'),
+
+    path('api/chatbase-token/', get_chatbase_token, name='chatbase_token'),
 ]

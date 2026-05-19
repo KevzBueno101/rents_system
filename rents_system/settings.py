@@ -2,7 +2,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 import os
 import warnings
-
+import os
+CHATBASE_SECRET = os.environ.get('CHATBASE_SECRET')
 # Load environment variables FIRST
 load_dotenv(override=True)
 
